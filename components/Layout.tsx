@@ -438,7 +438,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
               <div className="pt-12 border-t border-slate-100 flex flex-col md:flex-row justify-between items-center gap-6">
                   <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
-                      Â© 2025 Gillow Intelligence â€¢ Built for Global IP Excellence
+                      © 2025 Gillow Intelligence • Built for Global IP Excellence
                   </div>
                   <div className="flex gap-8 text-[11px] font-bold text-slate-400 uppercase tracking-widest">
                     <button onClick={() => setInfoDialog({ title: 'Terms of Use', description: 'This prototype is intended for evaluation workflows with sample data. Final legal terms can be added once production authentication and backend policies are in place.' })} className="hover:text-slate-900">Term of Use</button>

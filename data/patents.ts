@@ -2557,7 +2557,7 @@ const CSV_JSON = [
     "Publication Date": "26 February 2026",
     "Estimated Expiration Date": "16 August 2043",
     "Original Assignees": "Karl Storz Se & Co Kg",
-    "Inventors": "Dominik LÃ„NGLE | Janosz SCHNEIDER",
+    "Inventors": "Dominik LÄNGLE | Janosz SCHNEIDER",
     "Applicants": "Karl Storz Se & Co Kg",
     "Current Assignees": "Karl Storz Se & Co Kg",
     "CPCs": "A61B34/30 | A61B34/71 | A61B2034/301",
