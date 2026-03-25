@@ -196,6 +196,7 @@ const PatentDetail: React.FC = () => {
                     <h1 className="text-5xl font-black text-slate-900 tracking-tight leading-[1.1]">{patent.title}</h1>
                     <div className="flex flex-wrap gap-x-10 gap-y-4">
                        <MetricCompact icon={<Building2 size={16} />} label="Owner" value={patent.currentAssignees[0] || 'Unassigned'} />
+                       <MetricCompact icon={<Tag size={16} />} label="Entity Type" value={patent.entityType || 'Unknown'} />
                        <MetricCompact icon={<ListTree size={16} />} label="Art Unit" value={patent.gau} />
                        <MetricCompact icon={<Calendar size={16} />} label="Filed" value={patent.filingDate} />
                     </div>
