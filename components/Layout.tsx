@@ -158,7 +158,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const openShareWindow = (platform: 'linkedin' | 'x') => {
     const pageUrl = encodeURIComponent(window.location.href);
-    const pageText = encodeURIComponent('Explore this patent intelligence view on Gillow');
+    const pageText = encodeURIComponent('Explore this patent intelligence view on PatentXchange');
     const targetUrl =
       platform === 'linkedin'
         ? `https://www.linkedin.com/sharing/share-offsite/?url=${pageUrl}`
@@ -203,7 +203,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     <div className="w-10 h-10 rounded-xl bg-[#00bdcd] flex items-center justify-center shadow-lg shadow-blue-200 group-hover:rotate-6 transition-all">
                         <span className="font-black text-white text-xl">G</span>
                     </div>
-                    <span className="font-black text-2xl tracking-tighter text-slate-900 group-hover:text-blue-600 transition-colors">Gillow</span>
+                    <span className="font-black text-2xl tracking-tighter text-slate-900 group-hover:text-blue-600 transition-colors">PatentXchange</span>
                 </button>
 
                 <nav className="hidden xl:flex items-center space-x-8">
@@ -378,7 +378,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                           <div className="w-10 h-10 rounded-xl bg-[#00bdcd] flex items-center justify-center shadow-xl shadow-blue-200">
                               <span className="font-black text-white text-xl">G</span>
                           </div>
-                          <span className="font-black text-2xl tracking-tighter">Gillow</span>
+                          <span className="font-black text-2xl tracking-tighter">PatentXchange</span>
                       </div>
                       <p className="text-slate-400 max-w-sm mb-12 text-lg font-medium leading-relaxed">
                           Reimagining intellectual property management for the modern era. Navigate, value, and acquire patents with global transparency.
@@ -412,10 +412,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   <div className="md:col-span-2">
                       <h4 className="font-black text-[10px] uppercase tracking-[0.2em] text-slate-400 mb-10">Company</h4>
                       <ul className="space-y-6 text-sm font-black text-slate-600">
-                          <li><button onClick={() => setInfoDialog({ title: 'Our Mission', description: 'Gillow helps teams explore patent landscapes, evaluate portfolio strength, and move from discovery to transaction faster.', actionLabel: 'Go Home', actionType: 'home' })} className="hover:text-[#00bdcd] transition-colors">Our Mission</button></li>
+                          <li><button onClick={() => setInfoDialog({ title: 'Our Mission', description: 'PatentXchange helps teams explore patent landscapes, evaluate portfolio strength, and move from discovery to transaction faster.', actionLabel: 'Go Home', actionType: 'home' })} className="hover:text-[#00bdcd] transition-colors">Our Mission</button></li>
                           <li><button onClick={() => setInfoDialog({ title: 'Security', description: 'This prototype runs on local sample data and browser storage. Backend connectivity is optional and can be configured from the server connection panel.', actionLabel: 'Open Server Config', actionType: 'server-config' })} className="hover:text-[#00bdcd] transition-colors">Security</button></li>
                           <li><button onClick={() => setInfoDialog({ title: 'Privacy', description: 'Search history, favorites, and saved searches are currently stored in your browser for this prototype session.', actionLabel: 'Open Marketplace', actionType: 'browse' })} className="hover:text-[#00bdcd] transition-colors">Privacy</button></li>
-                          <li><button onClick={() => { window.location.href = 'mailto:support@gillow.ai?subject=Gillow%20Support'; }} className="hover:text-[#00bdcd] transition-colors">Support</button></li>
+                          <li><button onClick={() => { window.location.href = 'mailto:support@gillow.ai?subject=PatentXchange%20Support'; }} className="hover:text-[#00bdcd] transition-colors">Support</button></li>
                       </ul>
                   </div>
 
@@ -439,7 +439,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
               <div className="pt-12 border-t border-slate-100 flex flex-col md:flex-row justify-between items-center gap-6">
                   <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
-                      © 2025 Gillow Intelligence • Built for Global IP Excellence
+                      © 2025 PatentXchange • Built for Global IP Excellence
                   </div>
                   <div className="flex gap-8 text-[11px] font-bold text-slate-400 uppercase tracking-widest">
                     <button onClick={() => setInfoDialog({ title: 'Terms of Use', description: 'This prototype is intended for evaluation workflows with sample data. Final legal terms can be added once production authentication and backend policies are in place.' })} className="hover:text-slate-900">Term of Use</button>
@@ -456,7 +456,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-blue-600">Gillow</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-blue-600">PatentXchange</p>
                 <h3 className="mt-2 text-2xl font-black tracking-tight text-slate-900">{infoDialog.title}</h3>
               </div>
               <button onClick={() => setInfoDialog(null)} className="rounded-xl border border-slate-200 p-2 text-slate-400 hover:bg-slate-50 hover:text-slate-700">
