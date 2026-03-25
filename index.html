@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Gillow | Patent Marketplace</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script>
@@ -13,9 +13,23 @@
         theme: {
           extend: {
             fontFamily: {
-              sans: ['Inter', 'sans-serif'],
+              sans: ['Poppins', 'sans-serif'],
+              serif: ['Poppins', 'serif'],
+              mono: ['Poppins', 'monospace'],
             },
             colors: {
+              blue: {
+                50: '#eefcfd',
+                100: '#d4f7fa',
+                200: '#aceff4',
+                300: '#73e2ea',
+                400: '#37d0db',
+                500: '#00bdcd',
+                600: '#00bdcd',
+                700: '#00a6b6',
+                800: '#008492',
+                900: '#0d5861',
+              },
               slate: {
                 50: '#f8fafc',
                 100: '#f1f5f9',
@@ -24,8 +38,8 @@
                 900: '#0f172a',
               },
               primary: {
-                500: '#006AFF',
-                600: '#0055CC',
+                500: '#00bdcd',
+                600: '#00a6b6',
               }
             }
           }
@@ -33,9 +47,13 @@
       }
     </script>
     <style>
+      html {
+        font-size: 17px;
+      }
       body {
         background-color: #ffffff;
         color: #0f172a;
+        font-family: 'Poppins', sans-serif;
       }
       ::-webkit-scrollbar {
         width: 8px;

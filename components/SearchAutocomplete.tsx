@@ -46,7 +46,7 @@ const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({ onSearch, place
   return (
     <div ref={containerRef} className={`relative ${className}`}>
       <div className={`relative flex items-center transition-all duration-300 ${isFocused ? 'scale-[1.02]' : ''}`}>
-        <Search className={`absolute left-5 transition-colors duration-300 ${isFocused ? 'text-[#006AFF]' : 'text-slate-400'}`} size={22} />
+        <Search className={`absolute left-5 transition-colors duration-300 ${isFocused ? 'text-[#00bdcd]' : 'text-slate-400'}`} size={22} />
         <input 
           type="text"
           value={query}
@@ -55,7 +55,7 @@ const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({ onSearch, place
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSearch(query)}
           placeholder={placeholder || "Search patents by ID, title, or tech..."}
-          className="w-full h-16 pl-14 pr-16 bg-white border-2 border-slate-100 rounded-full shadow-xl shadow-slate-200/50 text-slate-800 text-lg font-medium outline-none focus:border-[#006AFF] transition-all placeholder-slate-400"
+          className="w-full h-16 pl-14 pr-16 bg-white border-2 border-slate-100 rounded-full shadow-xl shadow-slate-200/50 text-slate-800 text-lg font-medium outline-none focus:border-[#00bdcd] transition-all placeholder-slate-400"
         />
         {query && (
           <button onClick={() => handleSearch('')} className="absolute right-14 text-slate-300 hover:text-slate-500">
@@ -64,7 +64,7 @@ const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({ onSearch, place
         )}
         <button 
           onClick={() => handleSearch(query)}
-          className="absolute right-2 top-2 h-12 w-12 bg-[#006AFF] text-white rounded-full flex items-center justify-center hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200 active:scale-95"
+          className="absolute right-2 top-2 h-12 w-12 bg-[#00bdcd] text-white rounded-full flex items-center justify-center hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200 active:scale-95"
         >
           <Search size={24} />
         </button>

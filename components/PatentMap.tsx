@@ -62,7 +62,7 @@ const PatentMap: React.FC<PatentMapProps> = ({ patents, onSelectPatent }) => {
               <div className={`
                 flex items-center gap-2 px-3 py-1.5 rounded-full border shadow-lg cursor-pointer transition-all whitespace-nowrap
                 ${isHovered 
-                  ? 'bg-[#006AFF] text-white border-blue-400 scale-110' 
+                  ? 'bg-[#00bdcd] text-white border-blue-400 scale-110' 
                   : 'bg-white text-slate-800 border-slate-200 hover:border-blue-300'
                 }
               `}>
@@ -86,7 +86,7 @@ const PatentMap: React.FC<PatentMapProps> = ({ patents, onSelectPatent }) => {
           }}
         >
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[9px] font-black text-[#006AFF] bg-blue-50 px-2 py-0.5 rounded uppercase tracking-widest">{hoveredPatent.publicationNumber}</span>
+            <span className="text-[9px] font-black text-[#00bdcd] bg-blue-50 px-2 py-0.5 rounded uppercase tracking-widest">{hoveredPatent.publicationNumber}</span>
             <div className="flex items-center gap-1 text-emerald-600 text-[10px] font-bold">
                <TrendingUp size={10} /> {hoveredPatent.qualityScore}% Quality
             </div>
@@ -100,7 +100,7 @@ const PatentMap: React.FC<PatentMapProps> = ({ patents, onSelectPatent }) => {
 
       <div className="absolute top-6 left-6 z-10 space-y-2">
          <div className="bg-white/90 backdrop-blur-md p-3 rounded-xl border border-slate-200 shadow-xl flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-100 text-[#006AFF] rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 bg-blue-100 text-[#00bdcd] rounded-lg flex items-center justify-center">
                <Navigation size={20} />
             </div>
             <div>

@@ -15,15 +15,16 @@ import PatentFamilyMap from '../components/PatentFamilyMap';
 import MaintenanceFeeChart from '../components/MaintenanceFeeChart';
 import { ClaimsPanel } from '../components/ClaimsPanel';
 import { LicensingPanel, getLicensingColor } from '../components/LicensingPanel';
-import { ValuationBreakdown } from '../components/ValuationBreakdown';
 import { TRLPanel } from '../components/TRLPanel';
 import { MarketPanel } from '../components/MarketPanel';
 import { RiskPanel } from '../components/RiskPanel';
 import { PortfolioPanel } from '../components/PortfolioPanel';
 import { ProsecutionPanel } from '../components/ProsecutionPanel';
+import { ProceduralSignalsPanel } from '../components/ProceduralSignalsPanel';
 import { useGillow } from '../context/GillowContext';
 import { exportPatentToCsv } from '../utils/exportUtils';
 import { shareContent } from '../utils/shareUtils';
+import { hasItems, hasText, isKnownNumber } from '../utils/patentDisplay';
 
 const PatentDetail: React.FC = () => {
   const { patentId } = useParams();
@@ -99,6 +100,39 @@ const PatentDetail: React.FC = () => {
     </div>
   );
 
+  const hasTechDna = hasText(patent.abstract) || hasText(patent.domain) || hasText(patent.subdomain) || patent.cpcs.length > 0 || patent.ipcs.length > 0;
+  const hasLegalProfile = hasText(patent.legalStatus) || hasText(patent.simpleLegalStatus) || patent.flags.sep || patent.flags.opposition || patent.flags.ptab || patent.flags.litigation;
+  const hasMaintenanceSection = [
+    patent.maintenanceFees.year3_5,
+    patent.maintenanceFees.year7_5,
+    patent.maintenanceFees.year11_5,
+    patent.maintenanceFees.totalPending,
+  ].some((value) => isKnownNumber(value));
+  const hasPortfolioSection = hasText(patent.patentFamilyStrategy) || hasText(patent.portfolioSegment) || patent.relatedPatents.length > 0;
+  const hasProceduralSignalsSection =
+    hasItems(patent.trackOneCodes) ||
+    hasItems(patent.nonPublicationCodes) ||
+    hasItems(patent.cipConDiv) ||
+    hasItems(patent.iprPgr) ||
+    hasItems(patent.fit) ||
+    hasItems(patent.largestFamilies) ||
+    patent.flags.governmentInterest ||
+    patent.flags.sep ||
+    patent.flags.litigation;
+  const hasProsecutionSection = hasText(patent.firstActionDate) || hasText(patent.allowanceDate) || isKnownNumber(patent.prosecutionDuration) || isKnownNumber(patent.officeActionsCount) || isKnownNumber(patent.rceCount);
+  const hasMarketSection = hasText(patent.marketSector) || isKnownNumber(patent.totalAddressableMarket) || isKnownNumber(patent.marketGrowthRate) || hasItems(patent.keyCompetitors) || hasItems(patent.marketRegion);
+  const hasRiskSection = isKnownNumber(patent.infringementRiskScore) || hasItems(patent.riskFactors) || hasItems(patent.keyProductCategories);
+  const hasTrlSection = isKnownNumber(patent.technologyReadinessLevel) || hasText(patent.trlDescription) || hasItems(patent.commercialApplications);
+  const hasClaimsSection = patent.totalClaims > 0;
+  const hasLicensingSection = hasText(patent.licensingStatus) || isKnownNumber(patent.askingPrice) || patent.previousDeals.length > 0;
+  const hasGeographySection = patent.countries.length > 0;
+  const hasMarketSidebar = hasText(patent.marketSector) || isKnownNumber(patent.totalAddressableMarket);
+  const hasTrlSidebar = isKnownNumber(patent.technologyReadinessLevel);
+  const hasLicensingSidebar = hasText(patent.licensingStatus);
+  const hasRiskSidebar = isKnownNumber(patent.infringementRiskScore);
+  const marketSidebarValue = hasText(patent.marketSector) ? patent.marketSector : `$${(patent.totalAddressableMarket / 1e9).toFixed(1)}B TAM`;
+  const marketSidebarSub = isKnownNumber(patent.totalAddressableMarket) ? `TAM: $${(patent.totalAddressableMarket / 1e9).toFixed(1)}B` : 'Market Data';
+
   return (
     <div className="min-h-screen bg-white font-sans text-slate-900 pb-40">
       
@@ -155,9 +189,9 @@ const PatentDetail: React.FC = () => {
                         <span className="px-3 py-1 text-[10px] font-black bg-slate-900 text-white rounded-lg uppercase tracking-widest">
                             {patent.patentType}
                         </span>
-                        <span className={`px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-lg border ${getLicensingColor(patent.licensingStatus)}`}>
+                        {hasText(patent.licensingStatus) && <span className={`px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-lg border ${getLicensingColor(patent.licensingStatus)}`}>
                             {patent.licensingStatus}
-                        </span>
+                        </span>}
                     </div>
                     <h1 className="text-5xl font-black text-slate-900 tracking-tight leading-[1.1]">{patent.title}</h1>
                     <div className="flex flex-wrap gap-x-10 gap-y-4">
@@ -263,7 +297,7 @@ const PatentDetail: React.FC = () => {
             </section>
 
             {/* 2. Technology DNA */}
-            <section id="tech-dna" className="space-y-10">
+            {hasTechDna && <section id="tech-dna" className="space-y-10">
                 <div className="flex items-center justify-between">
                    <div className="flex items-center gap-3">
                       <div className="w-1.5 h-8 bg-blue-600 rounded-full" />
@@ -275,36 +309,36 @@ const PatentDetail: React.FC = () => {
                       Art Unit: {patent.gau}
                    </div>
                 </div>
-                <div className="bg-slate-50 p-10 rounded-[2.5rem] border border-slate-100 relative overflow-hidden group">
+                {hasText(patent.abstract) && <div className="bg-slate-50 p-10 rounded-[2.5rem] border border-slate-100 relative overflow-hidden group">
                     <div className="absolute top-0 right-0 p-8 opacity-[0.02] pointer-events-none group-hover:rotate-12 transition-transform duration-700">
                       <Dna size={200} />
                     </div>
                     <p className="text-slate-700 leading-relaxed text-xl font-medium italic font-serif relative z-10">
                         "{patent.abstract}"
                     </p>
-                </div>
+                </div>}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="space-y-6">
+                    {(hasText(patent.domain) || hasText(patent.subdomain)) && <div className="space-y-6">
                         <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
                             <Layers size={14} className="text-blue-500" /> Taxonomic Classification
                         </div>
                         <div className="grid grid-cols-1 gap-4">
-                            <div className="p-6 bg-white border border-slate-100 rounded-2xl shadow-sm hover:border-blue-100 transition-all">
+                            {hasText(patent.domain) && <div className="p-6 bg-white border border-slate-100 rounded-2xl shadow-sm hover:border-blue-100 transition-all">
                                 <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2"><Tag size={12}/> Domain</div>
                                 <div className="font-black text-slate-900 text-lg">{patent.domain}</div>
-                            </div>
-                            <div className="p-6 bg-white border border-slate-100 rounded-2xl shadow-sm hover:border-blue-100 transition-all">
+                            </div>}
+                            {hasText(patent.subdomain) && <div className="p-6 bg-white border border-slate-100 rounded-2xl shadow-sm hover:border-blue-100 transition-all">
                                 <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2"><ListTree size={12}/> Subdomain</div>
                                 <div className="font-black text-slate-900 text-lg">{patent.subdomain}</div>
-                            </div>
+                            </div>}
                         </div>
-                    </div>
-                    <div className="space-y-6">
+                    </div>}
+                    {(patent.cpcs.length > 0 || patent.ipcs.length > 0) && <div className="space-y-6">
                         <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
                             <Cpu size={14} className="text-blue-500" /> Classification DNA
                         </div>
                         <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm space-y-6">
-                           <div className="space-y-3">
+                           {patent.cpcs.length > 0 && <div className="space-y-3">
                               <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">CPC (Cooperative Patent Classification)</div>
                               <div className="flex flex-wrap gap-2">
                                  {patent.cpcs.slice(0, 6).map((cpc, i) => (
@@ -313,9 +347,9 @@ const PatentDetail: React.FC = () => {
                                     </span>
                                  ))}
                               </div>
-                           </div>
-                           <div className="h-px bg-slate-50 w-full" />
-                           <div className="space-y-3">
+                           </div>}
+                           {patent.cpcs.length > 0 && patent.ipcs.length > 0 && <div className="h-px bg-slate-50 w-full" />}
+                           {patent.ipcs.length > 0 && <div className="space-y-3">
                               <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">IPC (International Patent Classification)</div>
                               <div className="flex flex-wrap gap-2">
                                  {patent.ipcs.slice(0, 4).map((ipc, i) => (
@@ -324,42 +358,47 @@ const PatentDetail: React.FC = () => {
                                     </span>
                                  ))}
                               </div>
-                           </div>
+                           </div>}
                         </div>
-                    </div>
+                    </div>}
                 </div>
-            </section>
+            </section>}
 
-            {/* 3. Global Enforceability Footprint */}
-            <section id="geography" className="space-y-8">
+            {/* 3. Procedural & Strategic Signals */}
+            {hasProceduralSignalsSection && <section id="procedural-signals">
+                <ProceduralSignalsPanel patent={patent} />
+            </section>}
+
+            {/* 4. Global Enforceability Footprint */}
+            {hasGeographySection && <section id="geography" className="space-y-8">
                 <div className="flex items-center gap-3">
                    <div className="w-1.5 h-8 bg-blue-600 rounded-full" />
                    <h2 className="text-2xl font-black text-slate-900 tracking-tight uppercase tracking-widest text-[14px]">Global Enforceability Footprint</h2>
                 </div>
                 <PatentFamilyMap patent={patent} height={500} />
-            </section>
+            </section>}
 
-            {/* 4. Legal Status & Enforcement */}
-            <section id="legal-profile" className="space-y-8">
+            {/* 5. Legal Status & Enforcement */}
+            {hasLegalProfile && <section id="legal-profile" className="space-y-8">
                  <div className="flex items-center justify-between">
                     <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">
                         <Gavel size={28} className="text-blue-600" /> Legal Status & Enforcement
                     </h2>
-                    <div className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest flex items-center gap-2 border ${patent.simpleLegalStatus === 'Alive' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-red-50 text-red-600 border-red-100'}`}>
+                    {hasText(patent.simpleLegalStatus) && <div className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest flex items-center gap-2 border ${patent.simpleLegalStatus === 'Alive' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-red-50 text-red-600 border-red-100'}`}>
                         {patent.simpleLegalStatus === 'Alive' ? <BadgeCheck size={14} /> : <XCircle size={14} />}
                         Portfolio Status: {patent.simpleLegalStatus}
-                    </div>
+                    </div>}
                  </div>
                  <div className="bg-slate-50 border border-slate-200 rounded-[2.5rem] p-10">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-12">
-                        <div className="space-y-4">
+                        {hasText(patent.legalStatus) && <div className="space-y-4">
                             <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Primary Legal Designation</div>
                             <div className="text-3xl font-black text-slate-900">{patent.legalStatus}</div>
                             <p className="text-sm text-slate-500 font-medium leading-relaxed">
                                 Recognized as <strong>{patent.legalStatus}</strong> by the relevant patent office. 
-                                Its operational viability is classified as <strong>{patent.simpleLegalStatus}</strong>.
+                                {hasText(patent.simpleLegalStatus) && <> Its operational viability is classified as <strong>{patent.simpleLegalStatus}</strong>.</>}
                             </p>
-                        </div>
+                        </div>}
                         <div className="space-y-4">
                             <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Enforcement Landscape</div>
                             <div className="flex flex-wrap gap-3">
@@ -379,52 +418,48 @@ const PatentDetail: React.FC = () => {
                         <FlagCard label="Active Litigation" active={patent.flags.litigation} />
                     </div>
                  </div>
-            </section>
+            </section>}
 
-            {/* 5. Maintenance Fee Hierarchy */}
-            <section id="maintenance">
+            {/* 6. Maintenance Fee Hierarchy */}
+            {hasMaintenanceSection && <section id="maintenance">
                 <MaintenanceFeeChart patent={patent} />
-            </section>
+            </section>}
 
-            {/* 6. Portfolio & Asset Linkage */}
-            <section id="portfolio-context">
+            {/* 7. Portfolio & Asset Linkage */}
+            {hasPortfolioSection && <section id="portfolio-context">
                 <PortfolioPanel patent={patent} allPatents={allPatents} />
-            </section>
+            </section>}
 
-            {/* 7. Prosecution History Summary */}
-            <section id="prosecution">
+            {/* 8. Prosecution History Summary */}
+            {hasProsecutionSection && <section id="prosecution">
                 <ProsecutionPanel patent={patent} />
-            </section>
+            </section>}
 
-            {/* 8. Market Intelligence & TAM */}
-            <section id="market-intel">
+            {/* 9. Market Intelligence & TAM */}
+            {hasMarketSection && <section id="market-intel">
                 <MarketPanel patent={patent} />
-            </section>
+            </section>}
 
-            {/* 9. Infringement Risk Assessment */}
-            <section id="risk-assessment">
+            {/* 10. Infringement Risk Assessment */}
+            {hasRiskSection && <section id="risk-assessment">
                 <RiskPanel patent={patent} />
-            </section>
+            </section>}
 
-            {/* 10. Technology Readiness (TRL) */}
-            <section id="trl">
+            {/* 11. Technology Readiness (TRL) */}
+            {hasTrlSection && <section id="trl">
                 <TRLPanel patent={patent} />
-            </section>
+            </section>}
 
-            {/* 11. Claims & Scope Analysis */}
-            <section id="claims">
+            {/* 12. Claims & Scope Analysis */}
+            {hasClaimsSection && <section id="claims">
                 <ClaimsPanel patent={patent} />
-            </section>
+            </section>}
 
-            {/* 12. Licensing & Transactions */}
-            <section id="licensing">
+            {/* 13. Licensing & Transactions */}
+            {hasLicensingSection && <section id="licensing">
                 <LicensingPanel patent={patent} />
-            </section>
+            </section>}
 
-            {/* 13. Algorithm Breakdown */}
-            <section id="valuation-breakdown">
-                <ValuationBreakdown patent={patent} />
-            </section>
         </div>
 
         {/* Sidebar Marketplace Panel */}
@@ -445,10 +480,10 @@ const PatentDetail: React.FC = () => {
                     </div>
                     <div className="space-y-5 border-t border-slate-50 pt-10">
                         <SideStat label="Patent Quality" value={`${patent.qualityScore}/100`} sub="Technical Momentum" />
-                        <SideStat label="Market Sector" value={patent.marketSector} sub={`TAM: $${(patent.totalAddressableMarket / 1e9).toFixed(1)}B`} />
-                        <SideStat label="TRL Maturity" value={`Level ${patent.technologyReadinessLevel}`} sub="Readiness State" />
-                        <SideStat label="Licensing" value={patent.licensingStatus} sub="Acquisition Availability" />
-                        <SideStat label="Risk Profile" value={`${patent.infringementRiskScore}/10`} sub={`FTO: ${patent.ftoStatus}`} />
+                        {hasMarketSidebar && <SideStat label="Market Sector" value={marketSidebarValue} sub={marketSidebarSub} />}
+                        {hasTrlSidebar && <SideStat label="TRL Maturity" value={`Level ${patent.technologyReadinessLevel}`} sub="Readiness State" />}
+                        {hasLicensingSidebar && <SideStat label="Licensing" value={patent.licensingStatus} sub="Acquisition Availability" />}
+                        {hasRiskSidebar && <SideStat label="Risk Profile" value={`${patent.infringementRiskScore}/10`} sub={`FTO: ${patent.ftoStatus}`} />}
                     </div>
                 </div>
                 <div className="bg-slate-950 text-white rounded-[2.5rem] p-10 shadow-2xl relative overflow-hidden">

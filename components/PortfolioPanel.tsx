@@ -3,6 +3,7 @@ import React from 'react';
 import { Patent } from '../types';
 import { Link } from 'react-router-dom';
 import { Layers, ArrowRight, Network, Box, ChevronRight, Fingerprint } from 'lucide-react';
+import { hasText } from '../utils/patentDisplay';
 
 interface PortfolioPanelProps {
   patent: Patent;
@@ -13,6 +14,11 @@ export const PortfolioPanel: React.FC<PortfolioPanelProps> = ({ patent, allPaten
   const relatedPatentData = patent.relatedPatents
     .map(pubNum => allPatents.find(p => p.publicationNumber === pubNum))
     .filter(Boolean);
+  const hasStrategy = hasText(patent.patentFamilyStrategy);
+  const hasSegment = hasText(patent.portfolioSegment);
+  const hasRelatedPatents = relatedPatentData.length > 0;
+
+  if (!hasStrategy && !hasSegment && !hasRelatedPatents) return null;
   
   return (
     <div className="bg-white rounded-[2.5rem] border border-slate-200 p-10 shadow-sm overflow-hidden relative">
@@ -26,7 +32,7 @@ export const PortfolioPanel: React.FC<PortfolioPanelProps> = ({ patent, allPaten
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
-        <div className="p-6 bg-blue-50 rounded-3xl border border-blue-100 group hover:border-blue-300 transition-all">
+        {hasStrategy && <div className="p-6 bg-blue-50 rounded-3xl border border-blue-100 group hover:border-blue-300 transition-all">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-blue-600 shadow-sm">
               <Layers size={20} />
@@ -39,9 +45,9 @@ export const PortfolioPanel: React.FC<PortfolioPanelProps> = ({ patent, allPaten
           <p className="text-xs text-blue-800 font-medium leading-relaxed">
             Technical protection strategy utilizing <strong>{patent.patentFamilyStrategy}</strong> filings to expand technical coverage.
           </p>
-        </div>
+        </div>}
 
-        <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100 group hover:border-blue-100 transition-all">
+        {hasSegment && <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100 group hover:border-blue-100 transition-all">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-400 shadow-sm">
               <Box size={20} />
@@ -54,10 +60,10 @@ export const PortfolioPanel: React.FC<PortfolioPanelProps> = ({ patent, allPaten
           <p className="text-xs text-slate-500 font-medium leading-relaxed">
             Asset categorized within the <strong>{patent.portfolioSegment}</strong> vertical of the assignee's IP landscape.
           </p>
-        </div>
+        </div>}
       </div>
       
-      {relatedPatentData.length > 0 && (
+      {hasRelatedPatents && (
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
@@ -97,11 +103,6 @@ export const PortfolioPanel: React.FC<PortfolioPanelProps> = ({ patent, allPaten
         </div>
       )}
 
-      {relatedPatentData.length === 0 && (
-        <div className="p-8 border border-dashed border-slate-200 rounded-3xl text-center">
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest italic">No technical continuations listed for this specific filing track.</p>
-        </div>
-      )}
     </div>
   );
 };

@@ -136,7 +136,7 @@ const Saved: React.FC = () => {
                   <div className="flex items-center gap-4">
                       <button 
                         onClick={() => setShowComparison(true)}
-                        className="px-6 py-2.5 bg-[#006AFF] hover:bg-blue-700 rounded-xl text-sm font-black transition-all flex items-center gap-2"
+                        className="px-6 py-2.5 bg-[#00bdcd] hover:bg-blue-700 rounded-xl text-sm font-black transition-all flex items-center gap-2"
                       >
                           Compare <ChevronRight size={16} />
                       </button>

@@ -2,14 +2,23 @@
 import React from 'react';
 import { Patent } from '../types';
 import { History, FileText, Calendar, RotateCw, Clock, CheckCircle2, ChevronRight } from 'lucide-react';
+import { hasText, isKnownNumber } from '../utils/patentDisplay';
 
 interface ProsecutionPanelProps {
   patent: Patent;
 }
 
 export const ProsecutionPanel: React.FC<ProsecutionPanelProps> = ({ patent }) => {
+  const hasFirstAction = hasText(patent.firstActionDate);
+  const hasAllowance = hasText(patent.allowanceDate);
+  const hasDuration = isKnownNumber(patent.prosecutionDuration);
+  const hasOfficeActions = isKnownNumber(patent.officeActionsCount);
+  const hasRce = isKnownNumber(patent.rceCount);
+
+  if (!hasFirstAction && !hasAllowance && !hasDuration && !hasOfficeActions && !hasRce) return null;
+
   const formatDate = (d: string) => {
-    if (!d) return 'N/A';
+    if (!d) return '';
     try {
         return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     } catch {
@@ -32,32 +41,32 @@ export const ProsecutionPanel: React.FC<ProsecutionPanelProps> = ({ patent }) =>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-        <ProsecutionStat 
+        {hasOfficeActions && <ProsecutionStat 
           label="Office Actions" 
           value={patent.officeActionsCount} 
           icon={<FileText size={18} />} 
           color="slate"
-        />
-        <ProsecutionStat 
+        />}
+        {hasRce && <ProsecutionStat 
           label="RCE Filings" 
           value={patent.rceCount} 
           icon={<RotateCw size={18} />} 
           color="blue"
-        />
-        <ProsecutionStat 
+        />}
+        {hasFirstAction && <ProsecutionStat 
           label="First Action" 
           value={formatDate(patent.firstActionDate)} 
           icon={<Calendar size={18} />} 
           color="amber"
           isDate
-        />
-        <ProsecutionStat 
+        />}
+        {hasAllowance && <ProsecutionStat 
           label="Allowance" 
           value={formatDate(patent.allowanceDate)} 
           icon={<CheckCircle2 size={18} />} 
           color="emerald"
           isDate
-        />
+        />}
       </div>
 
       <div className="space-y-8">
@@ -65,17 +74,17 @@ export const ProsecutionPanel: React.FC<ProsecutionPanelProps> = ({ patent }) =>
            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
               <Clock size={14} className="text-blue-500" /> Prosecution Lifecycle
            </h4>
-           <div className="px-4 py-1 bg-slate-50 border border-slate-100 rounded-full text-[10px] font-black text-slate-600 uppercase tracking-widest">
+           {hasDuration && <div className="px-4 py-1 bg-slate-50 border border-slate-100 rounded-full text-[10px] font-black text-slate-600 uppercase tracking-widest">
               Duration: {years}Y {months}M ({patent.prosecutionDuration} Days)
-           </div>
+           </div>}
         </div>
 
         <div className="relative pt-6 pb-12 px-4">
             <div className="absolute top-10 left-0 right-0 h-1 bg-slate-100 rounded-full" />
             <div className="flex justify-between items-start relative z-10">
                 <TimelinePoint label="Filing" date={patent.filingDate} active />
-                <TimelinePoint label="First Action" date={patent.firstActionDate} active />
-                <TimelinePoint label="Allowance" date={patent.allowanceDate} active />
+                {hasFirstAction && <TimelinePoint label="First Action" date={patent.firstActionDate} active />}
+                {hasAllowance && <TimelinePoint label="Allowance" date={patent.allowanceDate} active />}
                 <TimelinePoint label="Granted" date={patent.publicationDate} active highlight />
             </div>
         </div>

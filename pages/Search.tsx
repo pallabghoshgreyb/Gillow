@@ -73,19 +73,19 @@ const Search: React.FC = () => {
                       <div className="flex items-center bg-slate-100 rounded-xl p-1.5 border border-slate-200">
                           <button 
                             onClick={() => setView('grid')}
-                            className={`p-2 rounded-lg transition-all ${view === 'grid' ? 'bg-white shadow-md text-[#006AFF]' : 'text-slate-500 hover:text-slate-800'}`}
+                            className={`p-2 rounded-lg transition-all ${view === 'grid' ? 'bg-white shadow-md text-[#00bdcd]' : 'text-slate-500 hover:text-slate-800'}`}
                           >
                               <LayoutGrid size={18} />
                           </button>
                           <button 
                             onClick={() => setView('list')}
-                            className={`p-2 rounded-lg transition-all ${view === 'list' ? 'bg-white shadow-md text-[#006AFF]' : 'text-slate-500 hover:text-slate-800'}`}
+                            className={`p-2 rounded-lg transition-all ${view === 'list' ? 'bg-white shadow-md text-[#00bdcd]' : 'text-slate-500 hover:text-slate-800'}`}
                           >
                               <List size={18} />
                           </button>
                           <button 
                             onClick={() => setView('map')}
-                            className={`p-2 rounded-lg transition-all ${view === 'map' ? 'bg-white shadow-md text-[#006AFF]' : 'text-slate-500 hover:text-slate-800'}`}
+                            className={`p-2 rounded-lg transition-all ${view === 'map' ? 'bg-white shadow-md text-[#00bdcd]' : 'text-slate-500 hover:text-slate-800'}`}
                           >
                               <MapIcon size={18} />
                           </button>
@@ -96,7 +96,7 @@ const Search: React.FC = () => {
                       <select 
                         value={filters.sortBy}
                         onChange={(e) => updateFilters({ sortBy: e.target.value as any })}
-                        className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:border-[#006AFF] cursor-pointer shadow-sm"
+                        className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:border-[#00bdcd] cursor-pointer shadow-sm"
                       >
                           <option value="relevance">Relevance</option>
                           <option value="newest">Newest Listed</option>
@@ -123,7 +123,7 @@ const Search: React.FC = () => {
                           <button 
                             key={domain}
                             onClick={() => updateFilters({ categories: isActive ? [] : [domain] })}
-                            className={`px-4 py-1.5 rounded-full border text-xs font-bold whitespace-nowrap transition-all shadow-sm ${isActive ? 'bg-[#006AFF] border-[#006AFF] text-white' : 'bg-white border-slate-200 text-slate-600 hover:border-[#006AFF]'}`}
+                            className={`px-4 py-1.5 rounded-full border text-xs font-bold whitespace-nowrap transition-all shadow-sm ${isActive ? 'bg-[#00bdcd] border-[#00bdcd] text-white' : 'bg-white border-slate-200 text-slate-600 hover:border-[#00bdcd]'}`}
                           >
                               {domain}
                           </button>
@@ -161,7 +161,7 @@ const Search: React.FC = () => {
                     </div>
                     <button 
                         onClick={() => setIsSaveModalOpen(true)}
-                        className="flex items-center gap-2 text-xs font-black text-[#006AFF] hover:bg-blue-50 px-5 py-3 rounded-xl transition-all bg-white border border-blue-100 shadow-sm"
+                        className="flex items-center gap-2 text-xs font-black text-[#00bdcd] hover:bg-blue-50 px-5 py-3 rounded-xl transition-all bg-white border border-blue-100 shadow-sm"
                     >
                         <Save size={16} /> Save this search
                     </button>

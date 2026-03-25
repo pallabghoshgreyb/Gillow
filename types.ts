@@ -4,7 +4,7 @@ export enum TechLevel {
   SUBDOMAIN = 'SUBDOMAIN',
 }
 
-export type LicensingStatus = 'Available' | 'Exclusive License' | 'Non-Exclusive License' | 'Sold' | 'Under Negotiation' | 'Not Available';
+export type LicensingStatus = '' | 'Available' | 'Exclusive License' | 'Non-Exclusive License' | 'Sold' | 'Under Negotiation' | 'Not Available';
 
 export interface PreviousDeal {
   licensee: string;
@@ -41,6 +41,7 @@ export interface PatentFlags {
   opposition: boolean;
   ptab: boolean;
   litigation: boolean;
+  governmentInterest: boolean;
 }
 
 export interface Patent {
@@ -133,7 +134,7 @@ export interface Patent {
 
   // PORTFOLIO CONTEXT
   relatedPatents: string[];
-  patentFamilyStrategy: 'Single' | 'Continuation' | 'Divisional' | 'CIP' | 'Provisional';
+  patentFamilyStrategy: '' | 'Single' | 'Continuation' | 'Divisional' | 'CIP' | 'Provisional';
   portfolioSegment: string;
 
   // PROSECUTION HISTORY
@@ -142,6 +143,14 @@ export interface Patent {
   allowanceDate: string;
   rceCount: number;
   prosecutionDuration: number;
+
+  // PROCEDURAL & STRATEGIC SIGNALS
+  trackOneCodes: string[];
+  nonPublicationCodes: string[];
+  cipConDiv: string[];
+  iprPgr: string[];
+  fit: string[];
+  largestFamilies: string[];
 
   // COMPONENT COMPATIBILITY
   assignee: {

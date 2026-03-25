@@ -10,7 +10,7 @@ const NotFound: React.FC = () => {
       <div className="relative mb-12 animate-in zoom-in duration-700">
         <div className="text-[180px] font-black text-slate-50 leading-none select-none">404</div>
         <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-24 h-24 bg-[#006AFF] text-white rounded-3xl flex items-center justify-center shadow-2xl rotate-12">
+            <div className="w-24 h-24 bg-[#00bdcd] text-white rounded-3xl flex items-center justify-center shadow-2xl rotate-12">
                 <Search size={48} strokeWidth={3} />
             </div>
         </div>

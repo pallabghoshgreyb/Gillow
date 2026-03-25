@@ -235,12 +235,12 @@ const SunburstChart: React.FC<SunburstChartProps> = ({ patents }) => {
     <div className="w-full flex flex-col items-center bg-white rounded-[3.5rem] p-8 md:p-16 border border-slate-100 shadow-2xl relative group/chart overflow-hidden">
       
       {/* Background Decor */}
-      <div className="absolute top-0 right-0 w-96 h-96 bg-[#006AFF]/5 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+      <div className="absolute top-0 right-0 w-96 h-96 bg-[#00bdcd]/5 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none" />
 
       {/* Sunburst UI Overlay */}
       <div className="absolute top-8 left-8 md:top-12 md:left-12 z-10 flex flex-col gap-4 pointer-events-none w-full md:w-auto">
           <div className="bg-white/90 backdrop-blur-xl p-5 rounded-3xl shadow-2xl border border-white/50 pointer-events-auto max-w-xs md:max-w-md">
-             <div className="flex items-center gap-2 text-[10px] font-black text-[#006AFF] uppercase tracking-[0.2em] mb-3">
+             <div className="flex items-center gap-2 text-[10px] font-black text-[#00bdcd] uppercase tracking-[0.2em] mb-3">
                 <Info size={14}/> Technical Portfolio Map
              </div>
              <div className="flex flex-wrap items-center gap-2 text-slate-400 text-xs font-black uppercase tracking-tight">
@@ -291,7 +291,7 @@ const SunburstChart: React.FC<SunburstChartProps> = ({ patents }) => {
           <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 flex items-center justify-end gap-2">
               <MousePointer2 size={12} /> Navigation Guide
           </div>
-          <div className="text-xs font-bold text-slate-600">Click segments to zoom • Center circle to reset</div>
+          <div className="text-xs font-bold text-slate-600">Click segments to zoom â€¢ Center circle to reset</div>
       </div>
 
       <div ref={containerRef} className="w-full h-[650px] flex items-center justify-center">

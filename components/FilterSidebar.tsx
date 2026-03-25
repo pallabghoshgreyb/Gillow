@@ -42,11 +42,11 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({ onFilterChange, onReset, 
     <aside className="w-full bg-white flex flex-col border-r border-slate-200 h-full overflow-y-auto custom-scrollbar">
       <div className="p-6 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10">
         <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
-          <Filter size={18} className="text-[#006AFF]" /> Filters
+          <Filter size={18} className="text-[#00bdcd]" /> Filters
         </h2>
         <button 
           onClick={onReset}
-          className="p-2 text-slate-400 hover:text-[#006AFF] hover:bg-blue-50 rounded-lg transition-all"
+          className="p-2 text-slate-400 hover:text-[#00bdcd] hover:bg-blue-50 rounded-lg transition-all"
         >
           <RefreshCcw size={16} />
         </button>
@@ -61,7 +61,7 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({ onFilterChange, onReset, 
                   type="checkbox"
                   checked={activeFilters.assignees.includes(assignee)}
                   onChange={() => handleMultiToggle('assignees', assignee)}
-                  className="w-4 h-4 border-slate-300 rounded text-[#006AFF] focus:ring-[#006AFF]"
+                  className="w-4 h-4 border-slate-300 rounded text-[#00bdcd] focus:ring-[#00bdcd]"
                 />
                 <span className="ml-3 text-sm font-medium text-slate-600 group-hover:text-slate-900">{assignee}</span>
               </label>
@@ -78,7 +78,7 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({ onFilterChange, onReset, 
                   type="checkbox" 
                   checked={activeFilters.categories.includes(cat)}
                   onChange={() => handleMultiToggle('categories', cat)}
-                  className="w-4 h-4 border-slate-300 rounded text-[#006AFF] focus:ring-[#006AFF]" 
+                  className="w-4 h-4 border-slate-300 rounded text-[#00bdcd] focus:ring-[#00bdcd]" 
                 />
                 <span className="ml-3 text-sm font-medium text-slate-600 group-hover:text-slate-900">{cat}</span>
               </label>
@@ -94,7 +94,7 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({ onFilterChange, onReset, 
                   type="checkbox"
                   checked={activeFilters.subCategories.includes(sub)}
                   onChange={() => handleMultiToggle('subCategories', sub)}
-                  className="w-4 h-4 border-slate-300 rounded text-[#006AFF] focus:ring-[#006AFF]"
+                  className="w-4 h-4 border-slate-300 rounded text-[#00bdcd] focus:ring-[#00bdcd]"
                 />
                 <span className="ml-3 text-sm font-medium text-slate-600 group-hover:text-slate-900">{sub}</span>
               </label>
@@ -111,8 +111,8 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({ onFilterChange, onReset, 
                 onClick={() => handleMultiToggle('statuses', status)}
                 className={`px-3 py-1.5 rounded-lg border text-xs font-bold transition-all ${
                   activeFilters.statuses.includes(status) 
-                    ? 'bg-[#006AFF] border-[#006AFF] text-white' 
-                    : 'border-slate-200 text-slate-500 hover:border-[#006AFF] hover:bg-blue-50'
+                    ? 'bg-[#00bdcd] border-[#00bdcd] text-white' 
+                    : 'border-slate-200 text-slate-500 hover:border-[#00bdcd] hover:bg-blue-50'
                 }`}
               >
                 {status}

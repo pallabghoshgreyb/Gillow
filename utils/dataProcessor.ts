@@ -26,19 +26,70 @@ export const calculateClaimMetrics = (patent: Patent) => {
 };
 
 export const parsePatentRow = (row: any): Patent => {
+  const familyCountryFromPrefix: Record<string, string> = {
+    US: 'United States of America',
+    CN: 'China',
+    EP: 'Europe (EPO)',
+    WO: 'WIPO',
+    TW: 'Taiwan',
+    JP: 'Japan',
+    KR: 'South Korea',
+    DE: 'Germany',
+    AU: 'Australia',
+    MX: 'Mexico',
+    BR: 'Brazil',
+    CA: 'Canada',
+    ES: 'Spain',
+    HK: 'Hong Kong',
+    MY: 'Malaysia',
+  };
+
+  const isEmptyLike = (val: any): boolean => {
+    if (val === undefined || val === null) return true;
+    const normalized = String(val).trim();
+    return normalized === '' || normalized === '-' || normalized === '—' || normalized === 'nan' || normalized === 'FALSE' || normalized === 'None';
+  };
+
   const splitPipe = (val: any): string[] => {
-    if (!val || val === 'nan' || val === 'FALSE' || val === 'None') return [];
+    if (isEmptyLike(val)) return [];
     return String(val).split('|').map(s => s.trim()).filter(s => s);
   };
 
+  const splitFlexible = (val: any): string[] => {
+    if (isEmptyLike(val)) return [];
+    return String(val)
+      .split(/[|,;]+/)
+      .map((s) => s.trim())
+      .filter((s) => s && s !== '-' && s !== '—');
+  };
+
   const splitComma = (val: any): string[] => {
-    if (!val || val === 'nan' || val === 'FALSE' || val === 'None') return [];
+    if (isEmptyLike(val)) return [];
     return String(val).split(',').map(s => s.trim()).filter(s => s);
   };
 
   const cleanNumeric = (val: any): number => {
-    if (val === undefined || val === null || val === '') return 0;
+    if (isEmptyLike(val)) return 0;
     return parseInt(String(val).replace(/[$,]/g, '')) || 0;
+  };
+
+  const normalizeText = (val: any): string => (isEmptyLike(val) ? '' : String(val));
+
+  const formatDateValue = (val: any): string => {
+    if (isEmptyLike(val)) return '';
+    const raw = String(val).trim();
+    if (/^\d{5}$/.test(raw)) {
+      const serial = parseInt(raw, 10);
+      const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+      const converted = new Date(excelEpoch.getTime() + serial * 24 * 60 * 60 * 1000);
+      return converted.toISOString().split('T')[0];
+    }
+    return raw;
+  };
+
+  const normalizeCountryValue = (value: string): string => {
+    const normalized = value.trim();
+    return familyCountryFromPrefix[normalized.toUpperCase()] || normalized;
   };
 
   const pubNum = String(row['Publication Number'] || '');
@@ -48,7 +99,7 @@ export const parsePatentRow = (row: any): Patent => {
   const backwardCitations = splitPipe(row['Backward Citations']);
 
   // Licensing Data
-  const licensingStatus = (row['Licensing Status'] as LicensingStatus) || 'Not Available';
+  const licensingStatus = String(row['Licensing Status'] || '') as LicensingStatus;
   const rawDeals = row['Previous Deals JSON'];
   let previousDeals: PreviousDeal[] = [];
   try {
@@ -58,27 +109,33 @@ export const parsePatentRow = (row: any): Patent => {
   }
 
   // TRL Data
-  const technologyReadinessLevel = cleanNumeric(row['Technology Readiness Level']) || 1;
-  const trlDescription = TRL_DESCRIPTIONS[technologyReadinessLevel] || "Unknown maturity status";
+  const technologyReadinessLevel = cleanNumeric(row['Technology Readiness Level']);
+  const trlDescription = technologyReadinessLevel ? (TRL_DESCRIPTIONS[technologyReadinessLevel] || '') : '';
   const commercialApplications = splitPipe(row['Commercial Applications']);
 
   // Market Data
-  const marketSector = String(row['Market Sector'] || 'General Technology');
+  const marketSector = normalizeText(row['Domain'] || row['Market Sector']);
   const totalAddressableMarket = cleanNumeric(row['Total Addressable Market USD']);
   const marketGrowthRate = parseFloat(String(row['Market Growth Rate'] || '0'));
   const keyCompetitors = splitComma(row['Key Competitors']);
   const marketRegion = splitComma(row['Market Region']);
 
   // Risk Assessment
-  const infringementRiskScore = cleanNumeric(row['Infringement Risk Score']) || 5;
+  const infringementRiskScore = cleanNumeric(row['Infringement Risk Score']);
   const ftoStatus = (row['FTO Status'] as any) || 'Unknown';
   const keyProductCategories = splitComma(row['Key Product Categories']);
   const riskFactors = splitComma(row['Risk Factors']);
 
   // Portfolio Context
   const relatedPatents = splitPipe(row['Related Patents']);
-  const patentFamilyStrategy = (row['Patent Family Strategy'] as any) || 'Single';
-  const portfolioSegment = String(row['Portfolio Segment'] || 'Core Assets');
+  const patentFamilyStrategy = String(row['Patent Family Strategy'] || '') as Patent['patentFamilyStrategy'];
+  const portfolioSegment = String(row['Portfolio Segment'] || '');
+  const trackOneCodes = splitFlexible(row['Track-One Codes']);
+  const nonPublicationCodes = splitFlexible(row['Non-Publication Codes']);
+  const cipConDiv = splitFlexible(row['CIP/CON/DIV']);
+  const iprPgr = splitFlexible(row['IPR/PGR']);
+  const fit = splitFlexible(row['FIT']);
+  const largestFamilies = splitFlexible(row['Largest Families']);
 
   // Prosecution History
   const officeActionsCount = cleanNumeric(row['Office Actions Count']);
@@ -87,39 +144,45 @@ export const parsePatentRow = (row: any): Patent => {
   const rceCount = cleanNumeric(row['RCE Count']);
   
   // Calculate Duration
-  const filingDate = new Date(row['Filing Date'] || '');
-  const grantDate = new Date(row['Publication Date'] || '');
+  const filingDate = new Date(formatDateValue(row['Filing Date']));
+  const grantDate = new Date(formatDateValue(row['Publication Date']));
   let prosecutionDuration = 0;
   if (!isNaN(filingDate.getTime()) && !isNaN(grantDate.getTime())) {
     prosecutionDuration = Math.ceil((grantDate.getTime() - filingDate.getTime()) / (1000 * 60 * 60 * 24));
   }
 
+  const inpadocMembers = splitPipe(row['INPADOC Family Members'] || row['INPADOC Family Members (Beta) - 1']);
+  const familyJurisdictions = inpadocMembers
+    .map((member) => String(member).trim().toUpperCase().slice(0, 2))
+    .map((prefix) => familyCountryFromPrefix[prefix])
+    .filter((country): country is string => Boolean(country));
+  const explicitCountries = splitPipe(row['Country'] || row['Country Code']).map(normalizeCountryValue);
+  const countries = familyJurisdictions.length > 0 ? familyJurisdictions : explicitCountries;
+
   // Dynamic Valuation Algorithm
   const numericTail = parseInt(pubNum.replace(/\D/g, '').slice(-4)) || 0;
   const techScore = 60 + (forwardCitations.length * 2) + (numericTail % 20) + (technologyReadinessLevel * 2);
-  const marketScore = 50 + (splitPipe(row['Country']).length * 4);
-  const legalScore = row['Litigation Flag'] === 'TRUE' ? 95 : 70;
+  const marketScore = 50 + (countries.length * 4);
+  const legalScore = ['true', 'yes', '1'].includes(String(row['Litigation Flag'] || row['Litigation'] || '').trim().toLowerCase()) ? 95 : 70;
 
   const valuationEstimate = (techScore * 5000) + (marketScore * 10000) + (legalScore * 2000);
   const askingPrice = row['Asking Price USD'] ? cleanNumeric(row['Asking Price USD']) : undefined;
-
-  const inpadocMembers = splitPipe(row['INPADOC Family Members']);
   const independentClaimsCount = cleanNumeric(row['Independent Claims Count']);
   const dependentClaimsCount = cleanNumeric(row['Dependent Claims Count']);
 
   return {
     id: pubNum,
     publicationNumber: pubNum,
-    applicationNumber: String(row['Application Number'] || ''),
+    applicationNumber: normalizeText(row['Application Number']),
     patentType: String(row['Patent Type'] || 'Utility'),
-    title: String(row['Title'] || ''),
-    entityType: String(row['Entity Type'] || ''),
-    gau: String(row['GAU'] || ''),
-    gauDefinition: String(row['GAU - Definiations'] || ''),
-    filingDate: String(row['Filing Date'] || ''),
-    priorityDate: String(row['Priority Date'] || ''),
-    publicationDate: String(row['Publication Date'] || ''),
-    estimatedExpirationDate: String(row['Estimated Expiration Date'] || ''),
+    title: normalizeText(row['Title']),
+    entityType: normalizeText(row['Entity Type']),
+    gau: normalizeText(row['GAU']),
+    gauDefinition: normalizeText(row['GAU - Definiations'] || row['GAU Definitions']),
+    filingDate: formatDateValue(row['Filing Date']),
+    priorityDate: formatDateValue(row['Priority Date']),
+    publicationDate: formatDateValue(row['Publication Date']),
+    estimatedExpirationDate: formatDateValue(row['Estimated Expiration Date']),
     maintenanceFees: {
       year3_5: cleanNumeric(row['3.5 years']),
       year7_5: cleanNumeric(row['7.5 Years']),
@@ -130,24 +193,25 @@ export const parsePatentRow = (row: any): Patent => {
     currentAssignees,
     inventors: splitPipe(row['Inventors']),
     applicants: splitPipe(row['Applicants']),
-    domain: String(row['Domain'] || ''),
-    subdomain: String(row['Subdomain'] || ''),
+    domain: normalizeText(row['Domain']),
+    subdomain: normalizeText(row['Subdomain']),
     cpcs: splitPipe(row['CPCs']),
     ipcs: splitPipe(row['IPCs']),
-    abstract: String(row['Abstract'] || ''),
-    legalStatus: String(row['Legal Status'] || ''),
-    simpleLegalStatus: String(row['Simple Legal Status'] || ''),
+    abstract: normalizeText(row['Abstract']),
+    legalStatus: normalizeText(row['Legal Status']),
+    simpleLegalStatus: normalizeText(row['Simple Legal Status']),
     backwardCitations,
     forwardCitations,
     backwardCitationsCount: backwardCitations.length,
     forwardCitationsCount: forwardCitations.length,
     flags: {
-      sep: String(row['SEP Flag'] || '').toLowerCase() === 'yes',
+      sep: ['yes', 'true', '1'].includes(String(row['SEP Flag'] || row['SEP'] || '').trim().toLowerCase()),
       opposition: String(row['Oppositions Flag'] || '').toUpperCase() === 'TRUE',
       ptab: String(row['PTAB Flag'] || '').toUpperCase() === 'TRUE',
-      litigation: String(row['Litigation Flag'] || '').toUpperCase() === 'TRUE'
+      litigation: ['yes', 'true', '1'].includes(String(row['Litigation Flag'] || row['Litigation'] || '').trim().toLowerCase()),
+      governmentInterest: ['yes', 'true', 'government interest'].includes(String(row['Govt. Interest'] || '').trim().toLowerCase())
     },
-    countries: splitPipe(row['Country']),
+    countries,
     inpadocFamilyMembers: inpadocMembers,
     familySize: inpadocMembers.length,
     
@@ -178,13 +242,19 @@ export const parsePatentRow = (row: any): Patent => {
     patentFamilyStrategy,
     portfolioSegment,
     officeActionsCount,
-    firstActionDate,
-    allowanceDate,
+    firstActionDate: formatDateValue(firstActionDate),
+    allowanceDate: formatDateValue(allowanceDate),
     rceCount,
     prosecutionDuration,
+    trackOneCodes,
+    nonPublicationCodes,
+    cipConDiv,
+    iprPgr,
+    fit,
+    largestFamilies,
 
     // Legacy fields
-    status: String(row['Legal Status'] || ''),
+    status: normalizeText(row['Legal Status']),
     citations: forwardCitations.length,
     independentClaimsCount,
     dependentClaimsCount,
@@ -198,7 +268,7 @@ export const parsePatentRow = (row: any): Patent => {
     ],
     assignee: {
       name: currentAssignees[0] || originalAssignees[0] || 'Unknown',
-      type: String(row['Entity Type'] || 'Company')
+      type: normalizeText(row['Entity Type']) || 'Company'
     }
   };
 };

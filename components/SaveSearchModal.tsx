@@ -37,7 +37,7 @@ const SaveSearchModal: React.FC<SaveSearchModalProps> = ({ isOpen, onClose, onSa
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g., AI Patents in Palo Alto"
-              className="w-full px-4 py-3 border-2 border-slate-100 rounded-xl focus:border-[#006AFF] outline-none transition-all font-medium"
+              className="w-full px-4 py-3 border-2 border-slate-100 rounded-xl focus:border-[#00bdcd] outline-none transition-all font-medium"
             />
           </div>
 
@@ -46,7 +46,7 @@ const SaveSearchModal: React.FC<SaveSearchModalProps> = ({ isOpen, onClose, onSa
               type="checkbox" 
               checked={notify}
               onChange={(e) => setNotify(e.target.checked)}
-              className="w-5 h-5 rounded border-blue-200 text-[#006AFF] focus:ring-[#006AFF]"
+              className="w-5 h-5 rounded border-blue-200 text-[#00bdcd] focus:ring-[#00bdcd]"
             />
             <div className="flex-1">
               <div className="text-sm font-bold text-blue-900 flex items-center gap-2">
@@ -67,7 +67,7 @@ const SaveSearchModal: React.FC<SaveSearchModalProps> = ({ isOpen, onClose, onSa
           <button 
             disabled={!name.trim()}
             onClick={() => { onSave(name); onClose(); }}
-            className="flex-1 px-4 py-3 bg-[#006AFF] text-white font-black rounded-xl shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all disabled:opacity-50 disabled:shadow-none flex items-center justify-center gap-2"
+            className="flex-1 px-4 py-3 bg-[#00bdcd] text-white font-black rounded-xl shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all disabled:opacity-50 disabled:shadow-none flex items-center justify-center gap-2"
           >
             <Save size={18} /> Save Search
           </button>

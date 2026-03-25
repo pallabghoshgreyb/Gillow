@@ -11,7 +11,11 @@ export const countryMapping: Record<string, { name: string; code: string; coords
   'Germany': { name: 'Germany', code: 'DE', coords: [51.1657, 10.4515], region: 'Europe' },
   'Australia': { name: 'Australia', code: 'AU', coords: [-25.2744, 133.7751], region: 'Oceania' },
   'Mexico': { name: 'Mexico', code: 'MX', coords: [23.6345, -102.5528], region: 'North America' },
-  'Brazil': { name: 'Brazil', code: 'BR', coords: [-14.2350, -51.9253], region: 'South America' }
+  'Brazil': { name: 'Brazil', code: 'BR', coords: [-14.2350, -51.9253], region: 'South America' },
+  'Canada': { name: 'Canada', code: 'CA', coords: [56.1304, -106.3468], region: 'North America' },
+  'Spain': { name: 'Spain', code: 'ES', coords: [40.4637, -3.7492], region: 'Europe' },
+  'Hong Kong': { name: 'Hong Kong', code: 'HK', coords: [22.3193, 114.1694], region: 'Asia' },
+  'Malaysia': { name: 'Malaysia', code: 'MY', coords: [4.2105, 101.9758], region: 'Asia' }
 };
 
 export const getRegionColor = (region: string) => {

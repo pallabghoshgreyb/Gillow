@@ -1,4 +1,4 @@
-export const GILLOW_BLUE = '#006AFF';
+export const GILLOW_BLUE = '#00bdcd';
 export const MAP_WIDTH = 2500;
 export const MAP_HEIGHT = 1800;
 

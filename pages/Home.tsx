@@ -51,11 +51,11 @@ const Home: React.FC = () => {
       <section className="relative min-h-screen flex flex-col items-center justify-start pt-32 pb-20 overflow-hidden bg-slate-50 border-b border-slate-200">
           
           <div className="z-10 w-full max-w-[1400px] px-6 text-center mb-16 relative">
-               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-blue-100 text-[#006AFF] text-[10px] font-black uppercase tracking-widest mb-8 shadow-xl animate-in fade-in slide-in-from-top-4 duration-700">
+               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-blue-100 text-[#00bdcd] text-[10px] font-black uppercase tracking-widest mb-8 shadow-xl animate-in fade-in slide-in-from-top-4 duration-700">
                  <Sparkles size={14} fill="currentColor" /> Advanced 3D Technology Landscapes
                </div>
                <h1 className="text-6xl md:text-9xl font-black text-slate-900 mb-8 tracking-tighter leading-none">
-                   Navigate <span className="text-[#006AFF]">Intelligence.</span>
+                   Navigate <span className="text-[#00bdcd]">Intelligence.</span>
                </h1>
                <p className="text-xl md:text-2xl text-slate-500 max-w-3xl mx-auto mb-12 font-medium leading-relaxed">
                  Ditch the spreadsheets. Explore the technical universe through high-density topographic maps and Gaussian clustering.

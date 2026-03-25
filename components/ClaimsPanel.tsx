@@ -10,6 +10,9 @@ interface ClaimsPanelProps {
 
 export const ClaimsPanel: React.FC<ClaimsPanelProps> = ({ patent }) => {
   const { totalClaims, claimBreadthScore } = calculateClaimMetrics(patent);
+  const hasClaimData = totalClaims > 0;
+
+  if (!hasClaimData) return null;
   
   return (
     <div className="bg-white rounded-[2.5rem] border border-slate-200 p-10 shadow-sm overflow-hidden relative">

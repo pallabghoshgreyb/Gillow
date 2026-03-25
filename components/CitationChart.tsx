@@ -7,7 +7,7 @@ interface CitationChartProps {
   color?: string;
 }
 
-const CitationChart: React.FC<CitationChartProps> = ({ data, color = '#006AFF' }) => {
+const CitationChart: React.FC<CitationChartProps> = ({ data, color = '#00bdcd' }) => {
   return (
     <div className="w-full h-[300px] bg-slate-50/50 rounded-xl border border-slate-100 p-4">
       <ResponsiveContainer width="100%" height="100%">

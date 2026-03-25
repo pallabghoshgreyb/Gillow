@@ -64,7 +64,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ patentId, isOpen, onClose }) 
                   <textarea rows={4} className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all resize-none" placeholder="I would like to discuss licensing terms for this patent..." />
                </div>
 
-               <button type="submit" className="w-full py-4 bg-[#006AFF] text-white font-black rounded-xl shadow-xl shadow-blue-200 hover:bg-blue-700 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 text-lg active:scale-95">
+               <button type="submit" className="w-full py-4 bg-[#00bdcd] text-white font-black rounded-xl shadow-xl shadow-blue-200 hover:bg-blue-700 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 text-lg active:scale-95">
                   Send Inquiry <Send size={20} />
                </button>
 

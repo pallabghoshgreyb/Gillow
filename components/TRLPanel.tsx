@@ -1,8 +1,8 @@
 
 import React from 'react';
 import { Patent } from '../types';
-import { TRL_DESCRIPTIONS } from '../utils/dataProcessor';
 import { Rocket, FlaskConical, Settings, Zap, ArrowRight, ShieldCheck } from 'lucide-react';
+import { hasItems, hasText, isKnownNumber } from '../utils/patentDisplay';
 
 interface TRLPanelProps {
   patent: Patent;
@@ -10,6 +10,12 @@ interface TRLPanelProps {
 
 export const TRLPanel: React.FC<TRLPanelProps> = ({ patent }) => {
   const trl = patent.technologyReadinessLevel;
+  const hasTrl = isKnownNumber(trl);
+  const hasApplications = hasItems(patent.commercialApplications);
+  const hasDescription = hasText(patent.trlDescription);
+  const applications = patent.commercialApplications.filter(Boolean);
+
+  if (!hasTrl && !hasApplications && !hasDescription) return null;
   
   const trlColor = trl >= 7 ? 'bg-emerald-500' :
                    trl >= 4 ? 'bg-blue-500' : 'bg-amber-500';
@@ -78,6 +84,7 @@ export const TRLPanel: React.FC<TRLPanelProps> = ({ patent }) => {
               </div>
            </div>
 
+           {hasDescription && (
            <div className={`p-6 rounded-2xl border ${trlBg} ${trlBorder}`}>
               <div className="flex items-start gap-4">
                 <div className={`p-3 rounded-xl bg-white shadow-sm ${trlText}`}>
@@ -91,22 +98,25 @@ export const TRLPanel: React.FC<TRLPanelProps> = ({ patent }) => {
                 </div>
               </div>
            </div>
+           )}
         </div>
       </div>
 
+      {hasApplications && (
       <div className="space-y-6">
         <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
           <ArrowRight size={14} className="text-blue-500" /> Market Applications
         </div>
         <div className="flex flex-wrap gap-3">
-          {patent.commercialApplications.map((app, idx) => (
-            <div key={idx} className="flex items-center gap-2 px-5 py-2.5 bg-blue-50/50 border border-blue-100 text-blue-700 rounded-xl text-xs font-black uppercase tracking-tight hover:bg-blue-100 transition-colors cursor-default">
+          {applications.map((app, idx) => (
+            <div key={idx} className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-tight cursor-default bg-blue-50/50 border border-blue-100 text-blue-700 hover:bg-blue-100 transition-colors">
                <ShieldCheck size={14} />
                {app}
             </div>
           ))}
         </div>
       </div>
+      )}
     </div>
   );
 };

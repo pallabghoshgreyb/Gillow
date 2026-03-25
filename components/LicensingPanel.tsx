@@ -2,6 +2,7 @@
 import React from 'react';
 import { Patent } from '../types';
 import { Lock, Unlock, CheckCircle, Info, Handshake, DollarSign, History } from 'lucide-react';
+import { hasText, isKnownNumber } from '../utils/patentDisplay';
 
 interface LicensingPanelProps {
   patent: Patent;
@@ -15,11 +16,17 @@ export const getLicensingColor = (status: string) => {
     case 'Sold': return 'bg-slate-100 text-slate-700 border-slate-200';
     case 'Under Negotiation': return 'bg-amber-100 text-amber-700 border-amber-200';
     case 'Not Available': return 'bg-red-100 text-red-700 border-red-200';
-    default: return 'bg-gray-100 text-gray-700';
+    default: return 'bg-gray-100 text-gray-700 border-gray-200';
   }
 };
 
 export const LicensingPanel: React.FC<LicensingPanelProps> = ({ patent }) => {
+  const hasLicensingStatus = hasText(patent.licensingStatus);
+  const hasAskingPrice = isKnownNumber(patent.askingPrice);
+  const hasDeals = patent.previousDeals && patent.previousDeals.length > 0;
+
+  if (!hasLicensingStatus && !hasAskingPrice && !hasDeals) return null;
+
   return (
     <div className="bg-white rounded-[2.5rem] border border-slate-200 p-10 shadow-sm">
       <div className="flex items-center gap-3 mb-10">
@@ -28,13 +35,14 @@ export const LicensingPanel: React.FC<LicensingPanelProps> = ({ patent }) => {
       </div>
       
       <div className="flex flex-col md:flex-row items-center justify-between p-8 bg-slate-50 rounded-[2rem] border border-slate-100 mb-10">
+        {hasLicensingStatus && (
         <div className="flex items-center gap-6">
           <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-sm bg-white ${getLicensingColor(patent.licensingStatus)}`}>
             {patent.licensingStatus === 'Available' && <Unlock size={32} />}
             {patent.licensingStatus === 'Exclusive License' && <Lock size={32} />}
             {patent.licensingStatus === 'Sold' && <CheckCircle size={32} />}
             {patent.licensingStatus === 'Under Negotiation' && <Handshake size={32} />}
-            {(patent.licensingStatus === 'Not Available' || patent.licensingStatus === 'Non-Exclusive License') && <Info size={32} />}
+            {(patent.licensingStatus === 'Not Available' || patent.licensingStatus === 'Non-Exclusive License' || !patent.licensingStatus) && <Info size={32} />}
           </div>
           <div>
             <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Market Readiness</div>
@@ -43,8 +51,9 @@ export const LicensingPanel: React.FC<LicensingPanelProps> = ({ patent }) => {
             </div>
           </div>
         </div>
+        )}
         
-        {patent.askingPrice && (
+        {hasAskingPrice && (
           <div className="text-center md:text-right mt-6 md:mt-0">
             <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Listing Price</div>
             <div className="text-4xl font-black text-slate-900 flex items-center justify-center md:justify-end gap-1">
@@ -55,7 +64,7 @@ export const LicensingPanel: React.FC<LicensingPanelProps> = ({ patent }) => {
         )}
       </div>
       
-      {patent.previousDeals && patent.previousDeals.length > 0 && (
+      {hasDeals && (
         <div className="space-y-6">
           <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
             <History size={14} className="text-slate-300" /> Transaction History

@@ -2,6 +2,7 @@
 import React from 'react';
 import { Patent } from '../types';
 import { BarChart3, Globe, TrendingUp, Users, Target, Activity, MapPin } from 'lucide-react';
+import { hasItems, hasText, isKnownNumber } from '../utils/patentDisplay';
 
 interface MarketPanelProps {
   patent: Patent;
@@ -14,7 +15,15 @@ export const MarketPanel: React.FC<MarketPanelProps> = ({ patent }) => {
     return `$${val.toLocaleString()}`;
   };
 
-  const valuationToTamRatio = (patent.valuationEstimate / patent.totalAddressableMarket) * 100;
+  const hasTam = isKnownNumber(patent.totalAddressableMarket);
+  const valuationToTamRatio = hasTam ? (patent.valuationEstimate / patent.totalAddressableMarket) * 100 : null;
+  const competitors = patent.keyCompetitors.filter(Boolean);
+  const regions = patent.marketRegion.filter(Boolean);
+  const hasMarketStats = hasText(patent.marketSector) || hasTam || isKnownNumber(patent.marketGrowthRate) || valuationToTamRatio !== null;
+  const hasCompetitors = hasItems(patent.keyCompetitors);
+  const hasRegions = hasItems(patent.marketRegion);
+
+  if (!hasMarketStats && !hasCompetitors && !hasRegions) return null;
 
   return (
     <div className="bg-white rounded-[2.5rem] border border-slate-200 p-10 shadow-sm overflow-hidden relative">
@@ -27,63 +36,69 @@ export const MarketPanel: React.FC<MarketPanelProps> = ({ patent }) => {
         <h2 className="text-xl font-black text-slate-900 uppercase tracking-widest text-[14px]">Market Intelligence & TAM</h2>
       </div>
 
+      {hasMarketStats && (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-        <MarketMetric 
+        {hasText(patent.marketSector) && <MarketMetric 
           label="Target Sector" 
           value={patent.marketSector} 
           icon={<Target size={18} />} 
           color="blue"
-        />
-        <MarketMetric 
+        />}
+        {hasTam && <MarketMetric 
           label="Market TAM" 
           value={formatUSD(patent.totalAddressableMarket)} 
           icon={<Globe size={18} />} 
           color="emerald"
-        />
-        <MarketMetric 
+        />}
+        {isKnownNumber(patent.marketGrowthRate) && <MarketMetric 
           label="Growth Rate" 
           value={`+${patent.marketGrowthRate}%`} 
           icon={<TrendingUp size={18} />} 
           color="amber"
           trend="up"
-        />
-        <MarketMetric 
+        />}
+        {valuationToTamRatio !== null && <MarketMetric 
           label="Capture Value" 
           value={`${valuationToTamRatio.toFixed(4)}%`} 
           sub="Asset / TAM Ratio"
           icon={<Activity size={18} />} 
           color="purple"
-        />
+        />}
       </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+        {hasCompetitors && (
         <div className="space-y-6">
            <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
               <Users size={14} className="text-blue-500" /> Competitive Landscape
            </div>
            <div className="flex flex-wrap gap-3">
-              {patent.keyCompetitors.map((competitor, idx) => (
-                <div key={idx} className="px-5 py-2.5 bg-slate-50 border border-slate-100 text-slate-700 rounded-xl text-xs font-black uppercase tracking-tight hover:bg-slate-100 transition-colors shadow-sm group">
+              {competitors.map((competitor, idx) => (
+                <div key={idx} className="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-tight shadow-sm group bg-slate-50 border border-slate-100 text-slate-700 hover:bg-slate-100 transition-colors">
                    <span className="opacity-40 group-hover:opacity-100 transition-opacity mr-2">#</span>
                    {competitor}
                 </div>
               ))}
            </div>
         </div>
+        )}
 
+        {hasRegions && (
         <div className="space-y-6">
            <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
               <MapPin size={14} className="text-emerald-500" /> Deployment Regions
            </div>
            <div className="flex flex-wrap gap-3">
-              {patent.marketRegion.map((region, idx) => (
-                <div key={idx} className="flex items-center gap-2 px-5 py-2.5 bg-blue-50/50 border border-blue-100 text-blue-800 rounded-xl text-xs font-black uppercase tracking-tight">
+              {regions.map((region, idx) => (
+                <div key={idx} className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-tight bg-blue-50/50 border border-blue-100 text-blue-800">
                    <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
                    {region}
                 </div>
               ))}
            </div>
         </div>
+        )}
       </div>
     </div>
   );

@@ -2,6 +2,7 @@
 import React from 'react';
 import { Patent } from '../types';
 import { AlertCircle, ShieldAlert, CheckCircle2, ShieldCheck, HelpCircle, ArrowRight } from 'lucide-react';
+import { hasItems, isKnownNumber } from '../utils/patentDisplay';
 
 interface RiskPanelProps {
   patent: Patent;
@@ -9,6 +10,13 @@ interface RiskPanelProps {
 
 export const RiskPanel: React.FC<RiskPanelProps> = ({ patent }) => {
   const score = patent.infringementRiskScore;
+  const hasScore = isKnownNumber(score);
+  const riskFactors = patent.riskFactors.filter(Boolean);
+  const productCategories = patent.keyProductCategories.filter(Boolean);
+  const hasRiskFactors = hasItems(patent.riskFactors);
+  const hasProductCategories = hasItems(patent.keyProductCategories);
+
+  if (!hasScore && !hasRiskFactors && !hasProductCategories) return null;
   
   const getRiskColor = (s: number) => {
     if (s >= 8) return '#ef4444'; // Red
@@ -46,7 +54,7 @@ export const RiskPanel: React.FC<RiskPanelProps> = ({ patent }) => {
   const normalizedRadius = radius - strokeWidth / 2;
   const circumference = normalizedRadius * 2 * Math.PI;
   // We want a gap at the top, similar to the image, so we use a partial stroke
-  const strokeDashoffset = circumference - (score / 10) * circumference;
+  const strokeDashoffset = circumference - ((hasScore ? score : 0) / 10) * circumference;
 
   return (
     <div className="bg-white rounded-[2.5rem] border border-slate-200 p-10 shadow-sm overflow-hidden relative">
@@ -118,35 +126,39 @@ export const RiskPanel: React.FC<RiskPanelProps> = ({ patent }) => {
               </p>
            </div>
 
+           {hasRiskFactors && (
            <div className="space-y-4">
               <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Critical Risk Factors</div>
               <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {patent.riskFactors.map((factor, idx) => (
-                  <li key={idx} className="flex items-start gap-3 p-4 bg-white border border-slate-100 rounded-xl shadow-sm hover:border-red-200 transition-colors group">
-                    <div className="mt-0.5 text-amber-500 group-hover:text-red-500 transition-colors">
+                {riskFactors.map((factor, idx) => (
+                  <li key={idx} className="flex items-start gap-3 p-4 rounded-xl shadow-sm group bg-white border border-slate-100 hover:border-red-200 transition-colors">
+                    <div className="mt-0.5 transition-colors text-amber-500 group-hover:text-red-500">
                       <AlertCircle size={14} />
                     </div>
-                    <span className="text-xs font-bold text-slate-700 leading-tight">{factor}</span>
+                    <span className="text-xs font-bold leading-tight text-slate-700">{factor}</span>
                   </li>
                 ))}
               </ul>
            </div>
+           )}
         </div>
       </div>
 
+      {hasProductCategories && (
       <div className="p-8 bg-slate-900 rounded-[2rem] border border-slate-800">
          <div className="flex items-center gap-2 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-6">
             <ArrowRight size={14} className="text-blue-500" /> Vulnerable Product Categories
          </div>
          <div className="flex flex-wrap gap-3">
-            {patent.keyProductCategories.map((category, idx) => (
-              <div key={idx} className="flex items-center gap-2 px-5 py-2.5 bg-white/5 border border-white/10 text-white rounded-xl text-xs font-bold hover:bg-white/10 transition-colors cursor-default">
+            {productCategories.map((category, idx) => (
+              <div key={idx} className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold cursor-default bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-colors">
                  <ShieldCheck size={14} className="text-blue-400" />
                  {category}
               </div>
             ))}
          </div>
       </div>
+      )}
     </div>
   );
 };
