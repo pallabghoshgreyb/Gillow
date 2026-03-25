@@ -38,9 +38,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const isLandscapePage = location.pathname === '/landscape';
   const searchSuggestions = useMemo(() => {
+    const publicationNumbers = PATENTS.map((patent) => patent.publicationNumber).filter(Boolean) as string[];
     const subdomains = PATENTS.map((patent) => patent.subdomain).filter(Boolean) as string[];
     const assignees = PATENTS.flatMap((patent) => patent.currentAssignees).filter(Boolean);
-    return Array.from(new Set([...subdomains, ...assignees])).sort();
+    return Array.from(new Set([...publicationNumbers, ...subdomains, ...assignees])).sort();
   }, []);
   const filteredSuggestions = useMemo(() => {
     const trimmedQuery = searchValue.trim().toLowerCase();

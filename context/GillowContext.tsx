@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Patent } from '../types';
+import { PATENTS } from '../data/patents';
 
 interface SavedSearch {
   id: string;
@@ -57,8 +58,9 @@ export const GillowProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     }
 
     // Mock initial notifications for demo - keeping only the requested one
+    const demoPatentNumber = PATENTS[0]?.publicationNumber || 'the latest patent';
     setNotifications([
-      { id: '2', text: 'Recent valuation update for US11540212B2', type: 'update', read: false, timestamp: Date.now() - 3600000 }
+      { id: '2', text: `Recent valuation update for ${demoPatentNumber}`, type: 'update', read: false, timestamp: Date.now() - 3600000 }
     ]);
   }, []);
 
