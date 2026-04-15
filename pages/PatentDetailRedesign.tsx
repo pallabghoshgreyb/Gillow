@@ -533,27 +533,9 @@ const PatentDetailRedesign: React.FC = () => {
                 </div>
               </div>
               <div className="lg:hidden">
-                <SidebarCard patent={patent} view={view} shareFeedback={shareFeedback} onDownload={() => window.print()} onShare={() => void handleShare()} activeJumpId={activeJumpId} availableJumpIds={availableJumpIds} onQuickJump={handleQuickJump} showQuickJump={false} />
+                <SidebarCard patent={patent} view={view} shareFeedback={shareFeedback} onDownload={() => window.print()} onShare={() => void handleShare()} />
               </div>
             </motion.div>
-
-            <RevealBlock id="valuation-breakdown" delay={0.12}>
-              <ValuationBreakdownSection patent={patent} valuation={view.valuation} />
-            </RevealBlock>
-
-            <RevealBlock id="ownership" delay={0.15}>
-              <OwnershipSection
-                currentAssignees={patent.currentAssignees}
-                originalAssignees={patent.originalAssignees}
-                inventors={patent.inventors}
-                applicants={patent.applicants}
-              />
-            </RevealBlock>
-
-            <motion.section id="timeline" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, delay: 0.18, ease: EASE }} className="scroll-mt-28 space-y-5">
-              <SectionIntro eyebrow="Patent timeline" title="Compact lifecycle view" description="A quick read on where the patent sits in prosecution and term." />
-              <PatentTimeline steps={view.timeline} activeStep={activeStep} activeStepId={activeStepId} mobileStepId={mobileStepId} onDesktopHover={setActiveStepId} onMobileToggle={setMobileStepId} />
-            </motion.section>
 
             <RevealBlock delay={0.2}>
               <div className="space-y-5">
@@ -585,31 +567,32 @@ const PatentDetailRedesign: React.FC = () => {
               </div>
             </RevealBlock>
 
-            <RevealBlock id="geography" delay={0.23}>
-              <GeographicalDistributionSection patent={patent} />
+            <motion.section id="timeline" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, delay: 0.22, ease: EASE }} className="scroll-mt-28 space-y-5">
+              <SectionIntro eyebrow="Patent timeline" title="Compact lifecycle view" description="A quick read on where the patent sits in prosecution and term." />
+              <PatentTimeline steps={view.timeline} activeStep={activeStep} activeStepId={activeStepId} mobileStepId={mobileStepId} onDesktopHover={setActiveStepId} onMobileToggle={setMobileStepId} />
+            </motion.section>
+
+            <RevealBlock id="claims" delay={0.24}>
+              <div className="space-y-5">
+                <SectionIntro eyebrow="Claims & scope" title="Claim architecture" description="A minimal snapshot of breadth, fallback protection, and overall scope." />
+                <div className="grid gap-3 sm:grid-cols-3">
+                  {view.claims.map((claim) => (
+                    <motion.div key={claim.label} whileHover={{ y: -2, boxShadow: '0 10px 28px rgba(15,23,42,0.06)' }} className={cn('flex items-center gap-4 px-5 py-4', INTERACTIVE)}>
+                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-50 text-teal-600">
+                        <claim.icon size={20} />
+                      </div>
+                      <div>
+                        <p className="text-2xl font-semibold tabular-nums text-slate-900">{claim.value}</p>
+                        <p className="text-sm font-medium text-slate-500">{claim.label}</p>
+                        <p className="text-xs text-slate-400">{claim.hint}</p>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
             </RevealBlock>
 
-            <RevealBlock id="examination" delay={0.26}>
-              <ExaminationDetailsSection patent={patent} />
-            </RevealBlock>
-
-            <RevealBlock id="continuity" delay={0.28}>
-              <ContinuitySection patent={patent} />
-            </RevealBlock>
-
-            <RevealBlock id="government" delay={0.3}>
-              <GovernmentStandardsSection patent={patent} />
-            </RevealBlock>
-
-            <RevealBlock id="fees" delay={0.32}>
-              <FeeStatusSection patent={patent} />
-            </RevealBlock>
-
-            <RevealBlock id="technology" delay={0.34}>
-              <TechnologyProfileSection patent={patent} />
-            </RevealBlock>
-
-            <RevealBlock id="classification" delay={0.36}>
+            <RevealBlock id="classification" delay={0.26}>
               <div className="space-y-5">
                 <SectionIntro eyebrow="Technology classification" title="IPC and CPC coding" description="Classification tags that situate the patent in search, diligence, and comparables." />
                 <div className={cn('p-6 sm:p-8 bg-slate-50/60', CARD)}>
@@ -624,7 +607,7 @@ const PatentDetailRedesign: React.FC = () => {
               </div>
             </RevealBlock>
 
-            <RevealBlock id="strength" delay={0.38}>
+            <RevealBlock id="strength" delay={0.28}>
               <div className="space-y-5">
                 <SectionIntro eyebrow="Intellectual property strength" title="Strength assessment" description="A concise read on commercial quality, family breadth, and prosecution posture." />
                 <motion.div whileHover={{ y: -2, boxShadow: '0 10px 28px rgba(15,23,42,0.06)' }} className={cn('p-6 sm:p-8', INTERACTIVE)}>
@@ -651,7 +634,7 @@ const PatentDetailRedesign: React.FC = () => {
               </div>
             </RevealBlock>
 
-            <RevealBlock id="prosecution" delay={0.4}>
+            <RevealBlock id="prosecution" delay={0.3}>
               <div className="space-y-5">
                 <SectionIntro eyebrow="Prosecution history" title="Readable file history" description="An editorial pass over the major recorded events surfaced from the prosecution record." />
                 <div className={cn('overflow-hidden', CARD)}>
@@ -675,28 +658,45 @@ const PatentDetailRedesign: React.FC = () => {
               </div>
             </RevealBlock>
 
-            <RevealBlock id="claims" delay={0.42}>
-              <div className="space-y-5">
-                <SectionIntro eyebrow="Claims & scope" title="Claim architecture" description="A minimal snapshot of breadth, fallback protection, and overall scope." />
-                <div className="grid gap-3 sm:grid-cols-3">
-                  {view.claims.map((claim) => (
-                    <motion.div key={claim.label} whileHover={{ y: -2, boxShadow: '0 10px 28px rgba(15,23,42,0.06)' }} className={cn('flex items-center gap-4 px-5 py-4', INTERACTIVE)}>
-                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-50 text-teal-600">
-                        <claim.icon size={20} />
-                      </div>
-                      <div>
-                        <p className="text-2xl font-semibold tabular-nums text-slate-900">{claim.value}</p>
-                        <p className="text-sm font-medium text-slate-500">{claim.label}</p>
-                        <p className="text-xs text-slate-400">{claim.hint}</p>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
+            <RevealBlock id="ownership" delay={0.32}>
+              <OwnershipSection
+                currentAssignees={patent.currentAssignees}
+                originalAssignees={patent.originalAssignees}
+                inventors={patent.inventors}
+                applicants={patent.applicants}
+              />
             </RevealBlock>
 
-            <RevealBlock id="risk" delay={0.44}>
+            <RevealBlock id="fees" delay={0.34}>
+              <FeeStatusSection patent={patent} />
+            </RevealBlock>
+
+            <RevealBlock id="risk" delay={0.36}>
               <RiskAssessmentSection patent={patent} />
+            </RevealBlock>
+
+            <RevealBlock id="technology" delay={0.38}>
+              <TechnologyProfileSection patent={patent} />
+            </RevealBlock>
+
+            <RevealBlock id="geography" delay={0.4}>
+              <GeographicalDistributionSection patent={patent} />
+            </RevealBlock>
+
+            <RevealBlock id="valuation-breakdown" delay={0.42}>
+              <ValuationBreakdownSection patent={patent} valuation={view.valuation} />
+            </RevealBlock>
+
+            <RevealBlock id="examination" delay={0.44}>
+              <ExaminationDetailsSection patent={patent} />
+            </RevealBlock>
+
+            <RevealBlock id="continuity" delay={0.46}>
+              <ContinuitySection patent={patent} />
+            </RevealBlock>
+
+            <RevealBlock id="government" delay={0.48}>
+              <GovernmentStandardsSection patent={patent} />
             </RevealBlock>
 
             {/* Global Patent Family is intentionally hidden for now and can be restored later.
@@ -707,8 +707,9 @@ const PatentDetailRedesign: React.FC = () => {
           </div>
 
           <aside className="mt-10 hidden lg:block lg:mt-0">
-            <div className="sticky top-28 max-h-[calc(100vh-7rem)] overflow-y-auto pr-1">
-              <SidebarCard patent={patent} view={view} shareFeedback={shareFeedback} onDownload={() => window.print()} onShare={() => void handleShare()} activeJumpId={activeJumpId} availableJumpIds={availableJumpIds} onQuickJump={handleQuickJump} showQuickJump />
+            <div className="sticky top-28">
+              <SidebarCard patent={patent} view={view} shareFeedback={shareFeedback} onDownload={() => window.print()} onShare={() => void handleShare()} />
+              <QuickJumpNavigation activeId={activeJumpId} availableIds={availableJumpIds} items={QUICK_JUMP_ITEMS} onJump={handleQuickJump} />
             </div>
           </aside>
         </div>
@@ -860,7 +861,7 @@ const PatentTimeline = ({
   );
 };
 
-const SidebarCard = ({ patent, view, shareFeedback, onDownload, onShare, activeJumpId, availableJumpIds, onQuickJump, showQuickJump }: { patent: Patent; view: View; shareFeedback: string; onDownload: () => void; onShare: () => void; activeJumpId: string; availableJumpIds: string[]; onQuickJump: (id: string) => void; showQuickJump: boolean }) => (
+const SidebarCard = ({ patent, view, shareFeedback, onDownload, onShare }: { patent: Patent; view: View; shareFeedback: string; onDownload: () => void; onShare: () => void }) => (
   <div className={cn('p-6 sm:p-7', CARD)}>
     <div className="space-y-6">
       <div className="rounded-[28px] border border-amber-100 bg-amber-50/80 p-6 shadow-[0_16px_36px_rgba(245,158,11,0.12)]">
@@ -871,7 +872,6 @@ const SidebarCard = ({ patent, view, shareFeedback, onDownload, onShare, activeJ
           <div className="mt-3 h-2 rounded-full bg-slate-100"><div className="h-full rounded-full bg-teal-500" style={{ width: `${view.confidence}%` }} /></div>
         </div>
       </div>
-      {showQuickJump ? <QuickJumpNavigation activeId={activeJumpId} availableIds={availableJumpIds} items={QUICK_JUMP_ITEMS} onJump={onQuickJump} /> : null}
       <div className="space-y-4">
         <div className="flex items-center justify-between gap-4"><p className="text-sm font-medium text-slate-500">Legal status</p><span className={cn('inline-flex rounded-full border px-3 py-1 text-xs font-medium', statusClasses(view.status.tone))}>{view.status.label}</span></div>
         <div className="flex items-center justify-between gap-4"><p className="text-sm font-medium text-slate-500">Assignee</p><p className="max-w-[60%] text-right text-sm font-semibold text-slate-900">{view.assignee}</p></div>
