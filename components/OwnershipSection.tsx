@@ -9,7 +9,6 @@ type OwnershipSectionProps = {
   currentAssignees?: string[] | string | null;
   originalAssignees?: string[] | string | null;
   inventors?: string[] | string | null;
-  applicants?: string[] | string | null;
 };
 
 const parseList = (value?: string[] | string | null) => {
@@ -100,7 +99,6 @@ const OwnershipSection: React.FC<OwnershipSectionProps> = ({
   currentAssignees,
   originalAssignees,
   inventors,
-  applicants,
 }) => {
   const [showAllInventors, setShowAllInventors] = useState(false);
   const [copiedField, setCopiedField] = useState('');
@@ -108,7 +106,6 @@ const OwnershipSection: React.FC<OwnershipSectionProps> = ({
   const currentList = useMemo(() => parseList(currentAssignees), [currentAssignees]);
   const originalList = useMemo(() => parseList(originalAssignees), [originalAssignees]);
   const inventorList = useMemo(() => parseList(inventors), [inventors]);
-  const applicantList = useMemo(() => parseList(applicants), [applicants]);
 
   useEffect(() => {
     if (!copiedField) return;
@@ -116,10 +113,8 @@ const OwnershipSection: React.FC<OwnershipSectionProps> = ({
     return () => window.clearTimeout(timer);
   }, [copiedField]);
 
-  const primaryCurrent =
-    currentList[0] || originalList[0] || applicantList[0] || 'Ownership not disclosed';
+  const primaryCurrent = currentList[0] || originalList[0] || 'Ownership not disclosed';
   const primaryOriginal = originalList[0] || 'Not disclosed';
-  const applicantText = applicantList.length > 0 ? applicantList.join(', ') : 'Not disclosed';
   const visibleInventors = inventorList.slice(0, 3);
   const extraInventors = inventorList.slice(3);
 
@@ -217,22 +212,6 @@ const OwnershipSection: React.FC<OwnershipSectionProps> = ({
           ) : (
             <p className="text-sm text-slate-500">Inventor list not disclosed.</p>
           )}
-        </div>
-
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-            Applicants
-          </p>
-          <div className="flex items-start justify-between gap-4">
-            <p className="min-w-0 text-sm leading-6 text-slate-600">{applicantText}</p>
-            <CopyButton
-              label="Copy applicants"
-              value={applicantText}
-              copiedKey="applicants"
-              isCopied={copiedField === 'applicants'}
-              onCopied={setCopiedField}
-            />
-          </div>
         </div>
       </div>
     </section>

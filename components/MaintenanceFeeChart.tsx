@@ -116,7 +116,7 @@ const MaintenanceFeeChart: React.FC<MaintenanceFeeChartProps> = ({ patent }) => 
              <div className="flex items-center justify-between gap-4">
                 <div>
                     <div className="text-lg font-black">Escrow Maintenance</div>
-                    <p className="text-xs opacity-80">Process via PatentXchange Direct</p>
+                    <p className="text-xs opacity-80">Process via PatentIntent Direct</p>
                 </div>
                 <button className="px-6 py-2.5 bg-white text-blue-600 rounded-xl text-xs font-black uppercase tracking-widest hover:scale-105 transition-all">
                     Initiate

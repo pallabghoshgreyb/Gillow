@@ -55,7 +55,7 @@ const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({ onSearch, place
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSearch(query)}
           placeholder={placeholder || "Search patents by ID, title, or tech..."}
-          className="w-full h-16 pl-14 pr-16 bg-white border-2 border-slate-100 rounded-full shadow-xl shadow-slate-200/50 text-slate-800 text-lg font-medium outline-none focus:border-[#00bdcd] transition-all placeholder-slate-400"
+          className="h-16 w-full rounded-full border-2 border-slate-100 bg-white pl-14 pr-16 text-base font-medium text-slate-800 shadow-xl shadow-slate-200/50 outline-none transition-all placeholder:text-slate-400 focus:border-[#00bdcd]"
         />
         {query && (
           <button onClick={() => handleSearch('')} className="absolute right-14 text-slate-300 hover:text-slate-500">
@@ -72,7 +72,7 @@ const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({ onSearch, place
 
       {isFocused && filteredSuggestions.length > 0 && (
         <div className="absolute left-0 right-0 top-full z-30 mt-3 rounded-3xl border border-slate-200 bg-white p-3 shadow-2xl">
-          <div className="px-3 pb-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
+          <div className="px-3 pb-2 text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
             Suggested Subdomains & Assignees
           </div>
           <div className="space-y-1">
@@ -83,10 +83,10 @@ const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({ onSearch, place
                   event.preventDefault();
                   handleSearch(suggestion);
                 }}
-                className="flex w-full items-center justify-between rounded-2xl px-3 py-3 text-left text-sm font-bold text-slate-600 transition-colors hover:bg-blue-50 hover:text-blue-700"
+                className="flex w-full items-center justify-between rounded-2xl px-3 py-3 text-left text-sm font-medium text-slate-600 transition-colors hover:bg-blue-50 hover:text-blue-700"
               >
                 <span>{suggestion}</span>
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-300">Search</span>
+                <span className="text-xs font-medium uppercase tracking-[0.14em] text-slate-300">Search</span>
               </button>
             ))}
           </div>

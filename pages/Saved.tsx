@@ -42,7 +42,7 @@ const Saved: React.FC = () => {
   if (loading) return (
     <div className="p-20 flex flex-col items-center justify-center gap-4">
         <div className="w-12 h-12 border-4 border-slate-100 border-t-blue-600 rounded-full animate-spin" />
-        <span className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Syncing Collection...</span>
+        <span className="text-xs font-medium uppercase tracking-[0.16em] text-slate-400">Syncing Collection...</span>
     </div>
   );
 
@@ -50,28 +50,28 @@ const Saved: React.FC = () => {
     <div className="min-h-screen bg-slate-50 pb-40">
       <div className="bg-white border-b border-slate-200 pt-10 pb-6 px-6 md:px-12">
           <div className="max-w-[1400px] mx-auto">
-              <nav className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">
+              <nav className="mb-4 flex items-center gap-2 text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
                   <span>Dashboard</span>
                   <ChevronRight size={14} />
                   <span className="text-slate-900">Saved Patents</span>
               </nav>
               <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                   <div>
-                      <h1 className="text-4xl font-black text-slate-900 flex items-center gap-4">
+                      <h1 className="flex items-center gap-4 text-4xl font-semibold text-slate-900">
                           <FolderHeart size={40} className="text-red-500" /> My Portfolio
                       </h1>
-                      <p className="text-slate-500 mt-2 font-medium">Manage and benchmark your tracked intellectual property patents.</p>
+                      <p className="mt-2 text-base leading-7 text-slate-500">Manage and benchmark your tracked intellectual property patents.</p>
                   </div>
                   <div className="flex items-center gap-3">
                       <button
                           onClick={() => exportPatentsToCsv(savedPatents, 'saved-patents.csv')}
-                          className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all shadow-sm"
+                          className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 shadow-sm transition-all hover:bg-slate-50"
                       >
                           <Share2 size={18} /> Export List
                       </button>
                       <button 
                         onClick={() => setSelectionMode(!selectionMode)}
-                        className={`flex items-center gap-2 px-6 py-2.5 border rounded-xl text-sm font-black transition-all shadow-sm ${selectionMode ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-200 text-slate-800 hover:bg-slate-50'}`}
+                        className={`flex items-center gap-2 rounded-xl border px-6 py-2.5 text-sm font-semibold shadow-sm transition-all ${selectionMode ? 'border-blue-600 bg-blue-600 text-white' : 'border-slate-200 bg-white text-slate-800 hover:bg-slate-50'}`}
                       >
                           <GitCompare size={18} /> {selectionMode ? 'Finish Selection' : 'Compare Patents'}
                       </button>
@@ -107,13 +107,13 @@ const Saved: React.FC = () => {
                   <div className="w-20 h-20 bg-slate-50 text-slate-300 rounded-full flex items-center justify-center mb-6">
                       <Heart size={40} />
                   </div>
-                  <h3 className="text-2xl font-black text-slate-800 mb-2">Portfolio Empty</h3>
+                  <h3 className="mb-2 text-2xl font-semibold text-slate-800">Portfolio Empty</h3>
                   <p className="text-slate-500 mb-8 leading-relaxed">
                       Discover high-value patents in the marketplace and save them to your tracker.
                   </p>
                   <button 
                       onClick={() => window.location.hash = '#/browse'}
-                      className="px-8 py-3 bg-slate-900 text-white font-black rounded-xl hover:bg-slate-800 transition-all shadow-lg active:scale-95 flex items-center gap-2"
+                      className="flex items-center gap-2 rounded-xl bg-slate-900 px-8 py-3 font-semibold text-white shadow-lg transition-all hover:bg-slate-800 active:scale-95"
                   >
                       Explore Marketplace <ArrowRight size={18} />
                   </button>
@@ -126,17 +126,17 @@ const Saved: React.FC = () => {
           <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[60] animate-in slide-in-from-bottom-20 duration-500 w-full max-w-2xl px-6">
               <div className="bg-slate-900 text-white px-6 py-4 rounded-3xl shadow-2xl flex items-center justify-between gap-6 border border-slate-700 backdrop-blur-md bg-opacity-95">
                   <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center font-black text-sm shadow-lg">{comparisonList.length}</div>
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-sm font-semibold shadow-lg">{comparisonList.length}</div>
                       <div>
-                          <div className="font-black text-xs uppercase tracking-widest text-blue-400">Benchmarking</div>
-                          <div className="font-bold text-sm">Patents in comparison queue</div>
+                          <div className="text-xs font-medium uppercase tracking-[0.16em] text-blue-400">Benchmarking</div>
+                          <div className="text-sm font-semibold">Patents in comparison queue</div>
                       </div>
                   </div>
                   
                   <div className="flex items-center gap-4">
                       <button 
                         onClick={() => setShowComparison(true)}
-                        className="px-6 py-2.5 bg-[#00bdcd] hover:bg-blue-700 rounded-xl text-sm font-black transition-all flex items-center gap-2"
+                        className="flex items-center gap-2 rounded-xl bg-[#00bdcd] px-6 py-2.5 text-sm font-semibold transition-all hover:bg-blue-700"
                       >
                           Compare <ChevronRight size={16} />
                       </button>
@@ -158,8 +158,8 @@ const Saved: React.FC = () => {
                              <GitCompare size={24} />
                           </div>
                           <div>
-                            <h3 className="font-black text-slate-900 text-2xl tracking-tighter">Patent Benchmarking</h3>
-                            <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">Side-by-side technical & market analysis</p>
+                            <h3 className="text-2xl font-semibold tracking-tight text-slate-900">Patent Benchmarking</h3>
+                            <p className="text-xs font-medium uppercase tracking-[0.16em] text-slate-500">Side-by-side technical & market analysis</p>
                           </div>
                       </div>
                       <button onClick={() => setShowComparison(false)} className="w-12 h-12 flex items-center justify-center bg-white border border-slate-200 rounded-full text-slate-400 hover:text-slate-900 transition-colors shadow-sm">
@@ -172,13 +172,13 @@ const Saved: React.FC = () => {
                   <div className="p-8 border-t border-slate-100 flex justify-end gap-4 bg-white">
                       <button
                         onClick={() => exportPatentsToCsv(comparisonPatents, 'comparison-report.csv')}
-                        className="px-8 py-3 text-slate-600 font-black uppercase tracking-widest text-xs hover:bg-slate-50 rounded-xl transition-all"
+                        className="rounded-xl px-8 py-3 text-sm font-medium text-slate-600 transition-all hover:bg-slate-50"
                       >
                         Download CSV Report
                       </button>
                       <button 
                         onClick={() => setShowComparison(false)}
-                        className="px-10 py-3 bg-slate-900 text-white font-black uppercase tracking-widest text-xs rounded-xl hover:bg-slate-800 transition-all active:scale-95 shadow-lg"
+                        className="rounded-xl bg-slate-900 px-10 py-3 text-sm font-semibold text-white shadow-lg transition-all hover:bg-slate-800 active:scale-95"
                       >
                         Dismiss
                       </button>

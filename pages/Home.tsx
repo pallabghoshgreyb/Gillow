@@ -45,19 +45,19 @@ const Home: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-white font-sans">
+    <div className="flex min-h-screen flex-col bg-white">
       
       {/* Hero Section with 3D Landscape */}
       <section className="relative min-h-screen flex flex-col items-center justify-start pt-32 pb-20 overflow-hidden bg-slate-50 border-b border-slate-200">
           
           <div className="z-10 w-full max-w-[1400px] px-6 text-center mb-16 relative">
-               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-blue-100 text-[#00bdcd] text-[10px] font-black uppercase tracking-widest mb-8 shadow-xl animate-in fade-in slide-in-from-top-4 duration-700">
+               <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-blue-100 bg-white px-4 py-2 text-xs font-medium uppercase tracking-[0.16em] text-[#00bdcd] shadow-xl animate-in fade-in slide-in-from-top-4 duration-700">
                  <Sparkles size={14} fill="currentColor" /> Advanced 3D Technology Landscapes
                </div>
-               <h1 className="text-6xl md:text-9xl font-black text-slate-900 mb-8 tracking-tighter leading-none">
+               <h1 className="mb-8 text-6xl font-semibold leading-[0.95] tracking-[-0.03em] text-slate-900 md:text-8xl">
                    Navigate <span className="text-[#00bdcd]">Intelligence.</span>
                </h1>
-               <p className="text-xl md:text-2xl text-slate-500 max-w-3xl mx-auto mb-12 font-medium leading-relaxed">
+               <p className="mx-auto mb-12 max-w-3xl text-lg font-medium leading-[1.6] text-slate-600 md:text-2xl">
                  Ditch the spreadsheets. Explore the technical universe through high-density topographic maps and Gaussian clustering.
                </p>
                
@@ -84,12 +84,12 @@ const Home: React.FC = () => {
       <main className="max-w-[1400px] mx-auto px-6 py-32 w-full">
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-20 gap-8">
             <div>
-              <div className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] mb-3">Technical Portfolios</div>
-              <h2 className="text-5xl md:text-6xl font-black text-slate-900 tracking-tight">Marketplace Highlights</h2>
+              <div className="mb-3 text-sm font-medium uppercase tracking-[0.16em] text-blue-600">Technical Portfolios</div>
+              <h2 className="text-4xl font-semibold tracking-tight text-slate-900 md:text-5xl">Marketplace Highlights</h2>
             </div>
             <button 
               onClick={() => navigate('/browse')}
-              className="group flex items-center gap-4 text-sm font-black text-white bg-slate-900 hover:bg-slate-800 px-10 py-5 rounded-2xl transition-all uppercase tracking-widest shadow-2xl active:scale-95"
+              className="group flex items-center gap-4 rounded-2xl bg-slate-900 px-8 py-4 text-sm font-semibold text-white shadow-2xl transition-all hover:bg-slate-800 active:scale-95"
             >
                 Browse All Patents <ArrowRight size={20} className="group-hover:translate-x-2 transition-transform" />
             </button>

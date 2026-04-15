@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Navigation, TrendingUp, Building } from 'lucide-react';
 import { Patent } from '../types';
+import { formatCompactCurrency } from '../utils/patentDisplay';
 
 interface PatentMapProps {
   patents: Patent[];
@@ -67,8 +68,8 @@ const PatentMap: React.FC<PatentMapProps> = ({ patents, onSelectPatent }) => {
                 }
               `}>
                 <div className={`w-2 h-2 rounded-full ${isHovered ? 'bg-white animate-pulse' : 'bg-blue-500'}`} />
-                <span className="text-[10px] font-black tracking-tight">
-                  ${(patent.valuationEstimate / 1000000).toFixed(1)}M
+                <span className="text-sm font-semibold tracking-tight">
+                  {formatCompactCurrency(patent.valuationEstimate)}
                 </span>
               </div>
             </div>
@@ -86,12 +87,12 @@ const PatentMap: React.FC<PatentMapProps> = ({ patents, onSelectPatent }) => {
           }}
         >
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[9px] font-black text-[#00bdcd] bg-blue-50 px-2 py-0.5 rounded uppercase tracking-widest">{hoveredPatent.publicationNumber}</span>
-            <div className="flex items-center gap-1 text-emerald-600 text-[10px] font-bold">
+            <span className="rounded bg-blue-50 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.14em] text-[#00bdcd]">{hoveredPatent.publicationNumber}</span>
+            <div className="flex items-center gap-1 text-[10px] font-medium text-emerald-600">
                <TrendingUp size={10} /> {hoveredPatent.qualityScore}% Quality
             </div>
           </div>
-          <h4 className="text-xs font-bold text-slate-900 mb-2 line-clamp-2 leading-snug">{hoveredPatent.title}</h4>
+          <h4 className="mb-2 line-clamp-2 text-sm font-semibold leading-snug text-slate-900">{hoveredPatent.title}</h4>
           <div className="flex items-center gap-2 text-[10px] text-slate-500 font-medium">
              <Building size={10} /> {hoveredPatent.assignee.name}
           </div>
@@ -104,7 +105,7 @@ const PatentMap: React.FC<PatentMapProps> = ({ patents, onSelectPatent }) => {
                <Navigation size={20} />
             </div>
             <div>
-               <div className="text-xs font-black text-slate-900 uppercase tracking-widest leading-none">Geo-Intelligence</div>
+               <div className="text-xs font-medium uppercase tracking-[0.16em] leading-none text-slate-900">Geo-Intelligence</div>
                <div className="text-[10px] text-slate-500 font-medium">Clustered by Assignee HQ</div>
             </div>
          </div>

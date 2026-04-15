@@ -5,3 +5,15 @@ export const hasItems = (items?: string[] | null): boolean =>
 
 export const isKnownNumber = (value?: number | null): boolean =>
   typeof value === 'number' && Number.isFinite(value) && value > 0;
+
+const compactCurrencyFormatter = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  notation: 'compact',
+  maximumFractionDigits: 1,
+});
+
+export const formatCompactCurrency = (value?: number | null): string => {
+  if (!isKnownNumber(value)) return '$0';
+  return compactCurrencyFormatter.format(value);
+};

@@ -112,6 +112,11 @@ export interface Patent {
     technicalQuality: number;
     marketBreadth: number;
     enforcementStrength: number;
+    strategicValue: number;
+    marketValue: number;
+    technologyValue: number;
+    economicValue: number;
+    legalValue: number;
   };
 
   // TRL

@@ -178,7 +178,7 @@ const GeographicalDistributionMap: React.FC<GeographicalDistributionMapProps> = 
                             textAnchor="middle"
                             y={radius + 16}
                             style={{
-                              fontFamily: 'Inter, sans-serif',
+                              fontFamily: 'var(--font-sans)',
                               fontSize: '10px',
                               fontWeight: 600,
                               fill: '#334155',

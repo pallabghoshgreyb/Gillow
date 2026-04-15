@@ -39,7 +39,7 @@ const ServerConfigModal: React.FC<ServerConfigModalProps> = ({ isOpen, onClose }
                 <div className="p-1.5 bg-blue-100 text-blue-600 rounded-md">
                     <Server size={18} />
                 </div>
-                Connect PatentXchange Backend
+                Connect PatentIntent Backend
             </div>
             <button onClick={onClose} className="text-slate-400 hover:text-slate-700 transition-colors">
                 <X size={20} />
@@ -49,7 +49,7 @@ const ServerConfigModal: React.FC<ServerConfigModalProps> = ({ isOpen, onClose }
         {/* Body */}
         <div className="p-6 space-y-4">
             <p className="text-sm text-slate-600">
-                Enter your FastAPI server URL (e.g., <code>http://localhost:8000</code>). The app will automatically connect to your PostgreSQL database through the PatentXchange API.
+                Enter your FastAPI server URL (e.g., <code>http://localhost:8000</code>). The app will automatically connect to your PostgreSQL database through the PatentIntent API.
             </p>
             
             <div className="space-y-2">

@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { Patent } from '../types';
+import { formatCompactCurrency } from '../utils/patentDisplay';
 
 type ValuationBreakdownSectionProps = {
   patent: Patent;
@@ -13,53 +14,53 @@ type MetricCard = {
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
-const formatMoney = (value: number) => {
-  if (!Number.isFinite(value) || value <= 0) return '$1.1M';
-  if (value >= 1_000_000_000) return `$${(value / 1_000_000_000).toFixed(1)}B`;
-  return `$${(value / 1_000_000).toFixed(1)}M`;
-};
-
 const computeMetrics = (patent: Patent): MetricCard[] => {
   const granted = /granted|issued|alive/i.test(
     `${patent.legalStatus || ''} ${patent.simpleLegalStatus || ''}`,
   );
   const territoryCount = Math.max(patent.familySize, patent.countries.length, 1);
   const strategic = clamp(
-    Math.round(
+    patent.valuationMetrics.strategicValue ||
+      Math.round(
       (granted ? 22 : 12) +
         Math.min(territoryCount, 6) * 6 +
         Math.min(patent.trackOneCodes.length, 3) * 4 +
         (patent.currentAssignees.length > 0 ? 6 : 0),
-    ),
+      ),
     20,
     100,
   );
   const market = clamp(
-    patent.valuationMetrics.marketBreadth ||
+    patent.valuationMetrics.marketValue ||
+      patent.valuationMetrics.marketBreadth ||
       Math.round(Math.max(patent.marketGrowthRate, 10) * 3.2),
     18,
     100,
   );
   const technology = clamp(
-    Math.round(
+    patent.valuationMetrics.technologyValue ||
+      Math.round(
       ((patent.technologyReadinessLevel || 5) / 9) * 65 +
         Math.min(patent.independentClaimsCount * 6, 18),
-    ),
+      ),
     18,
     100,
   );
   const economic = clamp(
-    patent.totalAddressableMarket > 0
+    patent.valuationMetrics.economicValue ||
+      (patent.totalAddressableMarket > 0
       ? Math.round(
           Math.min(patent.totalAddressableMarket / 25_000_000, 70) +
             Math.max(patent.marketGrowthRate, 0),
         )
-      : 33 + Math.min(territoryCount, 4) * 4,
+      : 33 + Math.min(territoryCount, 4) * 4),
     15,
     100,
   );
   const legal = clamp(
-    patent.valuationMetrics.enforcementStrength || (granted ? 70 : 54),
+    patent.valuationMetrics.legalValue ||
+      patent.valuationMetrics.enforcementStrength ||
+      (granted ? 70 : 54),
     10,
     100,
   );
@@ -99,7 +100,7 @@ const ValuationBreakdownSection: React.FC<ValuationBreakdownSectionProps> = ({
           Valuation Components
         </h3>
         <p className="mt-2 text-sm text-slate-600">
-          How the {formatMoney(valuation)} valuation is calculated
+          How the {formatCompactCurrency(valuation)} valuation is calculated
         </p>
       </div>
 

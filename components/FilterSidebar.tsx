@@ -41,7 +41,7 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({ onFilterChange, onReset, 
   return (
     <aside className="w-full bg-white flex flex-col border-r border-slate-200 h-full overflow-y-auto custom-scrollbar">
       <div className="p-6 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10">
-        <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
+        <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
           <Filter size={18} className="text-[#00bdcd]" /> Filters
         </h2>
         <button 
@@ -109,7 +109,7 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({ onFilterChange, onReset, 
               <button 
                 key={status}
                 onClick={() => handleMultiToggle('statuses', status)}
-                className={`px-3 py-1.5 rounded-lg border text-xs font-bold transition-all ${
+                className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-all ${
                   activeFilters.statuses.includes(status) 
                     ? 'bg-[#00bdcd] border-[#00bdcd] text-white' 
                     : 'border-slate-200 text-slate-500 hover:border-[#00bdcd] hover:bg-blue-50'
@@ -125,7 +125,7 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({ onFilterChange, onReset, 
         <FilterSection title="Filing Date" isOpen={expanded.includes('years')} onToggle={() => toggleSection('years')}>
           <div className="grid grid-cols-2 gap-3">
              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-400 uppercase">From</label>
+                <label className="text-xs font-medium uppercase tracking-[0.14em] text-slate-400">From</label>
                 <select 
                   value={activeFilters.startYear}
                   onChange={(e) => onFilterChange({ startYear: e.target.value })}
@@ -135,7 +135,7 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({ onFilterChange, onReset, 
                 </select>
              </div>
              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-400 uppercase">To</label>
+                <label className="text-xs font-medium uppercase tracking-[0.14em] text-slate-400">To</label>
                 <select 
                   value={activeFilters.endYear}
                   onChange={(e) => onFilterChange({ endYear: e.target.value })}
@@ -152,13 +152,13 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({ onFilterChange, onReset, 
            <FilterSection title="Metrics" isOpen={expanded.includes('more')} onToggle={() => toggleSection('more')}>
               <div className="space-y-6">
                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-400 uppercase">Asset Type</label>
+                    <label className="text-xs font-medium uppercase tracking-[0.14em] text-slate-400">Asset Type</label>
                     <div className="flex flex-wrap gap-2">
                       {PATENT_TYPES.map(t => (
                         <button 
                           key={t}
                           onClick={() => handleMultiToggle('patentTypes', t)}
-                          className={`px-3 py-1 rounded-full border text-[10px] font-black uppercase tracking-widest ${
+                          className={`rounded-full border px-3 py-1 text-xs font-medium uppercase tracking-[0.14em] ${
                             activeFilters.patentTypes.includes(t) 
                               ? 'bg-slate-900 border-slate-900 text-white' 
                               : 'border-slate-200 text-slate-500'
@@ -172,7 +172,7 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({ onFilterChange, onReset, 
 
                  <div className="space-y-4">
                     <div className="space-y-1">
-                       <label className="text-xs font-bold text-slate-400 uppercase flex justify-between">
+                       <label className="flex justify-between text-xs font-medium uppercase tracking-[0.14em] text-slate-400">
                           Min Citations <span>{activeFilters.minCitations}+</span>
                        </label>
                        <input 
@@ -193,7 +193,7 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({ onFilterChange, onReset, 
 
 const FilterSection: React.FC<{ title: string; children: React.ReactNode; isOpen: boolean; onToggle: () => void }> = ({ title, children, isOpen, onToggle }) => (
   <div className="space-y-4">
-    <button onClick={onToggle} className="w-full flex items-center justify-between text-sm font-black text-slate-800 uppercase tracking-wider text-left">
+    <button onClick={onToggle} className="flex w-full items-center justify-between text-left text-sm font-semibold tracking-tight text-slate-800">
       {title}
       <ChevronDown size={16} className={`text-slate-400 transition-transform ${isOpen ? '' : '-rotate-90'}`} />
     </button>

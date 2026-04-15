@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { select, scalePoint, scaleSqrt, scaleSequential, interpolateBlues, axisTop, axisLeft, max } from 'd3';
+import { select, scalePoint, scaleSqrt, scaleSequential, interpolateRgb, axisTop, axisLeft, max } from 'd3';
 import { Patent } from '../types';
 
 interface BubbleChartProps {
@@ -17,6 +17,10 @@ interface BubbleDatum {
   subdomains: string[];
   href: string;
 }
+
+const BRAND_BUBBLE_BASE = '#00bdcd';
+const BRAND_BUBBLE_DARK = '#0d5861';
+const BRAND_BUBBLE_LIGHT = '#d4f7fa';
 
 export const BubbleChart: React.FC<BubbleChartProps> = ({ patents, onSelectBubble, onSelectPatent }) => {
   const svgRef = useRef<SVGSVGElement>(null);
@@ -180,8 +184,9 @@ export const BubbleChart: React.FC<BubbleChartProps> = ({ patents, onSelectBubbl
         .domain([0, maxCount])
         .range([5, 25]);
 
-      const colorScale = scaleSequential(interpolateBlues)
-        .domain([0, (maxCount as number) * 1.2]);
+      const colorScale = scaleSequential(
+        interpolateRgb(BRAND_BUBBLE_LIGHT, BRAND_BUBBLE_DARK),
+      ).domain([1, Math.max(1, maxCount)]);
 
       // Grid Lines (Horizontal)
       g.selectAll(".grid-line-h")
@@ -244,7 +249,7 @@ export const BubbleChart: React.FC<BubbleChartProps> = ({ patents, onSelectBubbl
       bubbleGroups.append("circle")
         .attr("r", (d: any) => radiusScale(d.count))
         .attr("fill", (d: any) => colorScale(d.count))
-        .attr("opacity", 0.8)
+        .attr("opacity", 0.92)
         .attr("stroke", "#ffffff")
         .attr("stroke-width", 2)
         .style("cursor", "pointer")
@@ -303,7 +308,7 @@ export const BubbleChart: React.FC<BubbleChartProps> = ({ patents, onSelectBubbl
     <div className="w-full h-full bg-white flex flex-col overflow-hidden">
       {/* Special Header Section */}
       <div className="flex-shrink-0 px-8 py-6 border-b border-slate-100 bg-slate-50/50">
-        <h2 className="text-2xl font-black text-slate-900 tracking-tight">Assignee Competitive Landscape</h2>
+        <h2 className="text-2xl font-semibold tracking-tight text-slate-900">Assignee Competitive Landscape</h2>
         <p className="text-sm text-slate-500 font-medium mt-1">Technology Domains by Key Assignees</p>
       </div>
 
@@ -325,26 +330,26 @@ export const BubbleChart: React.FC<BubbleChartProps> = ({ patents, onSelectBubbl
           >
             <div className="flex items-start justify-between gap-3">
               <div>
-                <div className="text-[11px] font-black uppercase tracking-[0.18em] text-blue-600">
+                <div className="text-xs font-medium uppercase tracking-[0.16em] text-blue-600">
                   {hoveredBubble.count} patent{hoveredBubble.count === 1 ? '' : 's'}
                 </div>
-                <h3 className="mt-1 text-sm font-black text-slate-900">{hoveredBubble.assignee}</h3>
+                <h3 className="mt-1 text-sm font-semibold text-slate-900">{hoveredBubble.assignee}</h3>
                 <p className="mt-1 text-xs font-medium text-slate-500">{hoveredBubble.domain}</p>
               </div>
-              <div className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
+              <div className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
                 {hoveredBubble.count}
               </div>
             </div>
 
             <div className="mt-3">
-              <div className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
+              <div className="text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
                 Level 2 Subdomains
               </div>
               <div className="mt-2 flex flex-wrap gap-2">
                 {hoveredBubble.subdomains.map((subdomain) => (
                   <span
                     key={subdomain}
-                    className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-bold text-blue-700"
+                    className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-medium text-blue-700"
                   >
                     {subdomain}
                   </span>
@@ -355,7 +360,7 @@ export const BubbleChart: React.FC<BubbleChartProps> = ({ patents, onSelectBubbl
             <div className="mt-3 space-y-1.5">
               {hoveredBubble.patents.slice(0, 3).map((patent) => (
                 <div key={patent.publicationNumber} className="rounded-xl bg-slate-50 px-3 py-2">
-                  <div className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
+                  <div className="text-xs font-medium uppercase tracking-[0.14em] text-slate-500">
                     {patent.publicationNumber}
                   </div>
                   <div className="mt-1 line-clamp-2 text-xs font-medium text-slate-700">
@@ -367,7 +372,7 @@ export const BubbleChart: React.FC<BubbleChartProps> = ({ patents, onSelectBubbl
 
             <Link
               to={hoveredBubble.href}
-              className="mt-4 inline-flex items-center rounded-xl bg-blue-600 px-4 py-2 text-xs font-black uppercase tracking-wider text-white transition-colors hover:bg-blue-700"
+              className="mt-4 inline-flex items-center rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
               onClick={() => {
                 if (hoveredBubble.patents.length === 1 && onSelectPatent) {
                   onSelectPatent(hoveredBubble.patents[0]);

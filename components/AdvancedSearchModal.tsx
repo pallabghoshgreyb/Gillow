@@ -62,8 +62,8 @@ const AdvancedSearchModal: React.FC<AdvancedSearchModalProps> = ({ isOpen, onClo
               <Filter size={20} />
             </div>
             <div>
-              <h3 className="font-black text-slate-900 text-xl tracking-tight">Advanced Technical Search</h3>
-              <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mt-0.5">Refined IP Discovery Engine</p>
+              <h3 className="text-xl font-semibold tracking-tight text-slate-900">Advanced Technical Search</h3>
+              <p className="mt-0.5 text-xs font-medium uppercase tracking-[0.16em] text-slate-500">Refined IP Discovery Engine</p>
             </div>
           </div>
           <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 transition-colors bg-white rounded-full shadow-sm border border-slate-100">
@@ -75,19 +75,19 @@ const AdvancedSearchModal: React.FC<AdvancedSearchModalProps> = ({ isOpen, onClo
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Boolean Logic */}
             <div className="space-y-4">
-              <label className="text-xs font-black text-slate-400 uppercase tracking-[0.1em] flex items-center gap-2">
+              <label className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
                 <Target size={14} /> Search Logic
               </label>
               <div className="flex bg-slate-100 p-1 rounded-xl">
                 <button 
                   onClick={() => setFormData({...formData, booleanMode: 'AND'})}
-                  className={`flex-1 py-2 text-xs font-black rounded-lg transition-all ${formData.booleanMode === 'AND' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500'}`}
+                  className={`flex-1 rounded-lg py-2 text-sm font-medium transition-all ${formData.booleanMode === 'AND' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500'}`}
                 >
                   ALL TERMS (AND)
                 </button>
                 <button 
                   onClick={() => setFormData({...formData, booleanMode: 'OR'})}
-                  className={`flex-1 py-2 text-xs font-black rounded-lg transition-all ${formData.booleanMode === 'OR' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500'}`}
+                  className={`flex-1 rounded-lg py-2 text-sm font-medium transition-all ${formData.booleanMode === 'OR' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500'}`}
                 >
                   ANY TERM (OR)
                 </button>
@@ -96,7 +96,7 @@ const AdvancedSearchModal: React.FC<AdvancedSearchModalProps> = ({ isOpen, onClo
 
             {/* Scope */}
             <div className="space-y-4">
-              <label className="text-xs font-black text-slate-400 uppercase tracking-[0.1em] flex items-center gap-2">
+              <label className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
                 <Search size={14} /> Search Within
               </label>
               <div className="flex flex-wrap gap-2">
@@ -104,7 +104,7 @@ const AdvancedSearchModal: React.FC<AdvancedSearchModalProps> = ({ isOpen, onClo
                   <button 
                     key={field}
                     onClick={() => handleToggleIn(field)}
-                    className={`px-3 py-1.5 rounded-lg border text-[10px] font-black uppercase tracking-wider transition-all ${formData.searchIn.includes(field) ? 'bg-blue-50 border-blue-600 text-blue-600' : 'bg-white border-slate-200 text-slate-400 hover:border-slate-300'}`}
+                    className={`rounded-lg border px-3 py-1.5 text-xs font-medium uppercase tracking-[0.14em] transition-all ${formData.searchIn.includes(field) ? 'border-blue-600 bg-blue-50 text-blue-600' : 'border-slate-200 bg-white text-slate-400 hover:border-slate-300'}`}
                   >
                     {field}
                   </button>
@@ -114,7 +114,7 @@ const AdvancedSearchModal: React.FC<AdvancedSearchModalProps> = ({ isOpen, onClo
 
             {/* Thresholds */}
             <div className="space-y-6 md:col-span-2 pt-4 border-t border-slate-50">
-               <label className="text-xs font-black text-slate-400 uppercase tracking-[0.1em] flex items-center gap-2">
+               <label className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
                  <Zap size={14} /> Technical Thresholds
                </label>
                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -141,13 +141,13 @@ const AdvancedSearchModal: React.FC<AdvancedSearchModalProps> = ({ isOpen, onClo
 
             {/* Legal Filters */}
             <div className="md:col-span-2 space-y-4 pt-4 border-t border-slate-50">
-              <label className="text-xs font-black text-slate-400 uppercase tracking-[0.1em] flex items-center gap-2">
+              <label className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
                 <Layers size={14} /> Jurisdiction
               </label>
               <select
                 value={formData.jurisdiction}
                 onChange={(e) => setFormData({ ...formData, jurisdiction: e.target.value })}
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 outline-none focus:border-blue-500"
+                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none focus:border-blue-500"
               >
                 {jurisdictions.map((jurisdiction) => (
                   <option key={jurisdiction} value={jurisdiction}>
@@ -164,8 +164,8 @@ const AdvancedSearchModal: React.FC<AdvancedSearchModalProps> = ({ isOpen, onClo
                     <Calendar size={16} />
                   </div>
                   <div>
-                    <div className="text-sm font-black text-slate-900">Exclude Expired Patents</div>
-                    <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Show only enforceable patents</div>
+                    <div className="text-sm font-medium text-slate-900">Exclude Expired Patents</div>
+                    <div className="text-xs font-medium uppercase tracking-[0.14em] text-slate-500">Show only enforceable patents</div>
                   </div>
                 </div>
                 <button 
@@ -182,14 +182,14 @@ const AdvancedSearchModal: React.FC<AdvancedSearchModalProps> = ({ isOpen, onClo
         <div className="p-8 bg-slate-50 border-t border-slate-100 flex gap-4">
           <button 
             onClick={() => setFormData(DEFAULT_FORM_DATA)}
-            className="flex-1 px-6 py-3.5 bg-white border border-slate-200 text-slate-600 font-black rounded-2xl hover:bg-slate-50 transition-all uppercase text-xs tracking-widest"
+            className="flex-1 rounded-2xl border border-slate-200 bg-white px-6 py-3.5 text-sm font-medium text-slate-600 transition-all hover:bg-slate-50"
           >
             Clear All
           </button>
           <button 
             onClick={() => { onSearch(formData); onClose(); }}
             disabled={formData.searchIn.length === 0}
-            className="flex-1 px-6 py-3.5 bg-blue-600 text-white font-black rounded-2xl shadow-xl shadow-blue-200 hover:bg-blue-700 transition-all uppercase text-xs tracking-widest flex items-center justify-center gap-2 active:scale-95"
+            className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-blue-600 px-6 py-3.5 text-sm font-semibold text-white shadow-xl shadow-blue-200 transition-all hover:bg-blue-700 active:scale-95"
           >
             Execute Search <ArrowRight size={16} />
           </button>
@@ -202,8 +202,8 @@ const AdvancedSearchModal: React.FC<AdvancedSearchModalProps> = ({ isOpen, onClo
 const ThresholdInput = ({ label, value, onChange, max }: { label: string, value: number, onChange: (v: number) => void, max: number }) => (
   <div className="space-y-2">
     <div className="flex justify-between items-center">
-      <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">{label}</span>
-      <span className="text-xs font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded">{value}{label.includes('$M') ? 'M+' : '+'}</span>
+      <span className="text-xs font-medium uppercase tracking-[0.14em] text-slate-500">{label}</span>
+      <span className="rounded bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600">{value}{label.includes('$M') ? 'M+' : '+'}</span>
     </div>
     <input 
       type="range" 

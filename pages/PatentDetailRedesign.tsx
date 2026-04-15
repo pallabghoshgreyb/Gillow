@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { Patent } from '../types';
 import { api } from '../utils/api';
+import { formatCompactCurrency } from '../utils/patentDisplay';
 import { shareContent } from '../utils/shareUtils';
 import OwnershipSection from '../components/OwnershipSection';
 import FeeStatusSection from '../components/FeeStatusSection';
@@ -33,7 +34,6 @@ import GlobalPatentFamilySection from '../components/GlobalPatentFamilySection';
 import GovernmentStandardsSection from '../components/GovernmentStandardsSection';
 import QuickJumpNavigation, { type QuickJumpItem } from '../components/QuickJumpNavigation';
 
-const FONT = '"Inter", ui-sans-serif, system-ui, sans-serif';
 const EASE = [0.22, 1, 0.36, 1] as const;
 const CARD = 'rounded-3xl border border-slate-200 bg-white shadow-[0_2px_16px_rgba(15,23,42,0.03)]';
 const INTERACTIVE = `${CARD} transition duration-300 hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-[0_10px_28px_rgba(15,23,42,0.06)]`;
@@ -85,6 +85,7 @@ const COUNTRY_CODES: Record<string, string> = {
 };
 
 type Tone = 'granted' | 'pending' | 'expired';
+type ContinuityTone = 'granted' | 'pending' | 'abandoned' | 'expired';
 type StepState = 'completed' | 'current' | 'upcoming';
 type Step = {
   id: string;
@@ -93,6 +94,24 @@ type Step = {
   detail: string;
   state: StepState;
   badge?: string;
+  trackCodes: string[];
+};
+type ContinuityMiniStep = { label: string; state: 'done' | 'current' | 'upcoming' };
+type ContinuityApp = {
+  relation: string;
+  publicationNumber: string;
+  filingDate: string;
+  statusLabel: string;
+  tone: ContinuityTone;
+  trackCodes: string[];
+  miniTimeline: ContinuityMiniStep[];
+};
+type Lifecycle = {
+  title: string;
+  description: string;
+  steps: Step[];
+  trackCodes: string[];
+  continuityApps: ContinuityApp[];
 };
 type Claim = { label: string; value: number; hint: string; icon: LucideIcon };
 type History = { id: string; title: string; date: string; detail: string; tone: 'done' | 'active' | 'muted' };
@@ -106,7 +125,7 @@ type View = {
   confidence: number;
   abstractPreview: string;
   abstractRest: string;
-  timeline: Step[];
+  timeline: Lifecycle;
   claims: Claim[];
   classifications: string[];
   strength: number;
@@ -130,14 +149,13 @@ const formatDate = (value?: string, fallback = 'Not disclosed') => {
   return parsed.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 };
 
-const formatMoney = (value: number) => {
-  if (!Number.isFinite(value) || value <= 0) return '$1.4M';
-  if (value >= 1_000_000_000) return `$${(value / 1_000_000_000).toFixed(1)}B`;
-  return `$${(value / 1_000_000).toFixed(1)}M`;
-};
+const normalizeUpper = (value: string) => value.trim().toUpperCase();
+
+const uniqUpper = (items: string[]) =>
+  Array.from(new Set(items.filter(hasText).map((item) => normalizeUpper(item))));
 
 const leadAssignee = (patent: Patent) =>
-  patent.currentAssignees[0] || patent.originalAssignees[0] || patent.applicants[0] || patent.assignee.name || 'PatentXchange listing';
+  patent.currentAssignees[0] || patent.originalAssignees[0] || patent.assignee.name || 'PatentIntent listing';
 
 const statusOf = (patent: Patent) => {
   const status = `${patent.legalStatus || ''} ${patent.simpleLegalStatus || ''}`;
@@ -150,6 +168,100 @@ const statusClasses = (tone: Tone) => {
   if (tone === 'granted') return 'border-teal-200 bg-teal-50 text-teal-700';
   if (tone === 'expired') return 'border-slate-200 bg-slate-100 text-slate-700';
   return 'border-sky-200 bg-sky-50 text-sky-700';
+};
+
+const continuityStatusOf = (
+  publicationNumber: string,
+  matchedPatent?: Patent,
+): { label: string; tone: ContinuityTone } => {
+  const legalStatus = matchedPatent
+    ? `${matchedPatent.legalStatus || ''} ${matchedPatent.simpleLegalStatus || ''}`
+    : '';
+  const normalized = normalizeUpper(publicationNumber);
+
+  if (/abandoned/i.test(legalStatus)) return { label: 'Abandoned', tone: 'abandoned' };
+  if (/expired|dead|lapsed/i.test(legalStatus)) return { label: 'Expired', tone: 'expired' };
+  if (/granted|issued|alive/i.test(legalStatus)) return { label: 'Granted', tone: 'granted' };
+  if (/(?:B\d?|C\d?|T\d?)$/.test(normalized)) return { label: 'Granted', tone: 'granted' };
+  if (/(?:A\d?)$/.test(normalized)) return { label: 'Pending', tone: 'pending' };
+  return { label: 'Expired', tone: 'expired' };
+};
+
+const buildMiniTimeline = (
+  tone: ContinuityTone,
+  matchedPatent?: Patent,
+): ContinuityMiniStep[] => {
+  if (tone === 'abandoned') {
+    return [
+      { label: 'Filing', state: 'done' },
+      { label: 'Examination', state: 'done' },
+      { label: 'Abandon', state: 'current' },
+    ];
+  }
+
+  if (tone === 'expired') {
+    return [
+      { label: 'Filing', state: 'done' },
+      { label: 'Grant', state: 'done' },
+      { label: 'Expired', state: 'current' },
+    ];
+  }
+
+  if (tone === 'granted') {
+    return [
+      { label: 'Filing', state: 'done' },
+      { label: 'Examination', state: 'done' },
+      ...(hasText(matchedPatent?.allowanceDate)
+        ? [{ label: 'Allowance', state: 'done' as const }]
+        : []),
+      { label: 'Grant', state: 'current' },
+    ];
+  }
+
+  return [
+    { label: 'Filing', state: 'done' },
+    { label: 'Examination', state: 'current' },
+    { label: 'Grant', state: 'upcoming' },
+  ];
+};
+
+const groupTrackCodesByStep = (patent: Patent) => {
+  const buckets: Record<string, string[]> = {
+    filing: [],
+    'first-action': [],
+    examination: [],
+    rce: [],
+    allowance: [],
+    grant: [],
+  };
+
+  uniqUpper(patent.trackOneCodes).forEach((code) => {
+    if (/^(T1ON|T1OFF|MPDPH|PDPH)/.test(code)) {
+      buckets.filing.push(code);
+      return;
+    }
+
+    if (code === 'TK1R') {
+      if (patent.rceCount > 0) buckets.rce.push(code);
+      else buckets.allowance.push(code);
+      return;
+    }
+
+    if (/^T1GR/.test(code)) {
+      buckets.grant.push(code);
+      return;
+    }
+
+    if (/^(MPD|PDT)/.test(code)) {
+      if (hasText(patent.firstActionDate)) buckets['first-action'].push(code);
+      else buckets.examination.push(code);
+      return;
+    }
+
+    buckets.examination.push(code);
+  });
+
+  return buckets;
 };
 
 const splitAbstract = (text: string) => {
@@ -167,36 +279,104 @@ const splitAbstract = (text: string) => {
 const timelineCurrentStepId = (patent: Patent, tone: Tone) => {
   if (tone === 'expired') return 'expiry';
   if (tone === 'granted') return 'grant';
-  if (hasText(patent.publicationDate)) return 'publication';
-  if (hasText(patent.allowanceDate)) return 'allowance';
   if (patent.rceCount > 0) return 'rce';
+  if (hasText(patent.allowanceDate)) return 'allowance';
   if (patent.officeActionsCount > 0) return 'examination';
   if (hasText(patent.firstActionDate)) return 'first-action';
   return 'filing';
 };
 
-const buildTimeline = (patent: Patent, status: { label: string; tone: Tone }) => {
+const buildContinuityApps = (patent: Patent, catalog: Patent[]) => {
+  const relationTokens = patent.cipConDiv
+    .filter(hasText)
+    .map((value) => normalizeUpper(value));
+  const currentPublication = normalizeUpper(patent.publicationNumber);
+  const candidateMembers = uniqUpper(patent.inpadocFamilyMembers)
+    .filter((member) => member !== currentPublication)
+    .sort((left, right) => {
+      const leftPatent = catalog.find(
+        (item) => normalizeUpper(item.publicationNumber) === left,
+      );
+      const rightPatent = catalog.find(
+        (item) => normalizeUpper(item.publicationNumber) === right,
+      );
+      const leftPriority = left.startsWith(normalizeUpper(patent.jurisdiction || ''))
+        ? 0
+        : 1;
+      const rightPriority = right.startsWith(normalizeUpper(patent.jurisdiction || ''))
+        ? 0
+        : 1;
+      if (leftPriority !== rightPriority) return leftPriority - rightPriority;
+      const leftDate = leftPatent?.filingDate ? new Date(leftPatent.filingDate).getTime() : Number.MAX_SAFE_INTEGER;
+      const rightDate = rightPatent?.filingDate ? new Date(rightPatent.filingDate).getTime() : Number.MAX_SAFE_INTEGER;
+      if (leftDate !== rightDate) return leftDate - rightDate;
+      return left.localeCompare(right);
+    });
+
+  return relationTokens
+    .map((relation, index) => {
+      const publicationNumber = candidateMembers[index];
+      if (!publicationNumber) return null;
+      const matchedPatent = catalog.find(
+        (item) => normalizeUpper(item.publicationNumber) === publicationNumber,
+      );
+      const status = continuityStatusOf(publicationNumber, matchedPatent);
+      const fallbackTrackCodes = uniqUpper(patent.trackOneCodes).slice(index, index + 2);
+      const trackCodes =
+        matchedPatent && matchedPatent.trackOneCodes.length > 0
+          ? uniqUpper(matchedPatent.trackOneCodes)
+          : fallbackTrackCodes.length > 0
+            ? fallbackTrackCodes
+            : uniqUpper(patent.trackOneCodes).slice(0, 2);
+
+      return {
+        relation,
+        publicationNumber,
+        filingDate: matchedPatent
+          ? formatDate(matchedPatent.filingDate)
+          : formatDate(patent.filingDate),
+        statusLabel: status.label,
+        tone: status.tone,
+        trackCodes,
+        miniTimeline: buildMiniTimeline(status.tone, matchedPatent),
+      } satisfies ContinuityApp;
+    })
+    .filter((app): app is ContinuityApp => Boolean(app));
+};
+
+const buildTimeline = (
+  patent: Patent,
+  status: { label: string; tone: Tone },
+  catalog: Patent[],
+): Lifecycle => {
+  const trackByStep = groupTrackCodesByStep(patent);
   const steps: Omit<Step, 'state'>[] = [
     {
       id: 'filing',
       label: 'Filing',
       date: formatDate(patent.filingDate),
       detail: `Application ${hasText(patent.applicationNumber) ? patent.applicationNumber : 'record'} established priority and opened prosecution.`,
+      trackCodes: trackByStep.filing,
     },
     {
       id: 'first-action',
-      label: 'First Office Action',
+      label: '1st Action',
       date: hasText(patent.firstActionDate) ? formatDate(patent.firstActionDate) : 'In review',
       detail: hasText(patent.firstActionDate)
         ? 'The first substantive office action established the initial examination posture.'
         : 'No dated first office action is surfaced in the current record.',
+      trackCodes: trackByStep['first-action'],
     },
     {
       id: 'examination',
       label: 'Examination',
-      date: patent.officeActionsCount > 0 ? 'Active review' : 'Awaiting review',
-      detail: patent.officeActionsCount > 0 ? `${patent.officeActionsCount} recorded office action${patent.officeActionsCount === 1 ? '' : 's'} shaped the examination path.` : 'No office action count is surfaced in the current record yet.',
+      date: patent.officeActionsCount > 0 ? `${patent.officeActionsCount} office actions` : 'Awaiting review',
+      detail:
+        patent.officeActionsCount > 0
+          ? `${patent.officeActionsCount} recorded office action${patent.officeActionsCount === 1 ? '' : 's'} shaped the examination path.`
+          : 'No office action count is surfaced in the current record yet.',
       badge: patent.officeActionsCount > 0 ? `${patent.officeActionsCount} OA` : undefined,
+      trackCodes: trackByStep.examination,
     },
     ...(patent.rceCount > 0
       ? [
@@ -205,34 +385,42 @@ const buildTimeline = (patent: Patent, status: { label: string; tone: Tone }) =>
             label: 'RCE Filed',
             date: patent.rceCount === 1 ? '1 request' : `${patent.rceCount} requests`,
             detail: `${patent.rceCount} request${patent.rceCount === 1 ? '' : 's'} for continued examination ${patent.rceCount === 1 ? 'was' : 'were'} recorded before final disposition.`,
+            trackCodes: trackByStep.rce,
           },
         ]
       : []),
     {
       id: 'allowance',
-      label: 'Allowed',
+      label: 'Allowance',
       date: hasText(patent.allowanceDate) ? formatDate(patent.allowanceDate) : 'Pending',
       detail: hasText(patent.allowanceDate)
         ? 'Allowance indicates the application cleared examination and moved toward issuance.'
         : 'No allowance date is currently surfaced in the prosecution record.',
-    },
-    {
-      id: 'publication',
-      label: 'Publication',
-      date: formatDate(patent.publicationDate, 'Pending'),
-      detail: `Public disclosure under ${patent.publicationNumber || 'the published application'} expanded visibility and citation potential.`,
+      trackCodes: trackByStep.allowance,
     },
     {
       id: 'grant',
-      label: 'Granted',
-      date: status.tone === 'granted' ? formatDate(patent.publicationDate || patent.allowanceDate) : 'Pending',
-      detail: status.tone === 'granted' ? 'Rights are active and licensable, with current status aligned to a granted posture.' : 'Disposition is still evolving and should be confirmed during diligence.',
+      label: 'Grant',
+      date:
+        status.tone === 'granted'
+          ? formatDate(patent.publicationDate || patent.allowanceDate)
+          : status.tone === 'expired'
+            ? formatDate(patent.publicationDate || patent.allowanceDate, 'Historical')
+            : 'Pending',
+      detail:
+        status.tone === 'granted'
+          ? 'Rights are active and licensable, with current status aligned to a granted posture.'
+          : status.tone === 'expired'
+            ? 'The granted term has concluded based on the surfaced legal status.'
+            : 'Disposition is still evolving and should be confirmed during diligence.',
+      trackCodes: trackByStep.grant,
     },
     {
       id: 'expiry',
       label: 'Expiry',
       date: formatDate(patent.estimatedExpirationDate),
       detail: 'Expected term end based on current filing data and standard patent term assumptions.',
+      trackCodes: [],
     },
   ];
   const current = Math.max(
@@ -240,10 +428,16 @@ const buildTimeline = (patent: Patent, status: { label: string; tone: Tone }) =>
     steps.findIndex((step) => step.id === timelineCurrentStepId(patent, status.tone)),
   );
 
-  return steps.map((step, index) => ({
-    ...step,
-    state: index < current ? 'completed' : index === current ? 'current' : 'upcoming',
-  })) as Step[];
+  return {
+    title: 'Patent lifecycle',
+    description: 'Application prosecution with continuity family.',
+    steps: steps.map((step, index) => ({
+      ...step,
+      state: index < current ? 'completed' : index === current ? 'current' : 'upcoming',
+    })) as Step[],
+    trackCodes: uniqUpper(patent.trackOneCodes),
+    continuityApps: buildContinuityApps(patent, catalog),
+  };
 };
 
 const buildHistory = (patent: Patent, status: { label: string; tone: Tone }): History[] => [
@@ -303,7 +497,7 @@ const relatedSummary = (patent: Patent) => {
   return `Technical fit in ${patent.domain || 'medical robotics'} with claim posture suited to comparison and diligence.`;
 };
 
-const makeView = (patent: Patent): View => {
+const makeView = (patent: Patent, catalog: Patent[]): View => {
   const title = hasText(patent.title) ? patent.title : 'Surgical robotics systems and devices having a sterile restart, and methods thereof';
   const abstract = hasText(patent.abstract)
     ? patent.abstract
@@ -323,7 +517,7 @@ const makeView = (patent: Patent): View => {
     confidence: clamp(Math.round((strength * 0.78) + 20), 72, 98),
     abstractPreview: split.preview,
     abstractRest: split.rest,
-    timeline: buildTimeline(patent, status),
+    timeline: buildTimeline(patent, status, catalog),
     claims: [
       { label: 'Independent claims', value: patent.independentClaimsCount || 1, hint: 'Core coverage', icon: ShieldCheck },
       { label: 'Dependent claims', value: patent.dependentClaimsCount || Math.max(totalClaims - (patent.independentClaimsCount || 1), 0), hint: 'Fallback protection', icon: Link2 },
@@ -348,6 +542,7 @@ const PatentDetailRedesign: React.FC = () => {
   const { patentId } = useParams();
   const navigate = useNavigate();
   const [patent, setPatent] = useState<Patent | null>(null);
+  const [catalog, setCatalog] = useState<Patent[]>([]);
   const [related, setRelated] = useState<Patent[]>([]);
   const [loading, setLoading] = useState(true);
   const [shareFeedback, setShareFeedback] = useState('');
@@ -356,13 +551,14 @@ const PatentDetailRedesign: React.FC = () => {
   const [mobileStepId, setMobileStepId] = useState('');
   const [activeJumpId, setActiveJumpId] = useState('overview');
   const [availableJumpIds, setAvailableJumpIds] = useState<string[]>([]);
-  const view = useMemo(() => (patent ? makeView(patent) : null), [patent]);
+  const view = useMemo(() => (patent ? makeView(patent, catalog) : null), [patent, catalog]);
 
   useEffect(() => {
     let alive = true;
     const load = async () => {
       if (!patentId) {
         setPatent(null);
+        setCatalog([]);
         setRelated([]);
         setLoading(false);
         return;
@@ -374,17 +570,20 @@ const PatentDetailRedesign: React.FC = () => {
         if (!alive) return;
         if (!current) {
           setPatent(null);
+          setCatalog(allPatents);
           setRelated([]);
           setLoading(false);
           return;
         }
         setPatent(current);
+        setCatalog(allPatents);
         const ranked = allPatents.filter((item) => item.id !== current.id).sort((a, b) => patentScore(current, b) - patentScore(current, a));
         setRelated((ranked.length > 0 ? ranked : allPatents.filter((item) => item.id !== current.id)).slice(0, 3));
       } catch (error) {
         console.error('Failed to load patent detail page', error);
         if (!alive) return;
         setPatent(null);
+        setCatalog([]);
         setRelated([]);
       } finally {
         if (alive) setLoading(false);
@@ -397,8 +596,10 @@ const PatentDetailRedesign: React.FC = () => {
   }, [patentId]);
 
   useEffect(() => {
-    if (!view?.timeline.length) return;
-    const current = view.timeline.find((step) => step.state === 'current') || view.timeline[0];
+    if (!view?.timeline.steps.length) return;
+    const current =
+      view.timeline.steps.find((step) => step.state === 'current') ||
+      view.timeline.steps[0];
     setActiveStepId(current.id);
     setMobileStepId(current.id);
   }, [view]);
@@ -499,10 +700,12 @@ const PatentDetailRedesign: React.FC = () => {
   if (loading) return <Skeleton />;
   if (!patent || !view) return <NotFound onBack={() => navigate('/browse')} />;
 
-  const activeStep = view.timeline.find((step) => step.id === activeStepId) || view.timeline[0];
+  const activeStep =
+    view.timeline.steps.find((step) => step.id === activeStepId) ||
+    view.timeline.steps[0];
 
   return (
-    <div className="min-h-screen bg-white text-slate-900" style={{ fontFamily: FONT }}>
+    <div className="min-h-screen bg-white text-slate-900">
       <main className="mx-auto max-w-[1320px] px-4 pb-10 pt-8 sm:px-6 sm:pt-10 lg:px-8 lg:pt-12">
         <div className="lg:grid lg:grid-cols-[minmax(0,1.7fr)_minmax(320px,0.75fr)] lg:gap-12 xl:gap-16">
           <div className="space-y-12">
@@ -568,8 +771,8 @@ const PatentDetailRedesign: React.FC = () => {
             </RevealBlock>
 
             <motion.section id="timeline" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, delay: 0.22, ease: EASE }} className="scroll-mt-28 space-y-5">
-              <SectionIntro eyebrow="Patent timeline" title="Compact lifecycle view" description="A quick read on where the patent sits in prosecution and term." />
-              <PatentTimeline steps={view.timeline} activeStep={activeStep} activeStepId={activeStepId} mobileStepId={mobileStepId} onDesktopHover={setActiveStepId} onMobileToggle={setMobileStepId} />
+              <SectionIntro eyebrow="Patent lifecycle" title={view.timeline.title} description={view.timeline.description} />
+              <PatentTimeline timeline={view.timeline} activeStep={activeStep} activeStepId={activeStepId} mobileStepId={mobileStepId} onDesktopHover={setActiveStepId} onMobileToggle={setMobileStepId} onOpenPatent={(publicationNumber) => navigate(`/patent/${publicationNumber}`)} />
             </motion.section>
 
             <RevealBlock id="claims" delay={0.24}>
@@ -613,7 +816,7 @@ const PatentDetailRedesign: React.FC = () => {
                 <motion.div whileHover={{ y: -2, boxShadow: '0 10px 28px rgba(15,23,42,0.06)' }} className={cn('p-6 sm:p-8', INTERACTIVE)}>
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                     <div>
-                      <p className="text-sm font-medium uppercase tracking-[0.16em] text-teal-700">PatentXchange score</p>
+                      <p className="text-sm font-medium uppercase tracking-[0.16em] text-teal-700">PatentIntent score</p>
                       <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Licensing-readiness signal</h2>
                     </div>
                     <div className="text-right">
@@ -663,7 +866,6 @@ const PatentDetailRedesign: React.FC = () => {
                 currentAssignees={patent.currentAssignees}
                 originalAssignees={patent.originalAssignees}
                 inventors={patent.inventors}
-                applicants={patent.applicants}
               />
             </RevealBlock>
 
@@ -742,7 +944,7 @@ const PatentDetailRedesign: React.FC = () => {
         </RevealBlock>
 
         <div className="mt-8 border-t border-slate-100 pt-5 text-sm text-slate-400">
-          PatentXchange editorial view combines structured patent metadata with a calmer, reader-first detail experience for quick diligence.
+          PatentIntent editorial view combines structured patent metadata with a calmer, reader-first detail experience for quick diligence.
         </div>
       </main>
     </div>
@@ -763,46 +965,140 @@ const SectionIntro = ({ eyebrow, title, description }: { eyebrow: string; title:
   </div>
 );
 
+const relationClasses = (relation: string) => {
+  if (relation.startsWith('CIP')) return 'border-amber-200 bg-amber-50 text-amber-700';
+  if (relation.startsWith('CON')) return 'border-teal-200 bg-teal-50 text-teal-700';
+  if (relation.startsWith('DIV')) return 'border-slate-200 bg-slate-50 text-slate-700';
+  if (relation.startsWith('PRO')) return 'border-violet-200 bg-violet-50 text-violet-700';
+  return 'border-slate-200 bg-slate-50 text-slate-700';
+};
+
+const continuityStatusClasses = (tone: ContinuityTone) => {
+  if (tone === 'granted') return 'bg-teal-500';
+  if (tone === 'pending') return 'bg-amber-500';
+  if (tone === 'abandoned') return 'bg-red-500';
+  return 'bg-slate-400';
+};
+
+const TrackOneBadge: React.FC<{ code: string }> = ({ code }) => {
+  const colors: Record<string, string> = {
+    T1ON: 'bg-blue-50 text-blue-700 border-blue-200',
+    T1GR: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    MPDTG: 'bg-amber-50 text-amber-700 border-amber-200',
+    PDTG: 'bg-orange-50 text-orange-700 border-orange-200',
+    TK1R: 'bg-red-50 text-red-700 border-red-200',
+    T1OFF: 'bg-slate-100 text-slate-500 border-slate-200',
+  };
+
+  return (
+    <span
+      className={`inline-flex rounded border px-2 py-0.5 text-xs font-medium ${colors[code] || colors.T1OFF}`}
+    >
+      {code}
+    </span>
+  );
+};
+
 const PatentTimeline = ({
-  steps,
+  timeline,
   activeStep,
   activeStepId,
   mobileStepId,
   onDesktopHover,
   onMobileToggle,
+  onOpenPatent,
 }: {
-  steps: Step[];
+  timeline: Lifecycle;
   activeStep: Step;
   activeStepId: string;
   mobileStepId: string;
   onDesktopHover: (id: string) => void;
   onMobileToggle: (id: string) => void;
+  onOpenPatent: (publicationNumber: string) => void;
 }) => {
+  const { steps, trackCodes, continuityApps } = timeline;
   const currentIndex = Math.max(0, steps.findIndex((step) => step.state === 'current'));
   const fillPercent = steps.length > 1 ? (currentIndex / (steps.length - 1)) * 100 : 0;
+  const [continuityExpanded, setContinuityExpanded] = useState(continuityApps.length < 4);
+
+  useEffect(() => {
+    setContinuityExpanded(continuityApps.length < 4);
+  }, [continuityApps.length, timeline.title]);
+
+  const visibleContinuityApps = continuityExpanded
+    ? continuityApps
+    : continuityApps.slice(0, 3);
+
   return (
     <>
       <div className={cn('hidden p-6 md:block', CARD)}>
-        <div className="overflow-x-auto">
-          <div className="relative min-w-[880px] px-2 pt-1">
-            <div className="absolute left-6 right-6 top-5 h-0.5 bg-slate-200" />
-            <motion.div initial={{ width: 0 }} animate={{ width: `calc((100% - 3rem) * ${fillPercent / 100})` }} transition={{ duration: 0.7, ease: EASE }} className="absolute left-6 top-5 h-0.5 bg-teal-500" />
-            <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))` }}>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+              Primary application
+            </p>
+            <p className="mt-2 text-sm font-medium text-slate-900">
+              {steps[0]?.date || 'Filing not disclosed'}
+            </p>
+          </div>
+          {trackCodes.length > 0 ? (
+            <div className="flex max-w-[46%] flex-wrap justify-end gap-2">
+              {trackCodes.map((code) => (
+                <TrackOneBadge key={code} code={code} />
+              ))}
+            </div>
+          ) : null}
+        </div>
+
+        <div className="relative px-1 pt-8 lg:px-2">
+          <div className="absolute left-5 right-5 top-5 h-0.5 bg-slate-200" />
+          <motion.div initial={{ width: 0 }} animate={{ width: `calc((100% - 2.5rem) * ${fillPercent / 100})` }} transition={{ duration: 0.7, ease: EASE }} className="absolute left-5 top-5 h-0.5 bg-teal-500" />
+          <div className="grid gap-2 lg:gap-3" style={{ gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))` }}>
             {steps.map((step) => (
-              <button key={step.id} type="button" onMouseEnter={() => onDesktopHover(step.id)} onFocus={() => onDesktopHover(step.id)} className={cn('group relative flex flex-col items-center text-center', FOCUS)}>
-                <div className={cn('relative z-[1] flex h-10 w-10 items-center justify-center rounded-full border bg-white transition', step.state === 'completed' ? 'border-teal-500 bg-teal-500 text-white' : step.state === 'current' ? 'border-teal-500 bg-teal-500 text-white shadow-[0_0_0_8px_rgba(20,184,166,0.12)]' : 'border-slate-200 text-slate-300')}>
-                  {step.state === 'completed' ? <Check size={16} /> : <span className="h-2.5 w-2.5 rounded-full bg-current" />}
+              <button
+                key={step.id}
+                type="button"
+                title={step.trackCodes.length > 0 ? `Track-One: ${step.trackCodes.join(', ')}` : undefined}
+                onMouseEnter={() => onDesktopHover(step.id)}
+                onFocus={() => onDesktopHover(step.id)}
+                className={cn('group relative flex min-w-0 flex-col items-center text-center', FOCUS)}
+              >
+                <div
+                  className={cn(
+                    'relative z-[1] flex h-9 w-9 items-center justify-center rounded-full border bg-white transition lg:h-10 lg:w-10',
+                    step.state === 'completed'
+                      ? 'border-teal-500 bg-teal-500 text-white'
+                      : step.state === 'current'
+                        ? 'border-teal-500 bg-teal-500 text-white shadow-[0_0_0_8px_rgba(20,184,166,0.12)]'
+                        : 'border-slate-200 text-slate-300',
+                  )}
+                >
+                  {step.state === 'completed' ? (
+                    <Check size={16} />
+                  ) : (
+                    <span className="h-2.5 w-2.5 rounded-full bg-current" />
+                  )}
                 </div>
-                <span className={cn('mt-4 text-sm font-semibold transition', step.id === activeStepId ? 'text-slate-900' : 'text-slate-500 group-hover:text-slate-900')}>{step.label}</span>
+                <span
+                  className={cn(
+                    'mt-3 break-words text-[13px] font-semibold leading-4 transition lg:text-sm',
+                    step.id === activeStepId
+                      ? 'text-slate-900'
+                      : 'text-slate-500 group-hover:text-slate-900',
+                  )}
+                >
+                  {step.label}
+                </span>
                 {step.badge && (
-                  <span className="mt-2 inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-600">
+                  <span className="mt-2 inline-flex max-w-full rounded-full bg-slate-100 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-600 lg:px-2.5 lg:text-[11px]">
                     {step.badge}
                   </span>
                 )}
-                <span className="mt-1 text-xs text-slate-400">{step.date}</span>
+                <span className="mt-1 break-words text-[11px] leading-4 text-slate-400 lg:text-xs">
+                  {step.date}
+                </span>
               </button>
             ))}
-            </div>
           </div>
         </div>
         <AnimatePresence mode="wait">
@@ -819,43 +1115,210 @@ const PatentTimeline = ({
               <p className="text-xs font-medium uppercase tracking-[0.14em] text-slate-400">{activeStep.date}</p>
             </div>
             <p className="mt-2 text-sm leading-6 text-slate-600">{activeStep.detail}</p>
+            {activeStep.trackCodes.length > 0 ? (
+              <div className="mt-4 flex flex-wrap gap-2">
+                {activeStep.trackCodes.map((code) => (
+                  <TrackOneBadge key={`${activeStep.id}-${code}`} code={code} />
+                ))}
+              </div>
+            ) : null}
           </motion.div>
         </AnimatePresence>
-      </div>
-      <div className="space-y-3 md:hidden">
-        {steps.map((step) => {
-          const isOpen = mobileStepId === step.id;
-          return (
-            <div key={step.id} className={cn('overflow-hidden', CARD)}>
-              <button type="button" onClick={() => onMobileToggle(isOpen ? '' : step.id)} className={cn('flex w-full items-center justify-between gap-4 px-5 py-4 text-left', FOCUS)}>
-                <div className="flex items-center gap-4">
-                  <div className={cn('flex h-10 w-10 items-center justify-center rounded-full border bg-white', step.state === 'completed' ? 'border-teal-500 bg-teal-500 text-white' : step.state === 'current' ? 'border-teal-500 bg-teal-500 text-white' : 'border-slate-200 text-slate-300')}>
-                    {step.state === 'completed' ? <Check size={16} /> : <span className="h-2.5 w-2.5 rounded-full bg-current" />}
-                  </div>
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-sm font-semibold text-slate-900">{step.label}</p>
-                      {step.badge && (
-                        <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-600">
-                          {step.badge}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-slate-400">{step.date}</p>
-                  </div>
-                </div>
-                <motion.span animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.2 }}><ChevronDown size={18} className="text-slate-400" /></motion.span>
-              </button>
-              <AnimatePresence initial={false}>
-                {isOpen && (
-                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.28, ease: EASE }} className="overflow-hidden">
-                    <div className="border-t border-slate-100 px-5 py-4 text-sm leading-6 text-slate-600">{step.detail}</div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+
+        {continuityApps.length > 0 ? (
+          <div className="mt-6 rounded-2xl border border-slate-200 bg-white px-5 py-5">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                  Continuity applications
+                </p>
+                <p className="mt-1 text-sm text-slate-600">
+                  Continuations, divisionals, and CIPs branching from the family.
+                </p>
+              </div>
+              {continuityApps.length > 3 ? (
+                <button
+                  type="button"
+                  onClick={() => setContinuityExpanded((value) => !value)}
+                  className={cn('rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-teal-200 hover:text-teal-700', FOCUS)}
+                >
+                  {continuityExpanded ? 'Collapse' : `Show all ${continuityApps.length}`}
+                </button>
+              ) : null}
             </div>
-          );
-        })}
+
+            <div className="relative mt-5 space-y-4 pl-7">
+              <div className="absolute bottom-0 left-3 top-2 w-px bg-slate-200" />
+              {visibleContinuityApps.map((app) => (
+                <button
+                  key={`${app.relation}-${app.publicationNumber}`}
+                  type="button"
+                  onClick={() => onOpenPatent(app.publicationNumber)}
+                  className={cn('group relative block w-full rounded-2xl border border-slate-200 bg-slate-50/70 p-4 text-left transition hover:-translate-y-0.5 hover:border-teal-200 hover:bg-white hover:shadow-[0_10px_28px_rgba(15,23,42,0.06)]', FOCUS)}
+                >
+                  <span className="absolute left-[-20px] top-6 h-px w-5 bg-slate-200" />
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className={cn('inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold font-mono', relationClasses(app.relation))}>
+                          {app.relation}
+                        </span>
+                        <span className="font-mono text-sm font-semibold text-slate-900">
+                          {app.publicationNumber}
+                        </span>
+                      </div>
+                      <p className="mt-2 text-sm text-slate-500">Filed {app.filingDate}</p>
+                    </div>
+                    <span className="text-sm font-medium text-slate-600">{app.statusLabel}</span>
+                  </div>
+
+                  <div className="mt-4 flex items-center gap-3">
+                    {app.miniTimeline.map((step, index) => (
+                      <React.Fragment key={`${app.publicationNumber}-${step.label}`}>
+                        <span
+                          className={cn(
+                            'inline-flex h-3 w-3 rounded-full',
+                            step.state === 'done'
+                              ? continuityStatusClasses(app.tone)
+                              : step.state === 'current'
+                                ? continuityStatusClasses(app.tone)
+                                : 'bg-slate-200',
+                          )}
+                        />
+                        <span className="text-xs font-medium text-slate-500">{step.label}</span>
+                        {index < app.miniTimeline.length - 1 ? (
+                          <span className="h-px flex-1 bg-slate-200" />
+                        ) : null}
+                      </React.Fragment>
+                    ))}
+                  </div>
+
+                  {app.trackCodes.length > 0 ? (
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {app.trackCodes.map((code) => (
+                        <TrackOneBadge key={`${app.publicationNumber}-${code}`} code={code} />
+                      ))}
+                    </div>
+                  ) : null}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
+      </div>
+
+      <div className="space-y-3 md:hidden">
+        <div className={cn('overflow-hidden p-5', CARD)}>
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+            Primary application
+          </p>
+          <div className="mt-4 space-y-4">
+            {steps.map((step) => {
+              const isOpen = mobileStepId === step.id;
+              return (
+                <div key={step.id} className="rounded-2xl border border-slate-200 bg-white">
+                  <button type="button" onClick={() => onMobileToggle(isOpen ? '' : step.id)} className={cn('flex w-full items-center justify-between gap-4 px-4 py-4 text-left', FOCUS)}>
+                    <div className="flex items-center gap-4">
+                      <div className={cn('flex h-10 w-10 items-center justify-center rounded-full border bg-white', step.state === 'completed' ? 'border-teal-500 bg-teal-500 text-white' : step.state === 'current' ? 'border-teal-500 bg-teal-500 text-white' : 'border-slate-200 text-slate-300')}>
+                        {step.state === 'completed' ? <Check size={16} /> : <span className="h-2.5 w-2.5 rounded-full bg-current" />}
+                      </div>
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-sm font-semibold text-slate-900">{step.label}</p>
+                          {step.badge ? (
+                            <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-600">
+                              {step.badge}
+                            </span>
+                          ) : null}
+                        </div>
+                        <p className="text-xs text-slate-400">{step.date}</p>
+                      </div>
+                    </div>
+                    <motion.span animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.2 }}><ChevronDown size={18} className="text-slate-400" /></motion.span>
+                  </button>
+                  <AnimatePresence initial={false}>
+                    {isOpen && (
+                      <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.28, ease: EASE }} className="overflow-hidden">
+                        <div className="border-t border-slate-100 px-4 py-4">
+                          <p className="text-sm leading-6 text-slate-600">{step.detail}</p>
+                          {step.trackCodes.length > 0 ? (
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              {step.trackCodes.map((code) => (
+                                <TrackOneBadge key={`${step.id}-mobile-${code}`} code={code} />
+                              ))}
+                            </div>
+                          ) : null}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              );
+            })}
+          </div>
+
+          {trackCodes.length > 0 ? (
+            <div className="mt-5 flex flex-wrap gap-2">
+              {trackCodes.map((code) => (
+                <TrackOneBadge key={`mobile-track-${code}`} code={code} />
+              ))}
+            </div>
+          ) : null}
+        </div>
+
+        {continuityApps.length > 0 ? (
+          <div className={cn('overflow-hidden p-5', CARD)}>
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                  Continuity applications
+                </p>
+                <p className="mt-1 text-sm text-slate-600">
+                  Swipe through related continuations and divisionals.
+                </p>
+              </div>
+              {continuityApps.length > 3 ? (
+                <button
+                  type="button"
+                  onClick={() => setContinuityExpanded((value) => !value)}
+                  className={cn('rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:border-teal-200 hover:text-teal-700', FOCUS)}
+                >
+                  {continuityExpanded ? 'Less' : 'More'}
+                </button>
+              ) : null}
+            </div>
+
+            <div className="-mx-5 mt-4 flex snap-x gap-3 overflow-x-auto px-5 pb-1">
+              {visibleContinuityApps.map((app) => (
+                <button
+                  key={`mobile-${app.relation}-${app.publicationNumber}`}
+                  type="button"
+                  onClick={() => onOpenPatent(app.publicationNumber)}
+                  className={cn('min-w-[260px] snap-start rounded-2xl border border-slate-200 bg-slate-50/70 p-4 text-left transition hover:border-teal-200', FOCUS)}
+                >
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className={cn('inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold font-mono', relationClasses(app.relation))}>
+                      {app.relation}
+                    </span>
+                    <span className="font-mono text-sm font-semibold text-slate-900">
+                      {app.publicationNumber}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-sm text-slate-500">Filed {app.filingDate}</p>
+                  <div className="mt-3 flex items-center gap-2">
+                    <span className={cn('h-2.5 w-2.5 rounded-full', continuityStatusClasses(app.tone))} />
+                    <span className="text-sm font-medium text-slate-700">{app.statusLabel}</span>
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {app.trackCodes.map((code) => (
+                      <TrackOneBadge key={`mobile-${app.publicationNumber}-${code}`} code={code} />
+                    ))}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
       </div>
     </>
   );
@@ -866,7 +1329,7 @@ const SidebarCard = ({ patent, view, shareFeedback, onDownload, onShare }: { pat
     <div className="space-y-6">
       <div className="rounded-[28px] border border-amber-100 bg-amber-50/80 p-6 shadow-[0_16px_36px_rgba(245,158,11,0.12)]">
         <p className="text-xs font-medium uppercase tracking-[0.16em] text-amber-600">Indicative valuation</p>
-        <p className="mt-3 text-[3rem] font-semibold leading-none tracking-tight text-amber-500 tabular-nums">{formatMoney(view.valuation)}</p>
+        <p className="mt-3 text-[3rem] font-semibold leading-none tracking-tight text-amber-500 tabular-nums">{formatCompactCurrency(view.valuation)}</p>
         <div className="mt-5 rounded-2xl border border-white/80 bg-white/80 px-4 py-3">
           <div className="flex items-center justify-between gap-3 text-sm"><span className="font-medium text-slate-500">Confidence score</span><span className="font-semibold tabular-nums text-slate-900">{view.confidence}/100</span></div>
           <div className="mt-3 h-2 rounded-full bg-slate-100"><div className="h-full rounded-full bg-teal-500" style={{ width: `${view.confidence}%` }} /></div>
@@ -901,7 +1364,7 @@ const Shimmer = ({ className }: { className: string }) => (
 );
 
 const Skeleton = () => (
-  <div className="min-h-screen bg-white" style={{ fontFamily: FONT }}>
+  <div className="min-h-screen bg-white">
     <main className="mx-auto max-w-[1320px] px-4 pb-16 pt-8 sm:px-6 sm:pt-10 lg:px-8 lg:pt-12">
       <div className="lg:grid lg:grid-cols-[minmax(0,1.7fr)_minmax(320px,0.75fr)] lg:gap-12 xl:gap-16">
         <div className="space-y-16">
@@ -920,7 +1383,7 @@ const Skeleton = () => (
 );
 
 const NotFound = ({ onBack }: { onBack: () => void }) => (
-  <div className="min-h-screen bg-white" style={{ fontFamily: FONT }}>
+  <div className="min-h-screen bg-white">
     <main className="mx-auto flex min-h-[70vh] max-w-3xl items-center justify-center px-4 sm:px-6 lg:px-8">
       <div className={cn('w-full p-8 text-center sm:p-10', CARD)}>
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-50 text-teal-600"><FileSearch2 size={24} /></div>

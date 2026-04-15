@@ -39,8 +39,8 @@ const SidePanel: React.FC<SidePanelProps> = ({ node, onClose }) => {
       {/* Header */}
       <div className="p-6 border-b border-slate-100 flex justify-between items-start">
         <div>
-            <div className="text-xs font-bold text-blue-600 uppercase tracking-wider mb-1">{node.domain}</div>
-            <h2 className="text-2xl font-bold text-slate-900 leading-tight">{node.name}</h2>
+            <div className="mb-1 text-xs font-medium uppercase tracking-[0.16em] text-blue-600">{node.domain}</div>
+            <h2 className="text-2xl font-semibold leading-tight text-slate-900">{node.name}</h2>
         </div>
         <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors p-1 hover:bg-slate-50 rounded-full">
           <X size={24} />
@@ -57,7 +57,7 @@ const SidePanel: React.FC<SidePanelProps> = ({ node, onClose }) => {
                     <FileText size={16} />
                     <span className="text-xs uppercase font-semibold">Volume</span>
                 </div>
-                <div className="text-2xl font-bold text-slate-900">{node.patentCount.toLocaleString()}</div>
+                <div className="text-2xl font-semibold text-slate-900">{node.patentCount.toLocaleString()}</div>
                 <div className="text-xs text-emerald-600 flex items-center gap-1 mt-1 font-medium">
                     <TrendingUp size={12} />
                     +{node.growth}% Growth
@@ -68,7 +68,7 @@ const SidePanel: React.FC<SidePanelProps> = ({ node, onClose }) => {
                     <Building2 size={16} />
                     <span className="text-xs uppercase font-semibold">Lead Entity</span>
                 </div>
-                <div className="text-sm font-bold text-slate-800 line-clamp-2">{node.topAssignee}</div>
+                <div className="line-clamp-2 text-sm font-semibold text-slate-800">{node.topAssignee}</div>
             </div>
         </div>
 
@@ -106,7 +106,7 @@ const SidePanel: React.FC<SidePanelProps> = ({ node, onClose }) => {
 
         {/* Info */}
         <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
-             <h4 className="text-sm font-bold text-blue-800 mb-1">Landscape Context</h4>
+             <h4 className="mb-1 text-sm font-medium text-blue-800">Landscape Context</h4>
              <p className="text-xs text-blue-700 leading-relaxed">
                  {node.level === TechLevel.DOMAIN
                    ? `${node.name} is a primary technology domain in this landscape.`
@@ -121,7 +121,7 @@ const SidePanel: React.FC<SidePanelProps> = ({ node, onClose }) => {
       <div className="p-6 border-t border-slate-100 bg-white">
         <button 
             onClick={() => navigate(`/technology/${node.id}`)}
-            className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2 shadow-lg shadow-blue-100"
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-100 transition-colors hover:bg-blue-700"
         >
             View Detailed Analysis
             <ArrowRight size={18} />

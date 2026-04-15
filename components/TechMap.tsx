@@ -278,7 +278,7 @@ const TechMap: React.FC<TechMapProps> = ({ nodes, onSelectNode, selectedNodeId, 
             .attr("fill", isDomain ? "#64748b" : "#94a3b8")
             .attr("font-size", "8px")
             .attr("font-weight", "900")
-            .attr("font-family", "monospace");
+            .attr("font-family", "var(--font-sans)");
 
         labelGroup.append("text")
             .attr("x", 12)
@@ -319,18 +319,18 @@ const TechMap: React.FC<TechMapProps> = ({ nodes, onSelectNode, selectedNodeId, 
       {showLegend && (
         <div className="absolute left-4 top-4 z-10 space-y-4 md:left-8 md:top-8">
           <div className="w-[calc(100vw-2rem)] max-w-64 bg-white/95 p-4 backdrop-blur-xl rounded-3xl border border-slate-200 shadow-xl md:p-5">
-            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+            <h3 className="mb-4 flex items-center gap-2 text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
               <Layers size={14} className="text-blue-600"/> Technical Discovery
             </h3>
             <div className="space-y-2">
               {nodes.filter(n => n.level === TechLevel.DOMAIN).map(n => (
                 <div key={n.id} className="flex items-center gap-3">
                   <div className="w-2.5 h-2.5 rounded-full" style={{ background: n.color }} />
-                  <span className="text-[11px] font-bold text-slate-700">{n.name}</span>
+                  <span className="text-sm font-medium text-slate-700">{n.name}</span>
                 </div>
               ))}
             </div>
-            <div className="mt-4 pt-4 border-t border-slate-100 text-[10px] text-slate-400 font-bold uppercase tracking-tighter leading-relaxed">
+            <div className="mt-4 border-t border-slate-100 pt-4 text-xs font-medium uppercase tracking-[0.14em] leading-relaxed text-slate-400">
               Zoom out for high-level technical Domains. Zoom in to uncover specialized technical Subdomains.
             </div>
           </div>

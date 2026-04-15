@@ -84,7 +84,7 @@ const Search: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-[calc(100vh-80px)] bg-white font-sans">
+    <div className="flex min-h-[calc(100vh-80px)] flex-col bg-white">
       
       {/* Search & Action Toolbar */}
       <div className="flex-shrink-0 bg-white border-b border-slate-100 z-40 shadow-sm relative">
@@ -125,7 +125,7 @@ const Search: React.FC = () => {
                       <select 
                         value={filters.sortBy}
                         onChange={(e) => updateFilters({ sortBy: e.target.value as any })}
-                        className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:border-[#00bdcd] cursor-pointer shadow-sm"
+                        className="cursor-pointer rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm outline-none focus:border-[#00bdcd]"
                       >
                           <option value="relevance">Relevance</option>
                           <option value="newest">Newest Listed</option>
@@ -143,7 +143,7 @@ const Search: React.FC = () => {
 
               {/* Filtering Pills */}
               <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
-                  <div className="flex items-center gap-1 px-3 py-1.5 bg-slate-900 text-white rounded-lg text-[10px] font-black uppercase tracking-widest mr-2">
+                  <div className="mr-2 flex items-center gap-1 rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium uppercase tracking-[0.16em] text-white">
                     <Filter size={12} /> Technology Domains
                   </div>
                   {quickDomainFilters.map(domain => {
@@ -152,7 +152,7 @@ const Search: React.FC = () => {
                           <button 
                             key={domain}
                             onClick={() => updateFilters({ categories: isActive ? [] : [domain] })}
-                            className={`px-4 py-1.5 rounded-full border text-xs font-bold whitespace-nowrap transition-all shadow-sm ${isActive ? 'bg-[#00bdcd] border-[#00bdcd] text-white' : 'bg-white border-slate-200 text-slate-600 hover:border-[#00bdcd]'}`}
+                            className={`whitespace-nowrap rounded-full border px-4 py-1.5 text-xs font-medium transition-all shadow-sm ${isActive ? 'bg-[#00bdcd] border-[#00bdcd] text-white' : 'bg-white border-slate-200 text-slate-600 hover:border-[#00bdcd]'}`}
                           >
                               {domain}
                           </button>
@@ -181,21 +181,21 @@ const Search: React.FC = () => {
             <div className="p-8">
                 <div className="flex items-center justify-between mb-8">
                     <div>
-                        <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+                        <h2 className="text-2xl font-semibold tracking-tight text-slate-900">
                            {query ? `Search: "${query}"` : filters.assignees[0] ? `${filters.assignees[0]} Portfolio View` : 'Marketplace Hub'}
                         </h2>
-                        <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">
+                        <div className="mt-1 text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
                             Found {filteredPatents.length} patent{filteredPatents.length === 1 ? '' : 's'}
                         </div>
                     </div>
                     <div className="flex flex-col items-stretch gap-3 md:flex-row md:items-center">
                         {view !== 'map' && filteredPatents.length > 0 && (
                             <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-2 shadow-sm">
-                                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Patents Per Page</span>
+                                <span className="text-xs font-medium uppercase tracking-[0.16em] text-slate-400">Patents Per Page</span>
                                 <select
                                   value={pageSize}
                                   onChange={(e) => setPageSize(Number(e.target.value))}
-                                  className="bg-transparent text-sm font-black text-slate-700 outline-none"
+                                  className="bg-transparent text-sm font-medium text-slate-700 outline-none"
                                 >
                                   {[10, 20, 50, 100].map((size) => (
                                     <option key={size} value={size}>{size}</option>
@@ -205,7 +205,7 @@ const Search: React.FC = () => {
                         )}
                         <button 
                             onClick={() => setIsSaveModalOpen(true)}
-                            className="flex items-center justify-center gap-2 text-xs font-black text-[#00bdcd] hover:bg-blue-50 px-5 py-3 rounded-xl transition-all bg-white border border-blue-100 shadow-sm"
+                            className="flex items-center justify-center gap-2 rounded-xl border border-blue-100 bg-white px-5 py-3 text-sm font-semibold text-[#00bdcd] shadow-sm transition-all hover:bg-blue-50"
                         >
                             <Save size={16} /> Save this search
                         </button>
@@ -218,7 +218,7 @@ const Search: React.FC = () => {
                             <button
                                 key={`assignee-${assignee}`}
                                 onClick={() => removeFilterValue('assignees', assignee)}
-                                className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700"
+                                className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700"
                             >
                                 Assignee: {assignee} x
                             </button>
@@ -227,7 +227,7 @@ const Search: React.FC = () => {
                             <button
                                 key={`category-${category}`}
                                 onClick={() => removeFilterValue('categories', category)}
-                                className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700"
+                                className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700"
                             >
                                 Domain: {category} x
                             </button>
@@ -236,7 +236,7 @@ const Search: React.FC = () => {
                             <button
                                 key={`sub-${subCategory}`}
                                 onClick={() => removeFilterValue('subCategories', subCategory)}
-                                className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700"
+                                className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700"
                             >
                                 Subdomain: {subCategory} x
                             </button>
@@ -245,7 +245,7 @@ const Search: React.FC = () => {
                             <button
                                 key={`status-${status}`}
                                 onClick={() => removeFilterValue('statuses', status)}
-                                className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700"
+                                className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700"
                             >
                                 Status: {status} x
                             </button>
@@ -254,14 +254,14 @@ const Search: React.FC = () => {
                             <button
                                 key={`type-${type}`}
                                 onClick={() => removeFilterValue('patentTypes', type)}
-                                className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700"
+                                className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700"
                             >
                                 Type: {type} x
                             </button>
                         ))}
                         <button
                             onClick={resetFilters}
-                            className="rounded-full px-3 py-1.5 text-xs font-black text-slate-500 hover:text-slate-900"
+                            className="rounded-full px-3 py-1.5 text-xs font-medium text-slate-500 hover:text-slate-900"
                         >
                             Clear all
                         </button>
@@ -286,10 +286,10 @@ const Search: React.FC = () => {
                 ) : filteredPatents.length > 0 ? (
                     <>
                     <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm md:flex-row md:items-center md:justify-between">
-                        <div className="text-sm font-bold text-slate-600">
+                        <div className="text-sm font-medium text-slate-600">
                             Showing <span className="text-slate-900">{startResult}-{endResult}</span> of <span className="text-slate-900">{filteredPatents.length}</span> patents
                         </div>
-                        <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                        <div className="text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
                             Page {safeCurrentPage} of {totalPages}
                         </div>
                     </div>
@@ -312,7 +312,7 @@ const Search: React.FC = () => {
                                 <button
                                   onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
                                   disabled={safeCurrentPage === 1}
-                                  className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-600 shadow-sm transition-all hover:border-[#00bdcd] hover:text-[#00bdcd] disabled:cursor-not-allowed disabled:opacity-40"
+                                  className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-sm transition-all hover:border-[#00bdcd] hover:text-[#00bdcd] disabled:cursor-not-allowed disabled:opacity-40"
                                 >
                                   <ChevronLeft size={16} />
                                   Prev
@@ -322,12 +322,12 @@ const Search: React.FC = () => {
                                     <button
                                       key={page}
                                       onClick={() => setCurrentPage(page)}
-                                      className={`min-w-10 rounded-xl px-3 py-2 text-sm font-black shadow-sm transition-all ${page === safeCurrentPage ? 'bg-[#00bdcd] text-white' : 'border border-slate-200 bg-white text-slate-600 hover:border-[#00bdcd] hover:text-[#00bdcd]'}`}
+                                      className={`min-w-10 rounded-xl px-3 py-2 text-sm font-medium shadow-sm transition-all ${page === safeCurrentPage ? 'bg-[#00bdcd] text-white' : 'border border-slate-200 bg-white text-slate-600 hover:border-[#00bdcd] hover:text-[#00bdcd]'}`}
                                     >
                                       {page}
                                     </button>
                                   ) : (
-                                    <span key={`${page}-${index}`} className="px-2 text-sm font-black text-slate-300">
+                                    <span key={`${page}-${index}`} className="px-2 text-sm font-medium text-slate-300">
                                       ...
                                     </span>
                                   )
@@ -335,7 +335,7 @@ const Search: React.FC = () => {
                                 <button
                                   onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
                                   disabled={safeCurrentPage === totalPages}
-                                  className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-600 shadow-sm transition-all hover:border-[#00bdcd] hover:text-[#00bdcd] disabled:cursor-not-allowed disabled:opacity-40"
+                                  className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-sm transition-all hover:border-[#00bdcd] hover:text-[#00bdcd] disabled:cursor-not-allowed disabled:opacity-40"
                                 >
                                   Next
                                   <ChevronRight size={16} />
@@ -346,10 +346,10 @@ const Search: React.FC = () => {
                     </>
                 ) : (
                     <div className="bg-white rounded-[2rem] border border-slate-200 p-24 flex flex-col items-center text-center max-w-2xl mx-auto shadow-sm mt-10">
-                        <h3 className="text-3xl font-black text-slate-900 mb-4">No patents found</h3>
+                        <h3 className="mb-4 text-3xl font-semibold text-slate-900">No patents found</h3>
                         <button 
                             onClick={resetFilters}
-                            className="px-10 py-4 bg-slate-900 text-white font-black rounded-2xl hover:bg-slate-800 transition-all shadow-xl active:scale-95"
+                            className="rounded-2xl bg-slate-900 px-10 py-4 font-semibold text-white shadow-xl transition-all hover:bg-slate-800 active:scale-95"
                         >
                             Reset Filters
                         </button>
@@ -370,9 +370,9 @@ const Search: React.FC = () => {
           <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-bottom-10 duration-500">
               <div className="bg-slate-900 text-white px-8 py-4 rounded-2xl shadow-2xl flex items-center gap-4 border border-slate-700 backdrop-blur-md">
                   <CheckCircle2 size={24} className="text-emerald-400" />
-                  <span className="font-bold">Patent parameters archived</span>
+                  <span className="font-medium">Patent parameters archived</span>
                   <div className="w-px h-6 bg-slate-700 mx-2" />
-                  <button onClick={() => setShowSavedToast(false)} className="text-xs text-slate-400 hover:text-white uppercase font-black tracking-widest">Dismiss</button>
+                  <button onClick={() => setShowSavedToast(false)} className="text-xs font-medium uppercase tracking-[0.16em] text-slate-400 hover:text-white">Dismiss</button>
               </div>
           </div>
       )}

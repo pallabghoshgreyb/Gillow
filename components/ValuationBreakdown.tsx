@@ -50,7 +50,7 @@ export const ValuationBreakdown: React.FC<ValuationBreakdownProps> = ({ patent }
           <ShieldCheck size={24} />
         </div>
         <div>
-          <div className="text-[10px] font-black text-emerald-800 uppercase tracking-widest leading-none mb-1">PatentXchange Valuation Model V4</div>
+          <div className="text-[10px] font-black text-emerald-800 uppercase tracking-widest leading-none mb-1">PatentIntent Valuation Model V4</div>
           <p className="text-[11px] text-emerald-700 font-medium leading-relaxed italic">
             Computed estimate based on historical transaction data, citation velocity, and multi-jurisdictional family depth.
           </p>

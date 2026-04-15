@@ -151,7 +151,7 @@ const TechDetail: React.FC = () => {
   if (!techInfo) {
     return (
         <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center gap-4">
-             <h2 className="text-xl font-bold text-slate-800">Technology Not Found</h2>
+             <h2 className="text-xl font-semibold text-slate-800">Technology Not Found</h2>
              <button onClick={() => navigate('/')} className="text-blue-600 hover:underline flex items-center gap-2">
                 <ArrowLeft size={16} /> Back to Landscape
              </button>
@@ -171,7 +171,7 @@ const TechDetail: React.FC = () => {
         </div>
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
-                <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-2">{techInfo.name} Landscape</h1>
+                <h1 className="mb-2 text-3xl font-semibold text-slate-900 md:text-4xl">{techInfo.name} Landscape</h1>
                 <p className="text-slate-500 max-w-2xl">
                     Deep dive into patent filings, assignee trends, and technological breakthroughs in the {techInfo.level === TechLevel.DOMAIN ? `${techInfo.name} domain` : `${techInfo.name} subdomain within ${techInfo.domain}`}.
                 </p>
@@ -179,7 +179,7 @@ const TechDetail: React.FC = () => {
             <div className="flex gap-3">
                 <button
                   onClick={() => exportTechLandscapeReport(techInfo, filteredPatents, `${techInfo.id}-landscape-report.csv`)}
-                  className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 rounded-md text-sm font-medium transition-colors flex items-center gap-2 border border-slate-300 shadow-sm"
+                  className="flex items-center gap-2 rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
                 >
                     <Download size={16} /> Export Report
                 </button>
@@ -196,7 +196,7 @@ const TechDetail: React.FC = () => {
             <div className="flex flex-wrap items-center gap-3 p-4 bg-white rounded-lg border border-slate-200 sticky top-4 z-10 shadow-sm">
                 <div className="flex items-center gap-2 text-slate-500 mr-2">
                     <Filter size={18} />
-                    <span className="text-sm font-semibold">Filters:</span>
+                    <span className="text-sm font-medium">Filters:</span>
                 </div>
                 {visibleFilters.length > 0 ? (
                   visibleFilters.map((filterConfig) => (
@@ -233,22 +233,22 @@ const TechDetail: React.FC = () => {
                 
                 {/* Insight Card 1 */}
                 <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
-                    <h3 className="text-lg font-semibold text-slate-800 mb-4">Market Velocity</h3>
+                    <h3 className="mb-4 text-lg font-semibold text-slate-800">Market Velocity</h3>
                     <div className="flex items-end gap-2 mb-2">
-                        <span className="text-4xl font-bold text-blue-600">{marketVelocity.label}</span>
+                        <span className="text-4xl font-semibold text-blue-600">{marketVelocity.label}</span>
                         <span className="text-sm text-slate-500 mb-1">Activity Level</span>
                     </div>
                     <div className="w-full bg-slate-100 rounded-full h-2 mb-4">
                         <div className="bg-blue-600 h-2 rounded-full" style={{ width: marketVelocity.width }}></div>
                     </div>
                     <p className="text-sm text-slate-600 leading-relaxed">
-                        Filings have {marketVelocity.change >= 0 ? 'increased' : 'decreased'} by <span className={`${marketVelocity.change >= 0 ? 'text-emerald-600' : 'text-red-600'} font-bold`}>{Math.abs(marketVelocity.change)}%</span> versus the prior filing year in this technology slice.
+                        Filings have {marketVelocity.change >= 0 ? 'increased' : 'decreased'} by <span className={`${marketVelocity.change >= 0 ? 'text-emerald-600' : 'text-red-600'} font-semibold`}>{Math.abs(marketVelocity.change)}%</span> versus the prior filing year in this technology slice.
                     </p>
                 </div>
 
                  {/* Insight Card 2: Top Assignees */}
                  <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
-                    <h3 className="text-lg font-semibold text-slate-800 mb-4">Key Players</h3>
+                    <h3 className="mb-4 text-lg font-semibold text-slate-800">Key Players</h3>
                     <ul className="space-y-4">
                         {competitorRows.map((player, index) => (
                           <PlayerRow key={player.name} rank={index + 1} name={player.name} count={player.count} />
@@ -276,7 +276,7 @@ const FilterSelect: React.FC<{
   onChange,
 }) => (
     <label className="flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-600">
-        <span className="font-semibold">{label}</span>
+        <span className="font-medium text-slate-700">{label}</span>
         <select
           value={value}
           onChange={(event) => onChange(event.target.value)}
@@ -295,10 +295,10 @@ const FilterSelect: React.FC<{
 const PatentCard: React.FC<{ patent: Patent; onClick: () => void }> = ({ patent, onClick }) => (
     <div onClick={onClick} className="bg-white border border-slate-200 rounded-lg p-5 hover:border-blue-400 hover:shadow-md transition-all cursor-pointer group">
         <div className="flex justify-between items-start mb-2">
-            <span className="text-xs font-mono text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">{patent.id}</span>
+            <span className="rounded border border-blue-100 bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">{patent.id}</span>
             <span className="text-xs text-slate-400">{patent.publicationDate}</span>
         </div>
-        <h3 className="text-lg font-semibold text-slate-800 mb-2 group-hover:text-blue-600 transition-colors">{patent.title}</h3>
+        <h3 className="mb-2 text-lg font-semibold text-slate-800 transition-colors group-hover:text-blue-600">{patent.title}</h3>
         {patent.abstract && (
           <p className="text-sm text-slate-600 line-clamp-2 mb-4">{patent.abstract}</p>
         )}
@@ -306,14 +306,14 @@ const PatentCard: React.FC<{ patent: Patent; onClick: () => void }> = ({ patent,
         <div className="flex items-center gap-4 text-xs text-slate-500 border-t border-slate-100 pt-3">
             <div className="flex items-center gap-1.5">
                 <Building2 size={14} className="text-slate-400" />
-                <span className="text-slate-700 font-medium">{patent.assignee.name}</span>
+                <span className="font-medium text-slate-700">{patent.assignee.name}</span>
             </div>
             <div className="flex items-center gap-1.5">
                 <MapPin size={14} className="text-slate-400" />
                 <span>{patent.jurisdiction}</span>
             </div>
              <div className="flex items-center gap-1.5 ml-auto">
-                <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 font-medium border border-blue-100">{patent.legalStatus || 'Unknown'}</span>
+                <span className="rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 font-medium text-blue-700">{patent.legalStatus || 'Unknown'}</span>
             </div>
         </div>
     </div>
@@ -322,10 +322,10 @@ const PatentCard: React.FC<{ patent: Patent; onClick: () => void }> = ({ patent,
 const PlayerRow: React.FC<{ rank: number; name: string; count: number }> = ({ rank, name, count }) => (
     <li className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-            <span className="w-5 h-5 flex items-center justify-center text-xs font-bold text-slate-500 bg-slate-100 rounded-full border border-slate-200">{rank}</span>
+            <span className="flex h-5 w-5 items-center justify-center rounded-full border border-slate-200 bg-slate-100 text-xs font-medium text-slate-500">{rank}</span>
             <span className="text-sm text-slate-700">{name}</span>
         </div>
-        <span className="text-sm font-mono text-slate-500">{count.toLocaleString()}</span>
+        <span className="text-sm font-semibold text-slate-500">{count.toLocaleString()}</span>
     </li>
 );
 

@@ -1,6 +1,7 @@
 import { Patent } from '../types';
 import { parsePatentRow } from '../utils/dataProcessor';
 
+// Generated from Copy of Gillow updated table struc.xlsx
 const CSV_JSON = [
   {
     "Publication Number": "US11844585B1",
@@ -23,7 +24,8 @@ const CSV_JSON = [
     "Applicants": "DISTALMOTION SA",
     "Current Assignees": "RVLHC II LLC",
     "CPCs": "A61B34/37 | A61B34/74 | A61B34/74 | A61B34/37 | A61B34/76 | A61B2017/00123 | A61B46/10 | B25J3/04 | B25J9/0084 | B25J19/0075 | B25J13/025 | A61B34/74 | A61B34/37",
-    "Domain": "Wearable Medical Devices",
+    "CPCs (2)": "A61B34/37",
+    "Domain": "Wearable Medical Devices ",
     "Subdomain": "-",
     "IPCs": "A61B34 37 | A61B34 00 | A61B34 37 | A61B34 00",
     "Legal Status": "Granted",
@@ -50,7 +52,13 @@ const CSV_JSON = [
     "Largest Families": "8",
     "Govt. Interest": "0",
     "SEP": "No",
-    "Litigation": "0"
+    "Litigation": "0",
+    "Patent Valuation": "$ 385000",
+    "Strategic value": "40",
+    "Market value": "77",
+    "Technology value": "30",
+    "Economic value": "33",
+    "Legal value": "70"
   },
   {
     "Publication Number": "US11478140B1",
@@ -73,7 +81,8 @@ const CSV_JSON = [
     "Applicants": "RAYTRX LLC",
     "Current Assignees": "SAGE CONSULTING & WAGE PRESERVATION INC",
     "CPCs": "A61B1/3132 | A61B1/00006 | A61B1/00018 | A61B1/00066 | A61B1/00087 | A61B1/00096 | A61B1/0676 | A61B1/0684 | A61B1/00087 | A61B1/05 | A61B1/3132 | A61B2090/365 | A61B2090/367 | A61B1/00183 | A61B1/000094 | A61B90/361 | A61B2090/502 | A61B2090/372 | A61B2090/371 | A61B2034/105 | A61B2034/2065 | A61B2090/309 | A61B2017/00203 | A61B2017/00207 | A61B2017/00216 | A61B1/00098 | A61B1/3132 | A61B1/05 | A61B1/00147 | A61B1/0684 | A61B1/00066 | A61B1/00087 | A61B1/00006 | A61B1/00018 | A61B1/00096 | A61B1/0676",
-    "Domain": "Consumables And Disposables",
+    "CPCs (2)": "A61B1/3132",
+    "Domain": "Consumables And Disposables ",
     "Subdomain": "-",
     "IPCs": "A61B1 00 | A61B1 313 | A61B1 06 | A61B1 00 | A61B1 06 | A61B1 313",
     "Legal Status": "Granted",
@@ -100,7 +109,13 @@ const CSV_JSON = [
     "Largest Families": "7",
     "Govt. Interest": "0",
     "SEP": "No",
-    "Litigation": "0"
+    "Litigation": "0",
+    "Patent Valuation": "$ 104500",
+    "Strategic value": "40",
+    "Market value": "45",
+    "Technology value": "32",
+    "Economic value": "33",
+    "Legal value": "65"
   },
   {
     "Publication Number": "US2022079424A1",
@@ -123,7 +138,8 @@ const CSV_JSON = [
     "Applicants": "RAYTRX LLC",
     "Current Assignees": "RAYTRX LLC",
     "CPCs": "A61B1/00098 | A61B1/3132 | A61B1/05 | A61B1/00147 | A61B1/0684 | A61B1/00066 | A61B1/00087 | A61B1/00087 | A61B1/05 | A61B1/3132 | A61B2090/365 | A61B2090/367 | A61B1/00183 | A61B1/000094 | A61B90/361 | A61B2090/502 | A61B2090/372 | A61B2090/371 | A61B2034/105 | A61B2034/2065 | A61B2090/309 | A61B2017/00203 | A61B2017/00207 | A61B2017/00216 | A61B1/00098 | A61B1/3132 | A61B1/05 | A61B1/00147 | A61B1/0684 | A61B1/00066 | A61B1/00087 | A61B1/00006 | A61B1/00018 | A61B1/00096 | A61B1/0676",
-    "Domain": "Surgical Devices",
+    "CPCs (2)": "A61B1/00098",
+    "Domain": "Surgical Devices ",
     "Subdomain": "Electrosurgical Devices",
     "IPCs": "A61B1 00 | A61B1 313 | A61B1 05 | A61B1 06 | A61B1 00 | A61B1 05 | A61B1 06 | A61B1 313",
     "Legal Status": "Abandoned",
@@ -150,7 +166,13 @@ const CSV_JSON = [
     "Largest Families": "7",
     "Govt. Interest": "0",
     "SEP": "No",
-    "Litigation": "0"
+    "Litigation": "0",
+    "Patent Valuation": "$ -",
+    "Strategic value": "-",
+    "Market value": "-",
+    "Technology value": "-",
+    "Economic value": "-",
+    "Legal value": "-"
   },
   {
     "Publication Number": "US11826057B1",
@@ -173,7 +195,8 @@ const CSV_JSON = [
     "Applicants": "LITTLE ENGINE LLC",
     "Current Assignees": "DYNAMIC BALANCER SYSTEMS LLC",
     "CPCs": "A61B17/157 | A61B17/1764 | A61B34/20 | A61B2034/2046 | A61B2034/105 | A61B2034/2055 | A61B17/155 | A61B2034/2048 | A61F2/38 | A61B5/4585 | A61B2034/2059 | A61B2090/502 | A61B2090/372 | A61B2090/365 | A61B34/20 | A61B2017/0268 | A61B17/025 | A61B2090/065 | A61B17/1764 | A61B17/157 | A61B2017/568 | A61F2002/4666 | A61F2002/4658 | A61F2/389 | A61F2/3859 | A61B17/157 | A61B2034/2046 | A61B34/20 | A61B17/1764",
-    "Domain": "Assistive Care Devices",
+    "CPCs (2)": "A61B17/157",
+    "Domain": "Assistive Care Devices ",
     "Subdomain": "Durable Medical Equipment",
     "IPCs": "A61B17 15 | A61B34 20 | A61B17 17 | A61B17 15 | A61B17 17 | A61B34 20",
     "Legal Status": "Granted",
@@ -200,7 +223,13 @@ const CSV_JSON = [
     "Largest Families": "4",
     "Govt. Interest": "0",
     "SEP": "No",
-    "Litigation": "0"
+    "Litigation": "0",
+    "Patent Valuation": "$ 47300",
+    "Strategic value": "51",
+    "Market value": "25",
+    "Technology value": "28",
+    "Economic value": "31",
+    "Legal value": "70"
   },
   {
     "Publication Number": "US12402868B1",
@@ -223,7 +252,8 @@ const CSV_JSON = [
     "Applicants": "PRAXIS HOLDING LLC",
     "Current Assignees": "PRAXIS HOLDING LLC",
     "CPCs": "A61B10/0283 | A61B34/30 | A61B90/06 | A61B2034/305 | A61B2090/066 | A61B2034/305 | A61B2090/066 | A61B34/30 | A61B90/06 | A61B10/0283 | A61B2090/064 | A61B2010/045 | A61B2010/0208 | A61B10/0233 | A61B10/0283 | A61B34/30 | A61B2090/066 | A61B2034/305 | A61B90/06",
-    "Domain": "Consumables And Disposables",
+    "CPCs (2)": "A61B10/0283",
+    "Domain": "Consumables And Disposables ",
     "Subdomain": "-",
     "IPCs": "A61B10 02 | A61B34 30 | A61B90 00 | A61B10 02 | A61B34 30 | A61B90 00",
     "Legal Status": "Granted",
@@ -250,7 +280,13 @@ const CSV_JSON = [
     "Largest Families": "1",
     "Govt. Interest": "0",
     "SEP": "No",
-    "Litigation": "0"
+    "Litigation": "0",
+    "Patent Valuation": "$ 48400",
+    "Strategic value": "44",
+    "Market value": "26",
+    "Technology value": "25",
+    "Economic value": "30",
+    "Legal value": "86"
   },
   {
     "Publication Number": "US11857151B2",
@@ -273,7 +309,8 @@ const CSV_JSON = [
     "Applicants": "STERIS INSTRUMENT MAN SERVICES INC",
     "Current Assignees": "INTEGRATED MEDICAL SYSTEMS INTERNATIONAL INC",
     "CPCs": "A61B1/00009 | A61B1/04 | G06T5/003 | G06T5/006 | G06T7/0012 | H04N23/67 | G06T5/005 | G06T7/174 | G06T2207/10068 | G06T2207/20221 | G06T2207/30168 | H04N23/6845 | H04N23/951 | A61B1/00009 | A61B1/00188 | A61B1/00179 | A61B1/00096 | A61B1/002 | A61B1/04 | G02B23/243 | G06T7/0004 | G06T2207/10016 | G06T2207/10068 | G06T2207/30168 | G06T2207/30164 | G06T2207/20221 | A61B1/00057 | H04N23/555 | H04N23/676 | G06T7/0012 | G06T2207/30168 | G06T7/174 | G06T2207/10068 | A61B1/00009 | G06T2207/20221 | A61B1/04 | H04N23/67 | H04N23/951 | H04N23/6845 | G06T5/73 | G06T5/80 | G06T5/77",
-    "Domain": "Wearable Medical Devices",
+    "CPCs (2)": "A61B1/00009",
+    "Domain": "Wearable Medical Devices ",
     "Subdomain": "-",
     "IPCs": "H04N5 20 | G06T7 174 | A61B1 00 | G06T5 00 | G06T7 00 | A61B1 04 | H04N23 67 | H04N23 951 | H04N23 68 | H04N5 20 | A61B1 00 | A61B1 04 | G06T5 00 | G06T7 00 | G06T7 174 | H04N23 67 | H04N23 68 | H04N23 951",
     "Legal Status": "Granted",
@@ -300,7 +337,13 @@ const CSV_JSON = [
     "Largest Families": "8",
     "Govt. Interest": "0",
     "SEP": "No",
-    "Litigation": "0"
+    "Litigation": "0",
+    "Patent Valuation": "$ 2068000",
+    "Strategic value": "40",
+    "Market value": "93",
+    "Technology value": "38",
+    "Economic value": "37",
+    "Legal value": "75"
   },
   {
     "Publication Number": "US11628020B2",
@@ -323,7 +366,8 @@ const CSV_JSON = [
     "Applicants": "VIRTUOSO SURGICAL INC",
     "Current Assignees": "VIRTUOSO SURGICAL INC",
     "CPCs": "A61B34/30 | A61B1/00133 | A61B1/018 | A61B1/313 | A61B17/221 | A61B17/29 | A61B17/320016 | A61B18/24 | A61B2017/0034 | A61B2034/301 | A61M25/0116 | A61M25/0662 | A61M2025/0004 | A61B1/00133 | A61B1/018 | A61B18/24 | A61B34/30 | A61B2034/301 | A61B2017/00331 | A61B2017/3445 | A61B2017/2906 | A61B1/00098 | A61B34/30 | A61B34/70 | A61B1/00133 | A61B1/00098 | A61B1/0051 | A61B1/018 | A61B17/00234 | A61B17/3421 | A61B2034/301 | A61B2017/00331 | A61B2017/0034 | A61B2017/2906 | A61B2017/3445 | A61B34/30 | A61B1/018 | A61B1/00133 | A61B2017/0034 | A61B17/29 | A61B17/320016 | A61M2025/0004 | A61B18/24 | A61B2034/301 | A61M25/0116 | A61B1/313 | A61M25/0662 | A61B17/221 | A61B1/00087 | A61B1/00098",
-    "Domain": "Surgical Devices",
+    "CPCs (2)": "A61B34/30",
+    "Domain": "Surgical Devices ",
     "Subdomain": "Next-generation Surgical Devices",
     "IPCs": "A61B34 30 | A61B1 018 | A61B1 00 | A61B17 00 | A61B17 29 | A61B17 32 | A61M25 00 | A61B18 24 | A61M25 01 | A61B1 313 | A61M25 06 | A61B17 221 | A61B34 30 | A61B1 00 | A61B1 018 | A61B1 313 | A61B17 00 | A61B17 221 | A61B17 29 | A61B17 32 | A61B18 24 | A61M25 00 | A61M25 01 | A61M25 06",
     "Legal Status": "Granted",
@@ -350,7 +394,13 @@ const CSV_JSON = [
     "Largest Families": "7",
     "Govt. Interest": "0",
     "SEP": "No",
-    "Litigation": "0"
+    "Litigation": "0",
+    "Patent Valuation": "$ 572000",
+    "Strategic value": "48",
+    "Market value": "77",
+    "Technology value": "38",
+    "Economic value": "33",
+    "Legal value": "78"
   },
   {
     "Publication Number": "US11766338B1",
@@ -373,7 +423,8 @@ const CSV_JSON = [
     "Applicants": "SIMONSON ROBERT E",
     "Current Assignees": "SIMONSON ROBERT E",
     "CPCs": "A61F2/44 | A61F2/4611 | A61F2/44 | A61F2/4611 | A61F2/447 | A61F2002/30593 | A61F2/4601 | A61F2/4611 | A61F2/44",
-    "Domain": "Consumables And Disposables",
+    "CPCs (2)": "A61F2/44",
+    "Domain": "Consumables And Disposables ",
     "Subdomain": "-",
     "IPCs": "A61F2 44 | A61F2 46 | A61F2 44 | A61F2 46",
     "Legal Status": "Granted",
@@ -400,7 +451,13 @@ const CSV_JSON = [
     "Largest Families": "3",
     "Govt. Interest": "0",
     "SEP": "No",
-    "Litigation": "0"
+    "Litigation": "0",
+    "Patent Valuation": "$ 56100",
+    "Strategic value": "26",
+    "Market value": "38",
+    "Technology value": "25",
+    "Economic value": "31",
+    "Legal value": "74"
   },
   {
     "Publication Number": "US11925564B1",
@@ -423,7 +480,8 @@ const CSV_JSON = [
     "Applicants": "SIMONSON ROBERT E",
     "Current Assignees": "SIMONSON ROBERT E",
     "CPCs": "A61F2/44 | A61F2/4611 | A61F2/44 | A61F2/4611 | A61F2/447 | A61F2002/30593 | A61F2/4601 | A61F2/4611 | A61F2/44",
-    "Domain": "Consumables And Disposables",
+    "CPCs (2)": "A61F2/44",
+    "Domain": "Consumables And Disposables ",
     "Subdomain": "-",
     "IPCs": "A61F2 44 | A61F2 28 | A61F2 46 | A61F2 44 | A61F2 28 | A61F2 46",
     "Legal Status": "Granted",
@@ -450,7 +508,13 @@ const CSV_JSON = [
     "Largest Families": "3",
     "Govt. Interest": "0",
     "SEP": "No",
-    "Litigation": "0"
+    "Litigation": "0",
+    "Patent Valuation": "$ 56100",
+    "Strategic value": "26",
+    "Market value": "38",
+    "Technology value": "25",
+    "Economic value": "31",
+    "Legal value": "74"
   },
   {
     "Publication Number": "US10688043B1",
@@ -473,7 +537,8 @@ const CSV_JSON = [
     "Applicants": "TREMBLAY MARIO ELMEN",
     "Current Assignees": "LANVIRA LLC",
     "CPCs": "A61K9/0034 | A61K9/0014 | A61K36/04 | A61K47/10 | A61P31/20 | A61K9/0034 | A61K36/04 | A61K47/10 | A61P31/20 | A61K47/36 | A61K31/731 | A61K9/0034 | A61K9/0014 | A61P31/20 | A61K47/10 | A61K36/04",
-    "Domain": "Drug Delivery Devices",
+    "CPCs (2)": "A61K9/0034",
+    "Domain": "Drug Delivery Devices ",
     "Subdomain": "Implantable Drug Delivery Device",
     "IPCs": "A61K9 00 | A61P31 20 | A61K36 04 | A61K47 10 | A61K9 00 | A61K36 04 | A61K47 10 | A61P31 20",
     "Legal Status": "Granted",
@@ -500,7 +565,13 @@ const CSV_JSON = [
     "Largest Families": "25",
     "Govt. Interest": "0",
     "SEP": "No",
-    "Litigation": "0"
+    "Litigation": "0",
+    "Patent Valuation": "$ 110000",
+    "Strategic value": "38",
+    "Market value": "48",
+    "Technology value": "29",
+    "Economic value": "31",
+    "Legal value": "80"
   },
   {
     "Publication Number": "US10524803B1",
@@ -523,6 +594,7 @@ const CSV_JSON = [
     "Applicants": "ANDERSON KEITH RICHARD | CORTICAL EDGE ORTHOPEDICS LLC",
     "Current Assignees": "CORTICAL EDGE ORTHOPEDICS LLC",
     "CPCs": "A61B17/141 | A61B17/14 | A61B17/142 | A61B17/142 | A61B17/14",
+    "CPCs (2)": "A61B17/141",
     "Domain": "-",
     "Subdomain": "-",
     "IPCs": "A61B17 14 | A61B17 14",
@@ -550,7 +622,13 @@ const CSV_JSON = [
     "Largest Families": "5",
     "Govt. Interest": "0",
     "SEP": "No",
-    "Litigation": "0"
+    "Litigation": "0",
+    "Patent Valuation": "$ 539000",
+    "Strategic value": "33",
+    "Market value": "78",
+    "Technology value": "25",
+    "Economic value": "33",
+    "Legal value": "81"
   },
   {
     "Publication Number": "US11806028B1",
@@ -573,7 +651,8 @@ const CSV_JSON = [
     "Applicants": "RESTOR3D INC",
     "Current Assignees": "TRINITY CAPITAL INC",
     "CPCs": "A61B17/17 | B33Y80/00 | A61B2017/00526 | A61B2017/568 | B33Y80/00 | A61B17/15 | A61B17/1775 | A61B2017/568 | A61B34/10 | A61B2017/00526 | A61B17/17 | A61B2034/102 | A61B2034/108 | A61B2034/105 | A61B17/17 | A61B2017/568 | A61B2017/00526 | B33Y80/00",
-    "Domain": "Consumables And Disposables",
+    "CPCs (2)": "A61B17/17",
+    "Domain": "Consumables And Disposables ",
     "Subdomain": "-",
     "IPCs": "A61B17 17 | B33Y80 00 | A61B17 56 | A61B17 00 | A61B17 17 | A61B17 00 | A61B17 56 | B33Y80 00",
     "Legal Status": "Granted",
@@ -600,7 +679,13 @@ const CSV_JSON = [
     "Largest Families": "2",
     "Govt. Interest": "0",
     "SEP": "No",
-    "Litigation": "0"
+    "Litigation": "0",
+    "Patent Valuation": "$ 68200",
+    "Strategic value": "42",
+    "Market value": "29",
+    "Technology value": "27",
+    "Economic value": "33",
+    "Legal value": "74"
   },
   {
     "Publication Number": "US12042159B1",
@@ -623,7 +708,8 @@ const CSV_JSON = [
     "Applicants": "RESTOR3D INC",
     "Current Assignees": "RESTOR3D INC",
     "CPCs": "A61B17/17 | B33Y80/00 | A61B2017/00526 | A61B2017/568 | B33Y80/00 | A61B17/15 | A61B17/1775 | A61B2017/568 | A61B34/10 | A61B2017/00526 | A61B17/17 | A61B2034/102 | A61B2034/108 | A61B2034/105 | A61B17/17 | A61B2017/568 | A61B2017/00526 | B33Y80/00",
-    "Domain": "Consumables And Disposables",
+    "CPCs (2)": "A61B17/17",
+    "Domain": "Consumables And Disposables ",
     "Subdomain": "-",
     "IPCs": "A61B17 17 | B33Y80 00 | A61B17 00 | A61B17 56 | A61B17 17 | A61B17 00 | A61B17 56 | B33Y80 00",
     "Legal Status": "Granted",
@@ -650,7 +736,13 @@ const CSV_JSON = [
     "Largest Families": "2",
     "Govt. Interest": "0",
     "SEP": "No",
-    "Litigation": "0"
+    "Litigation": "0",
+    "Patent Valuation": "$ 68200",
+    "Strategic value": "42",
+    "Market value": "29",
+    "Technology value": "27",
+    "Economic value": "33",
+    "Legal value": "74"
   },
   {
     "Publication Number": "US9968373B1",
@@ -673,7 +765,8 @@ const CSV_JSON = [
     "Applicants": "SURGICAL DEVICE EXCHANGE LLC | SURGENTEC LLC",
     "Current Assignees": "SURGENTEC LLC",
     "CPCs": "A61B17/3403 | A61B17/3421 | A61B17/3478 | A61B17/3472 | A61B2017/0046 | A61B2017/00469 | A61B2017/3405 | A61B17/282 | A61B2017/00477 | A61B2017/00738 | A61B2090/0801 | A61B17/3472 | A61B2017/0046 | A61B2017/00469 | A61B17/3403 | A61B17/3421 | A61B17/3478 | A61B2017/3405 | A61B17/3472 | A61B2017/0046 | A61B2017/00469 | A61B17/282 | A61B2017/00477 | A61B2017/00738 | A61B2090/0801",
-    "Domain": "Consumables And Disposables",
+    "CPCs (2)": "A61B17/3403",
+    "Domain": "Consumables And Disposables ",
     "Subdomain": "-",
     "IPCs": "A61B10 00 | A61B17 34 | A61B17 00 | A61B10 00 | A61B17 00 | A61B17 34",
     "Legal Status": "Granted",
@@ -700,7 +793,13 @@ const CSV_JSON = [
     "Largest Families": "5",
     "Govt. Interest": "0",
     "SEP": "No",
-    "Litigation": "0"
+    "Litigation": "0",
+    "Patent Valuation": "$ 726000",
+    "Strategic value": "50",
+    "Market value": "79",
+    "Technology value": "30",
+    "Economic value": "33",
+    "Legal value": "80"
   },
   {
     "Publication Number": "US2017215989A1",
@@ -723,7 +822,8 @@ const CSV_JSON = [
     "Applicants": "MILLENNIUM HEALTHCARE TECH INC",
     "Current Assignees": "MILLENNIUM HEALTHCARE TECHNOLOGIES INC",
     "CPCs": "A61C1/0046 | A61B18/22 | A61C8/0006 | A61C17/0202 | A61C17/036 | A61C19/043 | A61C19/063 | A61M19/00 | A61N5/062 | A61B2018/00565 | A61B2017/00482 | A61B2018/00023 | A61B2018/00708 | A61B2018/00779 | A61B2018/00815 | A61B2018/00863 | A61B2018/00988 | A61B2018/22853 | A61M2210/0631 | A61N2005/0662 | A61B34/25 | A61B2034/252 | A61B2034/254 | A61B2034/256 | A61C1/0046 | A61N5/0624 | A61C1/0015 | A61B2018/00577 | A61B2018/00625 | A61B2018/00601 | A61N2005/0606 | A61B2018/00595 | A61N2005/0651 | A61B18/22 | A61B2018/00589 | A61B2018/00642 | A61M19/00 | A61N2005/063 | A61N5/067 | A61C1/0046 | A61N5/0624 | A61C1/0015 | A61C19/043 | A61B2018/00577 | A61B2018/00625 | A61B2018/00601 | A61N2005/0606 | A61B2018/00595 | A61N2005/0651 | A61B2218/002 | A61B2017/00482 | A61B2018/00023 | A61B2018/00708 | A61B2018/00779 | A61B2018/00815 | A61B2018/00863 | A61B2018/00988 | A61B2018/22853 | A61B34/25 | A61B2034/254 | A61N2005/0662 | A61M2210/0631 | A61B2034/256 | A61B2034/252 | A61N5/067 | A61B18/22 | A61B2018/00565 | A61B2018/00589 | A61B2018/00642 | A61B2018/202 | A61C8/0006 | A61C17/0202 | A61C17/036 | A61C19/063 | A61M19/00 | A61N5/062 | A61N2005/063 | A61B5/4547 | A61N2005/0663",
-    "Domain": "Consumables And Disposables",
+    "CPCs (2)": "A61C1/0046",
+    "Domain": "Consumables And Disposables ",
     "Subdomain": "-",
     "IPCs": "A61C1 00 | A61C8 02 | A61C17 02 | A61N5 06 | A61C19 04 | A61C19 06 | A61M19 00 | A61B18 22 | A61C17 00 | A61C1 00 | A61B18 22 | A61C8 02 | A61C17 00 | A61C17 02 | A61C19 04 | A61C19 06 | A61M19 00 | A61N5 06",
     "Legal Status": "Granted",
@@ -750,7 +850,13 @@ const CSV_JSON = [
     "Largest Families": "5",
     "Govt. Interest": "0",
     "SEP": "No",
-    "Litigation": "0"
+    "Litigation": "0",
+    "Patent Valuation": "$ 814000",
+    "Strategic value": "51",
+    "Market value": "72",
+    "Technology value": "43",
+    "Economic value": "28",
+    "Legal value": "81"
   },
   {
     "Publication Number": "US11357497B1",
@@ -773,7 +879,8 @@ const CSV_JSON = [
     "Applicants": "ANAKWENZE OKE A",
     "Current Assignees": "-",
     "CPCs": "A61B17/0401 | A61B17/0487 | A61B17/0642 | A61F2/0811 | A61B17/04 | A61B17/064 | A61B17/068 | A61B2017/0462 | A61F2/08 | A61F2002/0864 | A61F2220/0016 | A61B17/0401 | A61B2017/0406 | A61B2017/0409 | A61B17/1604 | A61B2017/0053 | A61F2/0811 | A61B2017/0462 | A61B17/0401 | A61B17/04 | A61F2002/0864 | A61F2/08 | A61F2220/0016 | A61B17/0642 | A61B17/064 | A61B17/0487 | A61B17/068 | A61F2/0811",
-    "Domain": "Consumables And Disposables",
+    "CPCs (2)": "A61B17/0401",
+    "Domain": "Consumables And Disposables ",
     "Subdomain": "-",
     "IPCs": "A61B17 04 | A61B17 064 | A61F2 08 | A61B17 068 | A61B17 04 | A61B17 064 | A61B17 068 | A61F2 08",
     "Legal Status": "Granted",
@@ -800,7 +907,13 @@ const CSV_JSON = [
     "Largest Families": "3",
     "Govt. Interest": "0",
     "SEP": "No",
-    "Litigation": "0"
+    "Litigation": "0",
+    "Patent Valuation": "$ 75900",
+    "Strategic value": "32",
+    "Market value": "32",
+    "Technology value": "29",
+    "Economic value": "33",
+    "Legal value": "79"
   },
   {
     "Publication Number": "US11771581B1",
@@ -823,7 +936,8 @@ const CSV_JSON = [
     "Applicants": "TRAKTUS LLC",
     "Current Assignees": "TRAKTUS LLC",
     "CPCs": "A61F5/048 | A61F5/05875 | A61F5/048 | A61F5/05875 | A61F5/05875 | A61F5/048",
-    "Domain": "Wearable Medical Devices",
+    "CPCs (2)": "A61F5/048",
+    "Domain": "Wearable Medical Devices ",
     "Subdomain": "-",
     "IPCs": "A61F5 048 | A61F5 058 | A61F5 048 | A61F5 058",
     "Legal Status": "Granted",
@@ -850,7 +964,13 @@ const CSV_JSON = [
     "Largest Families": "3",
     "Govt. Interest": "0",
     "SEP": "No",
-    "Litigation": "0"
+    "Litigation": "0",
+    "Patent Valuation": "$ 75900",
+    "Strategic value": "32",
+    "Market value": "31",
+    "Technology value": "32",
+    "Economic value": "31",
+    "Legal value": "67"
   },
   {
     "Publication Number": "US11266442B1",
@@ -873,7 +993,8 @@ const CSV_JSON = [
     "Applicants": "ENABLE INC",
     "Current Assignees": "ENABLE INC",
     "CPCs": "A61B17/3474 | A61B1/00154 | A61B1/015 | A61B1/05 | A61B1/00177 | A61B17/3403 | A61B17/3496 | A61B90/361 | A61B2017/00004 | A61B2017/00473 | A61B17/3496 | A61B2017/00004 | A61B2017/00473 | A61B90/361 | A61B1/00154 | A61B1/00177 | A61B1/015 | A61B17/3474 | A61B17/3403 | A61B1/05 | A61B90/361 | A61B1/00154 | A61B1/00177 | A61B1/015 | A61B1/05 | A61B1/273 | A61B17/3403 | A61B17/3474 | A61B17/3478 | A61B17/3496 | A61B2017/00473 | A61B17/3474 | A61B17/3403 | A61B1/05 | A61B1/015 | A61B2017/00473 | A61B17/3496 | A61B90/361 | A61B2017/00004 | A61B1/00177 | A61B1/00154",
-    "Domain": "Consumables And Disposables",
+    "CPCs (2)": "A61B17/3474",
+    "Domain": "Consumables And Disposables ",
     "Subdomain": "-",
     "IPCs": "A61B1 313 | A61B17 34 | A61B1 05 | A61B1 015 | A61B1 00 | A61B17 00 | A61B90 00 | A61B1 313 | A61B1 00 | A61B1 015 | A61B1 05 | A61B17 00 | A61B17 34 | A61B90 00",
     "Legal Status": "Granted",
@@ -900,7 +1021,13 @@ const CSV_JSON = [
     "Largest Families": "13",
     "Govt. Interest": "0",
     "SEP": "No",
-    "Litigation": "0"
+    "Litigation": "0",
+    "Patent Valuation": "$ 4334000",
+    "Strategic value": "46",
+    "Market value": "99",
+    "Technology value": "42",
+    "Economic value": "34",
+    "Legal value": "76"
   },
   {
     "Publication Number": "US11602374B1",
@@ -923,7 +1050,8 @@ const CSV_JSON = [
     "Applicants": "ENABLE INC",
     "Current Assignees": "ENABLE INC",
     "CPCs": "A61B17/3474 | A61B1/00154 | A61B1/015 | A61B1/05 | A61B1/00177 | A61B17/3403 | A61B17/3496 | A61B90/361 | A61B2017/00004 | A61B2017/00473 | A61B17/3496 | A61B2017/00004 | A61B2017/00473 | A61B90/361 | A61B1/00154 | A61B1/00177 | A61B1/015 | A61B17/3474 | A61B17/3403 | A61B1/05 | A61B90/361 | A61B1/00154 | A61B1/00177 | A61B1/015 | A61B1/05 | A61B1/273 | A61B17/3403 | A61B17/3474 | A61B17/3478 | A61B17/3496 | A61B2017/00473 | A61B17/3474 | A61B17/3403 | A61B1/05 | A61B1/015 | A61B2017/00473 | A61B17/3496 | A61B90/361 | A61B2017/00004 | A61B1/00177 | A61B1/00154",
-    "Domain": "Consumables And Disposables",
+    "CPCs (2)": "A61B17/3474",
+    "Domain": "Consumables And Disposables ",
     "Subdomain": "-",
     "IPCs": "A61B1 313 | A61B17 34 | A61B1 05 | A61B1 015 | A61B1 00 | A61B17 00 | A61B90 00 | A61B1 313 | A61B1 00 | A61B1 015 | A61B1 05 | A61B17 00 | A61B17 34 | A61B90 00",
     "Legal Status": "Granted",
@@ -950,7 +1078,13 @@ const CSV_JSON = [
     "Largest Families": "13",
     "Govt. Interest": "0",
     "SEP": "No",
-    "Litigation": "0"
+    "Litigation": "0",
+    "Patent Valuation": "$ 4334000",
+    "Strategic value": "46",
+    "Market value": "99",
+    "Technology value": "42",
+    "Economic value": "34",
+    "Legal value": "76"
   },
   {
     "Publication Number": "US12083273B1",
@@ -973,7 +1107,8 @@ const CSV_JSON = [
     "Applicants": "SAFER MEDICAL PRODUCTS LLC",
     "Current Assignees": "SAFER MEDICAL PRODUCTS LLC",
     "CPCs": "A61M16/009 | A61M16/06 | A61M16/0816 | A61M16/0875 | A61M16/14 | A61M2202/0208 | A61M16/0683 | A61M16/0833 | A61M16/0816 | A61M16/009 | A61M16/14 | A61M16/0875 | A61M16/06 | A61M16/009 | A61M16/14 | A61M2202/0208 | A61M16/0875 | A61M16/0816 | A61M16/06",
-    "Domain": "Consumables And Disposables",
+    "CPCs (2)": "A61M16/009",
+    "Domain": "Consumables And Disposables ",
     "Subdomain": "-",
     "IPCs": "A61M16 00 | A61M16 06 | A61M16 08 | A61M16 14 | A61M16 00 | A61M16 06 | A61M16 08 | A61M16 14",
     "Legal Status": "Granted",
@@ -1000,7 +1135,13 @@ const CSV_JSON = [
     "Largest Families": "12",
     "Govt. Interest": "0",
     "SEP": "No",
-    "Litigation": "0"
+    "Litigation": "0",
+    "Patent Valuation": "$ 66000",
+    "Strategic value": "32",
+    "Market value": "27",
+    "Technology value": "28",
+    "Economic value": "31",
+    "Legal value": "83"
   },
   {
     "Publication Number": "US11872369B1",
@@ -1023,7 +1164,8 @@ const CSV_JSON = [
     "Applicants": "FRESENIUS KABI DEUTSCHLAND GMBH",
     "Current Assignees": "FRESENIUS KABI DEUTSCHLAND GMBH",
     "CPCs": "A61M5/14248 | A61K31/4015 | A61M2005/14252 | A61M2005/1583 | A61M2005/1585 | A61M2205/15 | A61M2205/3317 | A61M2205/3584 | A61M2205/50 | A61M2205/8206 | A61M2005/1583 | A61K31/4015 | A61M5/14248 | A61M2005/1585 | A61M2005/14252 | A61M5/14248 | A61K31/4015 | A61M2205/3317 | A61M2205/15 | A61M2005/14252 | A61M2205/8206 | A61M2005/1585 | A61M2005/1583 | A61M2205/50 | A61M2205/3584",
-    "Domain": "Assistive Care Devices",
+    "CPCs (2)": "A61M5/14248",
+    "Domain": "Assistive Care Devices ",
     "Subdomain": "Feeding Equipment | Drug Delivery Devices | Infusion Pumps",
     "IPCs": "A61M5 14 | A61M5 142 | A61K31 4015 | A61M5 158 | A61K31 4015 | A61M5 14 | A61M5 142 | A61M5 158",
     "Legal Status": "Granted",
@@ -1050,7 +1192,13 @@ const CSV_JSON = [
     "Largest Families": "1",
     "Govt. Interest": "0",
     "SEP": "No",
-    "Litigation": "0"
+    "Litigation": "0",
+    "Patent Valuation": "$ 110000",
+    "Strategic value": "55",
+    "Market value": "27",
+    "Technology value": "28",
+    "Economic value": "31",
+    "Legal value": "84"
   },
   {
     "Publication Number": "US10610257B2",
@@ -1073,7 +1221,8 @@ const CSV_JSON = [
     "Applicants": "NANO 2 0 BUSINESS PRESS LLC",
     "Current Assignees": "NANO SURGICAL INC",
     "CPCs": "A61B17/3211 | A61B17/32002 | A61B2017/32113 | A61B17/3213 | A61B2017/00734 | A61B2090/309 | A61B90/30 | A61B2090/0813 | G08B25/10 | A61B17/32002 | A61B17/3211 | A61B2017/32113",
-    "Domain": "Consumables And Disposables",
+    "CPCs (2)": "A61B17/3211",
+    "Domain": "Consumables And Disposables ",
     "Subdomain": "-",
     "IPCs": "B26B5 00 | A61B17 3211 | A61B17 32 | B26B5 00 | A61B17 32 | A61B17 3211",
     "Legal Status": "Granted",
@@ -1100,7 +1249,13 @@ const CSV_JSON = [
     "Largest Families": "3",
     "Govt. Interest": "0",
     "SEP": "No",
-    "Litigation": "0"
+    "Litigation": "0",
+    "Patent Valuation": "$ 583000",
+    "Strategic value": "34",
+    "Market value": "49",
+    "Technology value": "35",
+    "Economic value": "32",
+    "Legal value": "80"
   },
   {
     "Publication Number": "US2023066272A1",
@@ -1123,6 +1278,7 @@ const CSV_JSON = [
     "Applicants": "BLOCK INC",
     "Current Assignees": "SQUARE INC",
     "CPCs": "G06Q20/401 | G06Q20/223 | G06Q20/326 | G06N20/00 | G06Q20/223 | G06Q20/32 | G06Q20/326 | G06Q20/401 | G06N20/00 | G06Q20/401 | G06N20/00 | G06Q20/326 | G06Q20/223",
+    "CPCs (2)": "G06Q20/401",
     "Domain": "-",
     "Subdomain": "-",
     "IPCs": "G06Q20 40 | G06Q20 22 | G06Q20 32 | G06N20 00 | G06Q20 40 | G06N20 00 | G06Q20 22 | G06Q20 32",
@@ -1150,7 +1306,13 @@ const CSV_JSON = [
     "Largest Families": "8",
     "Govt. Interest": "0",
     "SEP": "No",
-    "Litigation": "0"
+    "Litigation": "0",
+    "Patent Valuation": "$ -",
+    "Strategic value": "-",
+    "Market value": "-",
+    "Technology value": "-",
+    "Economic value": "-",
+    "Legal value": "-"
   },
   {
     "Publication Number": "US2023066550A1",
@@ -1173,6 +1335,7 @@ const CSV_JSON = [
     "Applicants": "BLOCK INC",
     "Current Assignees": "SQUARE INC",
     "CPCs": "G06Q20/223 | G06Q20/326 | G06Q20/02 | G06Q20/065 | G06Q20/223 | G06Q20/3678 | G06Q20/3827 | G06Q20/3829 | G06Q20/389 | G06Q20/401 | G06Q20/4016 | H04L2209/56 | H04L9/50 | G06F18/24 | G06N20/00 | G06Q20/38215 | G06Q20/389 | G06N20/00 | G06Q20/065 | G06F18/214 | G06Q20/326 | G06Q20/223",
+    "CPCs (2)": "G06Q20/223",
     "Domain": "-",
     "Subdomain": "-",
     "IPCs": "G06Q20 22 | G06Q20 32 | G06Q20 22 | G06Q20 32",
@@ -1200,7 +1363,13 @@ const CSV_JSON = [
     "Largest Families": "8",
     "Govt. Interest": "0",
     "SEP": "No",
-    "Litigation": "0"
+    "Litigation": "0",
+    "Patent Valuation": "$ 4510",
+    "Strategic value": "56",
+    "Market value": "20",
+    "Technology value": "30",
+    "Economic value": "29",
+    "Legal value": "47"
   },
   {
     "Publication Number": "US10188280B1",
@@ -1223,7 +1392,8 @@ const CSV_JSON = [
     "Applicants": "WALL JR SIMEON",
     "Current Assignees": "SIMEON WALL JR",
     "CPCs": "A61B1/32 | A61B17/02 | A61M29/00 | A61B17/32 | A61M2202/08 | A61M2205/3606 | A61M2205/366 | A61B2017/320044 | A61B18/0218 | A61B2018/0022 | A61B2018/00577 | A61B2018/0212 | A61M1/84 | A61M1/85 | A61M1/89 | A61M1/772 | A61M1/892 | A61B1/32 | A61B17/02 | A61M29/00 | A61M2205/366 | A61M2205/3606 | A61B2018/0212 | A61B2018/0022 | A61M2202/08 | A61B18/0218 | A61B17/32 | A61B2018/00577 | A61B2017/320044 | A61M1/85 | A61M1/772 | A61M1/892 | A61M1/89 | A61B17/00234 | A61B18/02 | A61B2018/00005 | A61B2018/00101 | A61B2018/00172 | A61B2018/00244 | A61B2018/00464 | A61B2018/0237",
-    "Domain": "Wearable Medical Devices",
+    "CPCs (2)": "A61B1/32",
+    "Domain": "Wearable Medical Devices ",
     "Subdomain": "-",
     "IPCs": "A61B1 32 | A61B17 02 | A61M29 00 | A61B1 32 | A61B17 02 | A61M29 00",
     "Legal Status": "Granted",
@@ -1250,7 +1420,13 @@ const CSV_JSON = [
     "Largest Families": "2",
     "Govt. Interest": "0",
     "SEP": "No",
-    "Litigation": "0"
+    "Litigation": "0",
+    "Patent Valuation": "$ 73700",
+    "Strategic value": "26",
+    "Market value": "32",
+    "Technology value": "30",
+    "Economic value": "33",
+    "Legal value": "74"
   },
   {
     "Publication Number": "US2013197538A1",
@@ -1273,7 +1449,8 @@ const CSV_JSON = [
     "Applicants": "TITAN MED INC | TITAN MED INC",
     "Current Assignees": "TITAN MEDICAL INC",
     "CPCs": "A61B34/30 | B25J9/1689 | B25J9/1689 | G05B2219/35419 | G05B2219/39439 | G05B2219/40144 | G05B2219/45117 | A61B17/00234 | A61B34/30 | A61B34/37 | A61B34/74 | A61B34/76 | A61B2017/00199 | A61B90/50 | A61B2034/301 | B25J9/1633 | B25J9/1689 | B25J13/025 | G05B2219/35419 | G05B2219/39439 | G05B2219/40144 | G05B2219/45117",
-    "Domain": "Surgical Devices",
+    "CPCs (2)": "A61B34/30",
+    "Domain": "Surgical Devices ",
     "Subdomain": "Next-generation Surgical Device",
     "IPCs": "A61B19 00 | A61B19 00",
     "Legal Status": "Granted",
@@ -1300,7 +1477,13 @@ const CSV_JSON = [
     "Largest Families": "9",
     "Govt. Interest": "0",
     "SEP": "No",
-    "Litigation": "0"
+    "Litigation": "0",
+    "Patent Valuation": "$ 2486000",
+    "Strategic value": "49",
+    "Market value": "99",
+    "Technology value": "41",
+    "Economic value": "36",
+    "Legal value": "82"
   },
   {
     "Publication Number": "US2023225645A1",
@@ -1323,7 +1506,8 @@ const CSV_JSON = [
     "Applicants": "CHASE ARNOLD",
     "Current Assignees": "CHASE ARNOLD",
     "CPCs": "A61B5/14865 | A61B5/6848 | A61B5/4839 | A61B5/14503 | A61B5/1473 | A61B5/1459 | A61B5/14539 | A61B5/1495 | A61B5/6865 | A61B2562/227 | A61B2562/06 | A61B5/14532 | A61B5/14546 | A61B5/14735 | A61B5/14735 | A61B5/14532 | A61B2562/06 | A61B2562/227 | A61B5/14546 | A61B5/14735 | A61B5/14532 | A61B5/14546 | A61B2562/227 | A61B2562/06",
-    "Domain": "Wearable Medical Devices",
+    "CPCs (2)": "A61B5/14865",
+    "Domain": "Wearable Medical Devices ",
     "Subdomain": "-",
     "IPCs": "A61B5 1473 | A61B5 145 | A61B5 1473 | A61B5 145",
     "Legal Status": "Abandoned",
@@ -1350,7 +1534,13 @@ const CSV_JSON = [
     "Largest Families": "2",
     "Govt. Interest": "0",
     "SEP": "No",
-    "Litigation": "0"
+    "Litigation": "0",
+    "Patent Valuation": "$ 4180",
+    "Strategic value": "26",
+    "Market value": "15",
+    "Technology value": "24",
+    "Economic value": "29",
+    "Legal value": "45"
   },
   {
     "Publication Number": "US10939962B1",
@@ -1373,7 +1563,8 @@ const CSV_JSON = [
     "Applicants": "MAZOR ROBOTICS LTD",
     "Current Assignees": "MAZOR ROBOTICS LTD",
     "CPCs": "A61B34/20 | A61B90/361 | A61N1/0534 | A61B34/30 | A61B2090/376 | A61B2090/502 | A61B90/50 | A61B2017/3407 | A61B17/3403 | A61N1/0534 | A61B34/20 | A61B90/361 | A61N1/0534 | A61B34/30 | A61B2090/376 | A61B2034/301 | A61B17/3403",
-    "Domain": "Diagnosis & Imaging Devices",
+    "CPCs (2)": "A61B34/20",
+    "Domain": "Diagnosis & Imaging Devices ",
     "Subdomain": "Endoscopic Devices",
     "IPCs": "A61B34 20 | A61B90 00 | A61N1 05 | A61B34 20 | A61B90 00 | A61N1 05",
     "Legal Status": "Granted",
@@ -1400,7 +1591,13 @@ const CSV_JSON = [
     "Largest Families": "2",
     "Govt. Interest": "0",
     "SEP": "No",
-    "Litigation": "0"
+    "Litigation": "0",
+    "Patent Valuation": "$ 143000",
+    "Strategic value": "59",
+    "Market value": "47",
+    "Technology value": "30",
+    "Economic value": "33",
+    "Legal value": "79"
   },
   {
     "Publication Number": "US10166044B1",
@@ -1423,7 +1620,8 @@ const CSV_JSON = [
     "Applicants": "RICHEY MARK EDMUND | FRESHWATER BAY IND LLC",
     "Current Assignees": "FRESHWATER BAY INDUSTRIES LLC",
     "CPCs": "A61B17/42 | A61B17/0482 | A61B17/3474 | A61B2017/00331 | A61B2017/0046 | A61B2090/036 | A61B2090/062 | A61B34/30 | A61B17/4241 | A61B17/4241 | A61B2090/036 | A61B17/0482 | A61B34/30 | A61B17/3474 | A61B2090/062 | A61B2017/0046 | A61B2017/00331 | A61B17/42",
-    "Domain": "Consumables And Disposables",
+    "CPCs (2)": "A61B17/42",
+    "Domain": "Consumables And Disposables ",
     "Subdomain": "-",
     "IPCs": "A61B17 42 | A61B17 42",
     "Legal Status": "Granted",
@@ -1450,7 +1648,13 @@ const CSV_JSON = [
     "Largest Families": "10",
     "Govt. Interest": "0",
     "SEP": "No",
-    "Litigation": "0"
+    "Litigation": "0",
+    "Patent Valuation": "$ 50600",
+    "Strategic value": "32",
+    "Market value": "31",
+    "Technology value": "25",
+    "Economic value": "31",
+    "Legal value": "75"
   },
   {
     "Publication Number": "US11628017B1",
@@ -1473,7 +1677,8 @@ const CSV_JSON = [
     "Applicants": "PRICHARD MEDICAL LLC | PRICHARD MEDICAL INC",
     "Current Assignees": "PRICHARD MEDICAL INC",
     "CPCs": "A61B34/20 | A61B17/16 | A61B17/16 | A61B90/30 | A61B90/30 | A61B2034/2048 | A61B2034/2048 | A61B2090/309 | A61B2034/2051 | A61B17/1622 | A61B2090/309 | A61B17/1604 | A61B17/1655 | A61B17/8875 | A61B17/17 | A61B2017/00734 | A61B2090/035 | A61B90/50 | A61B2017/00477 | A61B2090/3762 | A61B2090/378 | A61B2090/374 | A61B10/0233 | A61B2010/045 | A61B2034/2051 | A61B34/20 | A61B34/20 | A61B17/16 | A61B2090/309 | A61B2034/2048 | A61B2034/2051 | A61B90/30",
-    "Domain": "Diagnosis & Imaging Devices",
+    "CPCs (2)": "A61B34/20",
+    "Domain": "Diagnosis & Imaging Devices ",
     "Subdomain": "Endoscopic Devices",
     "IPCs": "A61B34 20 | A61B17 16 | A61B90 30 | A61B34 20 | A61B17 16 | A61B90 30",
     "Legal Status": "Granted",
@@ -1500,7 +1705,13 @@ const CSV_JSON = [
     "Largest Families": "4",
     "Govt. Interest": "0",
     "SEP": "No",
-    "Litigation": "0"
+    "Litigation": "0",
+    "Patent Valuation": "$ 57200",
+    "Strategic value": "32",
+    "Market value": "30",
+    "Technology value": "27",
+    "Economic value": "31",
+    "Legal value": "74"
   },
   {
     "Publication Number": "US11266943B1",
@@ -1523,6 +1734,7 @@ const CSV_JSON = [
     "Applicants": "STARK JR JOSEPH J",
     "Current Assignees": "AIR TO EARTH HOLDINGS LLC",
     "CPCs": "B01D53/0446 | B01D53/0415 | B01D53/0431 | B01D2257/504 | B01D2259/4009 | B01D2259/4068 | B01D53/0431 | B01D2258/06 | B01D53/047 | B01D2257/504 | B01D53/0476 | B01D53/06 | Y02C20/40 | B01D53/0446 | B01D53/0415 | B01D2259/4068 | B01D2257/504 | B01D2259/4009 | B01D53/0431",
+    "CPCs (2)": "B01D53/0446",
     "Domain": "-",
     "Subdomain": "-",
     "IPCs": "B01D53 02 | B01D53 04 | B01D53 02 | B01D53 04",
@@ -1550,7 +1762,13 @@ const CSV_JSON = [
     "Largest Families": "3",
     "Govt. Interest": "0",
     "SEP": "No",
-    "Litigation": "0"
+    "Litigation": "0",
+    "Patent Valuation": "$ 62700",
+    "Strategic value": "36",
+    "Market value": "27",
+    "Technology value": "28",
+    "Economic value": "32",
+    "Legal value": "71"
   },
   {
     "Publication Number": "US11517694B1",
@@ -1573,7 +1791,8 @@ const CSV_JSON = [
     "Applicants": "BEAVER JEREMY JOSEPH | TAYLOR VERNON BRADLEY",
     "Current Assignees": "BEAVER JEREMY JOSEPH | TAYLOR VERNON BRADLEY",
     "CPCs": "A61M16/0463 | A61M16/0463 | A61M1/85 | A61M2202/0208 | A61M16/0409 | A61M16/0475 | A61M16/0475 | A61M16/0409 | A61B17/24 | A61B17/24 | A61B17/50 | A61B17/50 | A61M2202/0208 | A61M1/85",
-    "Domain": "Consumables And Disposables",
+    "CPCs (2)": "A61M16/0463",
+    "Domain": "Consumables And Disposables ",
     "Subdomain": "-",
     "IPCs": "A61M16 04 | A61M1 00 | A61B17 24 | A61B17 50 | A61M16 04 | A61B17 24 | A61B17 50 | A61M1 00",
     "Legal Status": "Granted",
@@ -1600,7 +1819,13 @@ const CSV_JSON = [
     "Largest Families": "2",
     "Govt. Interest": "0",
     "SEP": "No",
-    "Litigation": "0"
+    "Litigation": "0",
+    "Patent Valuation": "$ 72600",
+    "Strategic value": "43",
+    "Market value": "26",
+    "Technology value": "28",
+    "Economic value": "31",
+    "Legal value": "81"
   },
   {
     "Publication Number": "US11464902B1",
@@ -1623,7 +1848,8 @@ const CSV_JSON = [
     "Applicants": "FRESENIUS KABI DEUTSCHLAND GMBH",
     "Current Assignees": "FRESENIUS KABI DEUTSCHLAND GMBH",
     "CPCs": "A61M5/14248 | A61M5/14248 | A61K31/4015 | A61M5/148 | A61M5/16881 | A61M5/14248 | A61M5/1454 | A61M5/148 | A61M5/152 | A61M5/16881 | A61M2005/14204 | A61M2005/14506 | A61M5/152 | A61M5/152 | A61M2205/584 | A61M2005/14204 | A61M2005/14506 | A61M2205/583 | A61M2005/14506 | A61M5/1454 | A61M2205/581 | A61M2205/8281 | A61M2205/8281 | A61M5/148 | A61K31/4015 | A61M5/1483",
-    "Domain": "Assistive Care Devices",
+    "CPCs (2)": "A61M5/14248",
+    "Domain": "Assistive Care Devices ",
     "Subdomain": "Feeding Equipment | Drug Delivery Devices | Infusion Pumps",
     "IPCs": "A61M5 142 | A61M5 168 | A61M5 148 | A61M5 145 | A61M5 152 | A61M5 142 | A61M5 145 | A61M5 148 | A61M5 152 | A61M5 168",
     "Legal Status": "Granted",
@@ -1650,7 +1876,13 @@ const CSV_JSON = [
     "Largest Families": "1",
     "Govt. Interest": "0",
     "SEP": "No",
-    "Litigation": "0"
+    "Litigation": "0",
+    "Patent Valuation": "$ 110000",
+    "Strategic value": "55",
+    "Market value": "27",
+    "Technology value": "29",
+    "Economic value": "31",
+    "Legal value": "85"
   },
   {
     "Publication Number": "US10349823B2",
@@ -1673,7 +1905,8 @@ const CSV_JSON = [
     "Applicants": "OPPERMAN DAVID A | COLORADO VOICE CLINIC P C",
     "Current Assignees": "COLORADO VOICE CLINIC PC",
     "CPCs": "A61B1/267 | A61B1/00089 | A61B1/00101 | A61B1/267 | A61B1/267 | A61B1/00101 | A61B1/00089",
-    "Domain": "Consumables And Disposables",
+    "CPCs (2)": "A61B1/267",
+    "Domain": "Consumables And Disposables ",
     "Subdomain": "-",
     "IPCs": "A61B17 02 | A61B1 267 | A61B17 02 | A61B1 267",
     "Legal Status": "Granted",
@@ -1700,7 +1933,13 @@ const CSV_JSON = [
     "Largest Families": "8",
     "Govt. Interest": "0",
     "SEP": "No",
-    "Litigation": "0"
+    "Litigation": "0",
+    "Patent Valuation": "$ 231000",
+    "Strategic value": "26",
+    "Market value": "52",
+    "Technology value": "26",
+    "Economic value": "33",
+    "Legal value": "84"
   },
   {
     "Publication Number": "US11350936B1",
@@ -1723,7 +1962,8 @@ const CSV_JSON = [
     "Applicants": "ANTHONY BARR MCLORG",
     "Current Assignees": "MCLORG ANTHONY BARR",
     "CPCs": "A61B17/085 | A61B2017/081",
-    "Domain": "Surgical Devices",
+    "CPCs (2)": "A61B17/085",
+    "Domain": "Surgical Devices ",
     "Subdomain": "Sutures & Staples",
     "IPCs": "A61B17 08",
     "Legal Status": "Granted",
@@ -1750,7 +1990,13 @@ const CSV_JSON = [
     "Largest Families": "2",
     "Govt. Interest": "0",
     "SEP": "No",
-    "Litigation": "0"
+    "Litigation": "0",
+    "Patent Valuation": "$ 60500",
+    "Strategic value": "28",
+    "Market value": "29",
+    "Technology value": "25",
+    "Economic value": "31",
+    "Legal value": "76"
   },
   {
     "Publication Number": "US11311666B1",
@@ -1773,7 +2019,8 @@ const CSV_JSON = [
     "Applicants": "FRESENIUS KABI DEUTSCHLAND GMBH",
     "Current Assignees": "BRESSLERGROUP INC",
     "CPCs": "A61M5/14248 | A61M2005/14252 | A61M2230/201 | A61M2230/208 | A61M2230/30 | A61M2230/50 | A61M2005/14252 | A61M5/14248 | A61M5/1413 | A61M2005/1726 | A61M2230/201 | A61M2230/208 | A61M2230/30 | A61M2230/50 | A61M2205/3327 | A61M5/14248 | A61M2230/201 | A61M2005/14252 | A61M2230/208 | A61M2230/30 | A61M2230/50",
-    "Domain": "Assistive Care Devices",
+    "CPCs (2)": "A61M5/14248",
+    "Domain": "Assistive Care Devices ",
     "Subdomain": "Feeding Equipment | Drug Delivery Devices | Infusion Pumps",
     "IPCs": "A61M5 168 | A61M5 142 | A61M5 168 | A61M5 142",
     "Legal Status": "Granted",
@@ -1800,7 +2047,13 @@ const CSV_JSON = [
     "Largest Families": "2",
     "Govt. Interest": "0",
     "SEP": "No",
-    "Litigation": "0"
+    "Litigation": "0",
+    "Patent Valuation": "$ 110000",
+    "Strategic value": "57",
+    "Market value": "29",
+    "Technology value": "25",
+    "Economic value": "34",
+    "Legal value": "79"
   },
   {
     "Publication Number": "US10702635B1",
@@ -1823,6 +2076,7 @@ const CSV_JSON = [
     "Applicants": "A LARUE CO",
     "Current Assignees": "A LARUE CO",
     "CPCs": "A61M1/0039 | A61B17/3468 | A61B17/3468 | A61B17/3468 | A61B2017/00796 | A61B2017/00796 | A61F2/12 | A61F2/12 | A61M39/20 | A61M1/00 | A61M1/0001 | A61M39/12 | A61M1/0001 | A61M1/0039 | A61M39/24 | A61M1/008 | A61M39/12 | A61M2205/3379 | A61M1/0023 | A61M39/20 | A61M2205/586 | A61M1/0058 | A61M39/24 | A61M2210/1007 | A61M39/20 | A61M2205/3379 | A61F2/12 | A61M39/24 | A61M2205/586 | A61M1/76 | A61M1/76 | A61B2090/062 | A61M2210/1007 | A61M1/86 | A61M1/86 | A61B2217/005 | A61B17/3468 | A61M1/60 | A61M1/60 | A61M2205/3379 | A61B2217/005 | A61F2/12 | A61M2205/586 | A61F2/12 | A61B17/3468 | A61M1/00 | A61M39/20 | A61M1/0001 | A61M2205/586 | A61M1/0023 | A61B2090/062 | A61M1/0039 | A61B2217/005 | A61M1/0058 | A61M2205/3379 | A61M1/008 | A61M39/24 | A61M39/20 | A61M1/00 | A61M39/24 | A61M1/76 | A61M2205/3379 | A61M1/77 | A61M2205/586 | A61M1/71 | A61B2090/062 | A61M1/76 | A61M1/64 | A61M1/84 | A61M1/86 | A61M1/86 | A61M1/77 | A61M1/60 | A61M1/60 | A61M1/71 | A61M1/64",
+    "CPCs (2)": "A61M1/0039",
     "Domain": "-",
     "Subdomain": "-",
     "IPCs": "A61M1 00 | A61F2 12 | A61B17 34 | A61M39 20 | A61M39 24 | A61B90 00 | A61M1 00 | A61B17 34 | A61B90 00 | A61F2 12 | A61M39 20 | A61M39 24",
@@ -1850,7 +2104,13 @@ const CSV_JSON = [
     "Largest Families": "2",
     "Govt. Interest": "0",
     "SEP": "No",
-    "Litigation": "0"
+    "Litigation": "0",
+    "Patent Valuation": "$ 84700",
+    "Strategic value": "43",
+    "Market value": "27",
+    "Technology value": "30",
+    "Economic value": "34",
+    "Legal value": "75"
   },
   {
     "Publication Number": "US9655714B1",
@@ -1873,7 +2133,8 @@ const CSV_JSON = [
     "Applicants": "HOVIS W DAVID",
     "Current Assignees": "W DAVID HOVIS",
     "CPCs": "A61F2/0811 | A61B17/8875 | A61B17/0401 | A61B2017/044 | A61B2017/0409 | A61B2017/0445 | A61B2017/90 | A61F2002/0841 | A61F2002/0858 | A61F2002/0882 | A61F2/0805 | A61F2002/0841 | A61F2002/0858 | A61F2002/0882 | A61F2/0811 | A61B17/8875 | A61F2002/0841 | A61F2002/0858 | A61F2002/0882 | A61B2017/0409 | A61B17/0401 | A61B2017/044 | A61B2017/0445 | A61F2/0805 | A61B2017/06042 | A61B17/90",
-    "Domain": "Consumables And Disposables",
+    "CPCs (2)": "A61F2/0811",
+    "Domain": "Consumables And Disposables ",
     "Subdomain": "-",
     "IPCs": "A61B17 88 | A61F2 08 | A61B17 90 | A61B17 04 | A61B17 88 | A61B17 04 | A61B17 90 | A61F2 08",
     "Legal Status": "Expired Fee Related",
@@ -1900,7 +2161,13 @@ const CSV_JSON = [
     "Largest Families": "4",
     "Govt. Interest": "0",
     "SEP": "No",
-    "Litigation": "0"
+    "Litigation": "0",
+    "Patent Valuation": "$ -",
+    "Strategic value": "-",
+    "Market value": "-",
+    "Technology value": "-",
+    "Economic value": "-",
+    "Legal value": "-"
   },
   {
     "Publication Number": "US10709317B2",
@@ -1923,7 +2190,8 @@ const CSV_JSON = [
     "Applicants": "PRAESIDIODYNE LLC",
     "Current Assignees": "PRAESIDIODYNE LLC",
     "CPCs": "A61B1/00142 | A61B1/00137 | A61B1/0014 | A61B1/0014 | A61B1/00135 | A61B1/00142 | A61B1/00137 | A61B1/00135 | A61B17/00234 | A61B1/00137 | A61B1/018 | A61B1/0014 | A61B46/17 | A61B1/00142 | A61B2017/00336 | A61B1/018 | F16B2/10 | A61B17/00234 | A61B46/17 | A61B2017/00336 | F16B2/10",
-    "Domain": "Wearable Medical Devices",
+    "CPCs (2)": "A61B1/00142",
+    "Domain": "Wearable Medical Devices ",
     "Subdomain": "-",
     "IPCs": "A61B1 00 | A61B17 00 | A61B1 018 | A61B46 17 | F16B2 10 | A61B1 00 | A61B1 018 | A61B17 00 | A61B46 17 | F16B2 10",
     "Legal Status": "Granted",
@@ -1950,7 +2218,13 @@ const CSV_JSON = [
     "Largest Families": "6",
     "Govt. Interest": "0",
     "SEP": "No",
-    "Litigation": "0"
+    "Litigation": "0",
+    "Patent Valuation": "$ -",
+    "Strategic value": "-",
+    "Market value": "-",
+    "Technology value": "-",
+    "Economic value": "-",
+    "Legal value": "-"
   },
   {
     "Publication Number": "US10470872B1",
@@ -1973,7 +2247,8 @@ const CSV_JSON = [
     "Applicants": "SCARPONE MICHAEL A",
     "Current Assignees": "NEXT GENERATION REGENERATIVE MEDICINE DEVELOPMENT LLC",
     "CPCs": "A61F2/0811 | B33Y80/00 | A61F2002/0817 | A61F2002/0858 | B33Y80/00 | A61F2002/0858 | A61F2/0811 | A61F2250/0067 | A61F2/0811 | A61F2002/0858 | A61F2002/0817 | B33Y80/00",
-    "Domain": "Consumables And Disposables",
+    "CPCs (2)": "A61F2/0811",
+    "Domain": "Consumables And Disposables ",
     "Subdomain": "-",
     "IPCs": "A61F2 08 | B33Y80 00 | A61F2 08 | B33Y80 00",
     "Legal Status": "Granted",
@@ -2000,7 +2275,13 @@ const CSV_JSON = [
     "Largest Families": "5",
     "Govt. Interest": "0",
     "SEP": "No",
-    "Litigation": "0"
+    "Litigation": "0",
+    "Patent Valuation": "$ 48400",
+    "Strategic value": "35",
+    "Market value": "46",
+    "Technology value": "26",
+    "Economic value": "31",
+    "Legal value": "84"
   },
   {
     "Publication Number": "US11020182B1",
@@ -2023,7 +2304,8 @@ const CSV_JSON = [
     "Applicants": "FELONEY MICHAEL",
     "Current Assignees": "FELONEY MICHAEL",
     "CPCs": "A61B19/2203 | A61B2017/00026 | A61B2017/00929 | A61B2019/223 | A61B2019/2223 | A61B2019/2292 | A61B19/2203 | A61B2019/2223 | A61B2019/223 | A61B2019/2292 | A61B2017/00026 | A61B2017/00929 | A61B34/30 | A61B34/76 | A61B2017/00106 | A61B2017/0011 | A61B2017/00026 | A61B34/30 | A61B34/37 | A61B34/35 | A61B34/76",
-    "Domain": "Assistive Care Devices",
+    "CPCs (2)": "A61B19/2203",
+    "Domain": "Assistive Care Devices ",
     "Subdomain": "Treatment Equipment",
     "IPCs": "A61B5 00 | A61B19 00 | A61B17 00 | A61B5 00 | A61B17 00",
     "Legal Status": "Granted",
@@ -2050,7 +2332,13 @@ const CSV_JSON = [
     "Largest Families": "1",
     "Govt. Interest": "0",
     "SEP": "No",
-    "Litigation": "0"
+    "Litigation": "0",
+    "Patent Valuation": "$ 41800",
+    "Strategic value": "26",
+    "Market value": "29",
+    "Technology value": "25",
+    "Economic value": "31",
+    "Legal value": "78"
   },
   {
     "Publication Number": "US9962166B1",
@@ -2073,7 +2361,8 @@ const CSV_JSON = [
     "Applicants": "SACHS DAVID P | SIMONSON ROBERT E",
     "Current Assignees": "DAVID P SACHS | ROBERT E SIMONSON",
     "CPCs": "A61B17/155 | A61B17/155 | A61B17/1671 | A61F2/44 | A61F2/30744 | A61F2/44 | A61F2002/30235 | A61F2002/30594 | A61F2002/30784 | A61F2002/3085 | A61F2/44 | A61B17/1671 | A61F2002/30784 | A61F2002/3085 | A61F2002/30235 | A61F2002/30594 | A61F2/30744",
-    "Domain": "Consumables And Disposables",
+    "CPCs (2)": "A61B17/155",
+    "Domain": "Consumables And Disposables ",
     "Subdomain": "-",
     "IPCs": "A61F2 46 | A61B17 15 | A61F2 46 | A61B17 15",
     "Legal Status": "Granted",
@@ -2100,7 +2389,13 @@ const CSV_JSON = [
     "Largest Families": "2",
     "Govt. Interest": "0",
     "SEP": "No",
-    "Litigation": "0"
+    "Litigation": "0",
+    "Patent Valuation": "$ 66000",
+    "Strategic value": "34",
+    "Market value": "27",
+    "Technology value": "25",
+    "Economic value": "34",
+    "Legal value": "72"
   },
   {
     "Publication Number": "US10889053B1",
@@ -2123,7 +2418,8 @@ const CSV_JSON = [
     "Applicants": "RESTOR3D INC",
     "Current Assignees": "TRINITY CAPITAL INC",
     "CPCs": "B29C64/106 | A61B17/1659 | A61B2017/00526 | B29L2031/753 | B33Y10/00 | B33Y50/02 | B33Y70/00 | B33Y80/00 | G16H30/20 | A61B17/1659 | A61B2017/00526 | B33Y80/00 | B33Y70/00 | B33Y40/20 | B29C64/106 | A61B2017/00526 | A61B17/1659 | G16H30/20 | B33Y80/00 | B33Y10/00 | B33Y70/00 | B33Y50/02 | B29L2031/753",
-    "Domain": "Assistive Care Devices",
+    "CPCs (2)": "B29C64/106",
+    "Domain": "Assistive Care Devices ",
     "Subdomain": "Durable Medical Equipment",
     "IPCs": "B29C64 106 | A61B17 00 | A61B17 16 | G16H30 20 | B33Y80 00 | B33Y10 00 | B33Y70 00 | B33Y50 02 | B29L31 00 | B29C64 106 | A61B17 00 | A61B17 16 | B29L31 00 | B33Y10 00 | B33Y50 02 | B33Y70 00 | B33Y80 00 | G16H30 20",
     "Legal Status": "Granted",
@@ -2150,19 +2446,25 @@ const CSV_JSON = [
     "Largest Families": "1",
     "Govt. Interest": "0",
     "SEP": "No",
-    "Litigation": "0"
+    "Litigation": "0",
+    "Patent Valuation": "$ 81400",
+    "Strategic value": "42",
+    "Market value": "28",
+    "Technology value": "37",
+    "Economic value": "31",
+    "Legal value": "84"
   }
 ];
 
 export const PATENTS: Patent[] = CSV_JSON.map(parsePatentRow);
 
-export const getPatentById = (id: string) => PATENTS.find(p => p.publicationNumber === id);
+export const getPatentById = (id: string) => PATENTS.find((p) => p.publicationNumber === id);
 
 export const searchPatents = (query: string) => {
   const q = query.toLowerCase();
-  return PATENTS.filter(p => 
-    p.publicationNumber.toLowerCase().includes(q) || 
-    p.title.toLowerCase().includes(q) || 
-    p.currentAssignees.some(a => a.toLowerCase().includes(q))
+  return PATENTS.filter((p) =>
+    p.publicationNumber.toLowerCase().includes(q) ||
+    p.title.toLowerCase().includes(q) ||
+    p.currentAssignees.some((a) => a.toLowerCase().includes(q))
   );
 };

@@ -73,7 +73,16 @@ export const parsePatentRow = (row: any): Patent => {
     return parseInt(String(val).replace(/[$,]/g, '')) || 0;
   };
 
-  const normalizeText = (val: any): string => (isEmptyLike(val) ? '' : String(val));
+  const normalizeText = (val: any): string => (isEmptyLike(val) ? '' : String(val).trim());
+
+  const normalizeFtoStatus = (val: any): Patent['ftoStatus'] => {
+    if (isEmptyLike(val)) return 'Unknown';
+    const normalized = String(val).trim().toLowerCase();
+    if (normalized === 'clear') return 'Clear';
+    if (normalized === 'blocked') return 'Blocked';
+    if (normalized === 'caution' || normalized === 'pending') return 'Caution';
+    return 'Unknown';
+  };
 
   const formatDateValue = (val: any): string => {
     if (isEmptyLike(val)) return '';
@@ -92,7 +101,7 @@ export const parsePatentRow = (row: any): Patent => {
     return familyCountryFromPrefix[normalized.toUpperCase()] || normalized;
   };
 
-  const pubNum = String(row['Publication Number'] || '');
+  const pubNum = normalizeText(row['Publication Number']);
   const currentAssignees = splitPipe(row['Current Assignees']);
   const originalAssignees = splitPipe(row['Original Assignees']);
   const forwardCitations = splitPipe(row['Forward Citations']);
@@ -116,13 +125,14 @@ export const parsePatentRow = (row: any): Patent => {
   // Market Data
   const marketSector = normalizeText(row['Domain'] || row['Market Sector']);
   const totalAddressableMarket = cleanNumeric(row['Total Addressable Market USD']);
-  const marketGrowthRate = parseFloat(String(row['Market Growth Rate'] || '0'));
+  const parsedMarketGrowthRate = parseFloat(String(row['Market Growth Rate'] || '0'));
+  const marketGrowthRate = Number.isFinite(parsedMarketGrowthRate) ? parsedMarketGrowthRate : 0;
   const keyCompetitors = splitComma(row['Key Competitors']);
   const marketRegion = splitComma(row['Market Region']);
 
   // Risk Assessment
   const infringementRiskScore = cleanNumeric(row['Infringement Risk Score']);
-  const ftoStatus = (row['FTO Status'] as any) || 'Unknown';
+  const ftoStatus = normalizeFtoStatus(row['FTO Status']);
   const keyProductCategories = splitComma(row['Key Product Categories']);
   const riskFactors = splitComma(row['Risk Factors']);
 
@@ -165,10 +175,26 @@ export const parsePatentRow = (row: any): Patent => {
   const marketScore = 50 + (countries.length * 4);
   const legalScore = ['true', 'yes', '1'].includes(String(row['Litigation Flag'] || row['Litigation'] || '').trim().toLowerCase()) ? 95 : 70;
 
-  const valuationEstimate = (techScore * 5000) + (marketScore * 10000) + (legalScore * 2000);
-  const askingPrice = row['Asking Price USD'] ? cleanNumeric(row['Asking Price USD']) : undefined;
+  const declaredValuation = cleanNumeric(row['Patent Valuation'] || row['Asking Price USD']);
+  const strategicValue = cleanNumeric(row['Strategic value']);
+  const marketValue = cleanNumeric(row['Market value']);
+  const technologyValue = cleanNumeric(row['Technology value']);
+  const economicValue = cleanNumeric(row['Economic value']);
+  const legalValue = cleanNumeric(row['Legal value']);
+  const valuationEstimate = declaredValuation || (techScore * 5000) + (marketScore * 10000) + (legalScore * 2000);
+  const askingPrice = declaredValuation || (row['Asking Price USD'] ? cleanNumeric(row['Asking Price USD']) : undefined);
   const independentClaimsCount = cleanNumeric(row['Independent Claims Count']);
   const dependentClaimsCount = cleanNumeric(row['Dependent Claims Count']);
+  const explicitQualityInputs = [
+    strategicValue,
+    marketValue,
+    technologyValue,
+    economicValue,
+    legalValue,
+  ].filter((value) => value > 0);
+  const qualityScore = explicitQualityInputs.length > 0
+    ? Math.round(explicitQualityInputs.reduce((sum, value) => sum + value, 0) / explicitQualityInputs.length)
+    : Math.round((techScore + marketScore + legalScore) / 3);
 
   return {
     id: pubNum,
@@ -217,14 +243,19 @@ export const parsePatentRow = (row: any): Patent => {
     
     askingPrice,
     valuationEstimate,
-    qualityScore: Math.round((techScore + marketScore + legalScore) / 3),
+    qualityScore,
     jurisdiction: pubNum.substring(0, 2),
     licensingStatus,
     previousDeals,
     valuationMetrics: {
-        technicalQuality: Math.min(techScore, 100),
-        marketBreadth: Math.min(marketScore, 100),
-        enforcementStrength: Math.min(legalScore, 100)
+        technicalQuality: technologyValue || Math.min(techScore, 100),
+        marketBreadth: marketValue || Math.min(marketScore, 100),
+        enforcementStrength: legalValue || Math.min(legalScore, 100),
+        strategicValue,
+        marketValue,
+        technologyValue,
+        economicValue,
+        legalValue
     },
     technologyReadinessLevel,
     trlDescription,

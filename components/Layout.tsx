@@ -184,7 +184,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const openShareWindow = (platform: 'linkedin' | 'x') => {
     const pageUrl = encodeURIComponent(window.location.href);
-    const pageText = encodeURIComponent('Explore this patent intelligence view on PatentXchange');
+    const pageText = encodeURIComponent('Explore this patent intelligence view on PatentIntent');
     const targetUrl =
       platform === 'linkedin'
         ? `https://www.linkedin.com/sharing/share-offsite/?url=${pageUrl}`
@@ -197,7 +197,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     <div className={`flex w-full bg-white text-slate-900 font-sans ${isLandscapePage ? 'h-screen overflow-hidden flex-col' : 'min-h-screen flex-col'}`}>
       
       {/* Demo Banner */}
-      <div className="bg-slate-900 text-white text-[10px] font-black uppercase tracking-[0.2em] py-2 px-6 flex items-center justify-center gap-4 relative z-[60]">
+      <div className="relative z-[60] flex items-center justify-center gap-4 bg-slate-900 px-6 py-2 text-xs font-medium uppercase tracking-[0.16em] text-white">
           <span className="flex items-center gap-1.5 text-blue-400">
             <AlertCircle size={12} /> PROTOTYPE MODE
           </span>
@@ -227,14 +227,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   className="flex items-center gap-2 group flex-shrink-0"
                 >
                     <div className="w-10 h-10 rounded-xl bg-[#00bdcd] flex items-center justify-center shadow-lg shadow-blue-200 group-hover:rotate-6 transition-all">
-                        <span className="font-black text-white text-xl">G</span>
+                        <span className="text-xl font-semibold text-white">G</span>
                     </div>
-                    <span className="font-black text-2xl tracking-tighter text-slate-900 group-hover:text-blue-600 transition-colors">PatentXchange</span>
+                    <span className="text-2xl font-semibold tracking-tight text-slate-900 transition-colors group-hover:text-blue-600">PatentIntent</span>
                 </button>
 
                 <nav className="hidden xl:flex items-center space-x-8">
-                    <NavLink to="/browse" className={({isActive}) => `text-sm font-black uppercase tracking-widest hover:text-[#00bdcd] transition-colors ${isActive ? 'text-[#00bdcd]' : 'text-slate-500'}`}>Marketplace</NavLink>
-                    <NavLink to="/landscape" className={({isActive}) => `text-sm font-black uppercase tracking-widest hover:text-[#00bdcd] transition-colors ${isActive ? 'text-[#00bdcd]' : 'text-slate-500'}`}>Landscape</NavLink>
+                    <NavLink to="/browse" className={({isActive}) => `text-sm font-medium transition-colors hover:text-[#00bdcd] ${isActive ? 'text-[#00bdcd]' : 'text-slate-500'}`}>Marketplace</NavLink>
+                    <NavLink to="/landscape" className={({isActive}) => `text-sm font-medium transition-colors hover:text-[#00bdcd] ${isActive ? 'text-[#00bdcd]' : 'text-slate-500'}`}>Landscape</NavLink>
                 </nav>
             </div>
 
@@ -249,7 +249,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                             onChange={(e) => setSearchValue(e.target.value)}
                             onFocus={() => setShowSearchHistory(true)}
                             onBlur={() => setTimeout(() => setShowSearchHistory(false), 200)}
-                            className="bg-transparent border-none outline-none w-full text-sm font-bold text-slate-700 placeholder:text-slate-400 placeholder:font-medium"
+                            className="w-full border-none bg-transparent text-sm font-medium text-slate-700 outline-none placeholder:font-medium placeholder:text-slate-400"
                             placeholder="Search subdomains or assignees..." 
                         />
                         <button 
@@ -268,7 +268,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                         {filteredSuggestions.length > 0 && (
                           <>
                             <div className="flex items-center justify-between mb-3 px-2">
-                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><SearchIcon size={12}/> Suggested Matches</span>
+                                <span className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.16em] text-slate-400"><SearchIcon size={12}/> Suggested Matches</span>
                             </div>
                             <div className="space-y-1 mb-3">
                               {filteredSuggestions.map((suggestion) => (
@@ -278,7 +278,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                                       event.preventDefault();
                                       void handleSuggestionSelect(suggestion);
                                     }}
-                                    className="w-full text-left px-4 py-3 text-sm font-bold text-slate-600 hover:bg-blue-50 hover:text-blue-600 rounded-xl flex items-center justify-between group"
+                                    className="group flex w-full items-center justify-between rounded-xl px-4 py-3 text-left text-sm font-medium text-slate-600 hover:bg-blue-50 hover:text-blue-600"
                                 >
                                     <div className="flex items-center gap-3">
                                       <SearchIcon size={14} className="opacity-30" />
@@ -294,8 +294,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                         {searchHistory.length > 0 && (
                           <>
                             <div className="flex items-center justify-between mb-4 px-2">
-                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><Clock size={12}/> Recent History</span>
-                                <button onMouseDown={(event) => event.preventDefault()} onClick={clearSearchHistory} className="text-[10px] font-black text-red-500 uppercase hover:underline">Clear all</button>
+                                <span className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.16em] text-slate-400"><Clock size={12}/> Recent History</span>
+                                <button onMouseDown={(event) => event.preventDefault()} onClick={clearSearchHistory} className="text-xs font-medium uppercase tracking-[0.16em] text-red-500 hover:underline">Clear all</button>
                             </div>
                             <div className="space-y-1">
                               {searchHistory.map((h, i) => (
@@ -306,7 +306,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                                         setShowSearchHistory(false);
                                         navigate(`/search?q=${encodeURIComponent(h)}`);
                                       }}
-                                      className="w-full text-left px-4 py-3 text-sm font-bold text-slate-600 hover:bg-blue-50 hover:text-blue-600 rounded-xl flex items-center justify-between group"
+                                      className="group flex w-full items-center justify-between rounded-xl px-4 py-3 text-left text-sm font-medium text-slate-600 hover:bg-blue-50 hover:text-blue-600"
                                   >
                                       <div className="flex items-center gap-3">
                                         <SearchIcon size={14} className="opacity-30" />
@@ -330,7 +330,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     >
                         <Bell size={20} />
                         {unreadCount > 0 && (
-                            <span className="absolute top-0 right-0 w-4 h-4 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center border-2 border-white translate-x-1/4 -translate-y-1/4">
+                            <span className="absolute top-0 right-0 flex h-4 w-4 translate-x-1/4 -translate-y-1/4 items-center justify-center rounded-full border-2 border-white bg-red-500 text-[9px] font-semibold text-white">
                                 {unreadCount}
                             </span>
                         )}
@@ -339,7 +339,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     {showNotifications && (
                         <div className="absolute top-full right-0 mt-4 w-80 bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2">
                             <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
-                                <span className="text-xs font-black uppercase tracking-widest text-slate-400">Notifications</span>
+                                <span className="text-xs font-medium uppercase tracking-[0.16em] text-slate-400">Notifications</span>
                                 <button onClick={() => setShowNotifications(false)}><X size={16} className="text-slate-400" /></button>
                             </div>
                             <div className="max-h-96 overflow-y-auto">
@@ -350,7 +350,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                                                 <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${n.type === 'alert' ? 'bg-blue-500' : n.type === 'saved' ? 'bg-amber-500' : 'bg-emerald-500'}`} />
                                                 <div className="text-sm font-medium text-slate-700 leading-snug">{n.text}</div>
                                             </div>
-                                            <div className="text-[9px] text-slate-400 font-black mt-2 ml-5 uppercase tracking-wider">{formatNotificationAge(n.timestamp)}</div>
+                                            <div className="mt-2 ml-5 text-[11px] font-medium uppercase tracking-[0.14em] text-slate-400">{formatNotificationAge(n.timestamp)}</div>
                                         </div>
                                     ))
                                 ) : (
@@ -364,7 +364,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <NavLink to="/saved" className={({isActive}) => `w-10 h-10 flex items-center justify-center rounded-xl transition-all relative ${isActive ? 'bg-red-50 text-red-600' : 'text-slate-500 hover:text-red-600 hover:bg-slate-50'}`}>
                     <Heart size={20} fill={favorites.length > 0 && window.location.hash.includes('saved') ? 'currentColor' : 'none'} />
                     {favorites.length > 0 && (
-                        <span className="absolute top-0 right-0 w-4 h-4 bg-[#00bdcd] text-white text-[9px] font-black rounded-full flex items-center justify-center border-2 border-white translate-x-1/4 -translate-y-1/4">
+                        <span className="absolute top-0 right-0 flex h-4 w-4 translate-x-1/4 -translate-y-1/4 items-center justify-center rounded-full border-2 border-white bg-[#00bdcd] text-[9px] font-semibold text-white">
                             {favorites.length}
                         </span>
                     )}
@@ -379,7 +379,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     actionLabel: 'Open Marketplace',
                     actionType: 'browse',
                   })}
-                  className="flex items-center gap-3 h-10 px-6 rounded-xl bg-slate-900 text-white text-xs font-black uppercase tracking-widest hover:bg-slate-800 transition-all active:scale-95 shadow-lg shadow-slate-200"
+                  className="flex h-10 items-center gap-3 rounded-xl bg-slate-900 px-6 text-sm font-semibold text-white shadow-lg shadow-slate-200 transition-all hover:bg-slate-800 active:scale-95"
                 >
                     <User size={16} />
                     <span className="hidden lg:inline">Sign In</span>
@@ -402,9 +402,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   <div className="md:col-span-5">
                       <div className="flex items-center gap-2 mb-10">
                           <div className="w-10 h-10 rounded-xl bg-[#00bdcd] flex items-center justify-center shadow-xl shadow-blue-200">
-                              <span className="font-black text-white text-xl">G</span>
+                              <span className="text-xl font-semibold text-white">G</span>
                           </div>
-                          <span className="font-black text-2xl tracking-tighter">PatentXchange</span>
+                          <span className="text-2xl font-semibold tracking-tight">PatentIntent</span>
                       </div>
                       <p className="text-slate-400 max-w-sm mb-12 text-lg font-medium leading-relaxed">
                           Reimagining intellectual property management for the modern era. Navigate, value, and acquire patents with global transparency.
@@ -426,8 +426,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   </div>
 
                   <div className="md:col-span-2">
-                      <h4 className="font-black text-[10px] uppercase tracking-[0.2em] text-slate-400 mb-10">Platform</h4>
-                      <ul className="space-y-6 text-sm font-black text-slate-600">
+                      <h4 className="mb-10 text-sm font-medium uppercase tracking-[0.16em] text-slate-400">Platform</h4>
+                      <ul className="space-y-6 text-sm font-medium text-slate-600">
                           <li><button onClick={() => navigate('/browse')} className="hover:text-[#00bdcd] transition-colors">Marketplace</button></li>
                           <li><button onClick={() => navigate('/landscape')} className="hover:text-[#00bdcd] transition-colors">Landscape</button></li>
                           <li><button onClick={() => setInfoDialog({ title: 'AI Valuation', description: 'Valuation insights are available inside each patent detail page, including pricing, quality score, and risk context.', actionLabel: 'Open Sample Patent', actionType: 'sample-patent' })} className="hover:text-[#00bdcd] transition-colors">AI Valuation</button></li>
@@ -436,17 +436,17 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   </div>
 
                   <div className="md:col-span-2">
-                      <h4 className="font-black text-[10px] uppercase tracking-[0.2em] text-slate-400 mb-10">Company</h4>
-                      <ul className="space-y-6 text-sm font-black text-slate-600">
-                          <li><button onClick={() => setInfoDialog({ title: 'Our Mission', description: 'PatentXchange helps teams explore patent landscapes, evaluate portfolio strength, and move from discovery to transaction faster.', actionLabel: 'Go Home', actionType: 'home' })} className="hover:text-[#00bdcd] transition-colors">Our Mission</button></li>
+                      <h4 className="mb-10 text-sm font-medium uppercase tracking-[0.16em] text-slate-400">Company</h4>
+                      <ul className="space-y-6 text-sm font-medium text-slate-600">
+                          <li><button onClick={() => setInfoDialog({ title: 'Our Mission', description: 'PatentIntent helps teams explore patent landscapes, evaluate portfolio strength, and move from discovery to transaction faster.', actionLabel: 'Go Home', actionType: 'home' })} className="hover:text-[#00bdcd] transition-colors">Our Mission</button></li>
                           <li><button onClick={() => setInfoDialog({ title: 'Security', description: 'This prototype runs on local sample data and browser storage. Backend connectivity is optional and can be configured from the server connection panel.', actionLabel: 'Open Server Config', actionType: 'server-config' })} className="hover:text-[#00bdcd] transition-colors">Security</button></li>
                           <li><button onClick={() => setInfoDialog({ title: 'Privacy', description: 'Search history, favorites, and saved searches are currently stored in your browser for this prototype session.', actionLabel: 'Open Marketplace', actionType: 'browse' })} className="hover:text-[#00bdcd] transition-colors">Privacy</button></li>
-                          <li><button onClick={() => { window.location.href = 'mailto:support@gillow.ai?subject=PatentXchange%20Support'; }} className="hover:text-[#00bdcd] transition-colors">Support</button></li>
+                          <li><button onClick={() => { window.location.href = 'mailto:support@gillow.ai?subject=PatentIntent%20Support'; }} className="hover:text-[#00bdcd] transition-colors">Support</button></li>
                       </ul>
                   </div>
 
                   <div className="md:col-span-3">
-                      <h4 className="font-black text-[10px] uppercase tracking-[0.2em] text-slate-400 mb-10">Newsletter</h4>
+                      <h4 className="mb-10 text-sm font-medium uppercase tracking-[0.16em] text-slate-400">Newsletter</h4>
                       <p className="text-sm text-slate-500 mb-6 font-medium">Get the latest on high-value portfolio listings.</p>
                       <form onSubmit={handleNewsletterSubscribe} className="flex flex-col gap-3">
                         <input
@@ -455,20 +455,20 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                           className="px-5 py-3 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:border-blue-400"
                           placeholder="your@email.com"
                         />
-                        <button type="submit" className="bg-slate-900 text-white py-3 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-800 transition-all">Subscribe</button>
+                        <button type="submit" className="rounded-xl bg-slate-900 py-3 text-sm font-semibold text-white transition-all hover:bg-slate-800">Subscribe</button>
                         {newsletterStatus && (
-                          <p className="text-xs font-bold text-blue-600">{newsletterStatus}</p>
+                          <p className="text-xs font-medium text-blue-600">{newsletterStatus}</p>
                         )}
                       </form>
                   </div>
               </div>
 
-              <div className="pt-12 border-t border-slate-100 flex flex-col md:flex-row justify-between items-center gap-6">
-                  <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
-                      © 2025 PatentXchange • Built for Global IP Excellence
+              <div className="flex flex-col items-center justify-between gap-6 border-t border-slate-100 pt-12 md:flex-row">
+                  <div className="text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
+                      © 2025 PatentIntent • Built for Global IP Excellence
                   </div>
-                  <div className="flex gap-8 text-[11px] font-bold text-slate-400 uppercase tracking-widest">
-                    <button onClick={() => setInfoDialog({ title: 'Terms of Use', description: 'This prototype is intended for evaluation workflows with sample data. Final legal terms can be added once production authentication and backend policies are in place.' })} className="hover:text-slate-900">Term of Use</button>
+                  <div className="flex gap-8 text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
+                    <button onClick={() => setInfoDialog({ title: 'Terms of Use', description: 'This prototype is intended for evaluation workflows with sample data. Final legal terms can be added once production authentication and backend policies are in place.' })} className="hover:text-slate-900">Terms of Use</button>
                     <button onClick={() => setInfoDialog({ title: 'Compliance', description: 'Compliance workflows depend on your connected backend and data source policies. Use the server configuration panel to point the app at your approved systems.', actionLabel: 'Open Server Config', actionType: 'server-config' })} className="hover:text-slate-900">Compliance</button>
                     <button onClick={() => setIsServerConfigOpen(true)} className="hover:text-slate-900">Patent Search API</button>
                   </div>
@@ -482,8 +482,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-blue-600">PatentXchange</p>
-                <h3 className="mt-2 text-2xl font-black tracking-tight text-slate-900">{infoDialog.title}</h3>
+                <p className="text-xs font-medium uppercase tracking-[0.16em] text-blue-600">PatentIntent</p>
+                <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">{infoDialog.title}</h3>
               </div>
               <button onClick={() => setInfoDialog(null)} className="rounded-xl border border-slate-200 p-2 text-slate-400 hover:bg-slate-50 hover:text-slate-700">
                 <X size={16} />
@@ -491,11 +491,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             </div>
             <p className="mt-4 text-sm font-medium leading-relaxed text-slate-600">{infoDialog.description}</p>
             <div className="mt-6 flex items-center justify-end gap-3">
-              <button onClick={() => setInfoDialog(null)} className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50">
+              <button onClick={() => setInfoDialog(null)} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-500 hover:bg-slate-50">
                 Close
               </button>
               {infoDialog.actionLabel && (
-                <button onClick={() => runInfoAction(infoDialog.actionType)} className="rounded-xl bg-slate-900 px-4 py-2 text-xs font-black uppercase tracking-widest text-white hover:bg-slate-800">
+                <button onClick={() => runInfoAction(infoDialog.actionType)} className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">
                   {infoDialog.actionLabel}
                 </button>
               )}
@@ -561,7 +561,7 @@ const SocialIcon = ({ icon, label, onClick }: { icon: string; label: string; onC
     title={label}
     className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 hover:bg-[#00bdcd] hover:text-white hover:-translate-y-1 transition-all"
   >
-    <span className="text-[10px] font-black uppercase tracking-tighter">{icon[0]}</span>
+    <span className="text-[10px] font-semibold uppercase tracking-[0.14em]">{icon[0]}</span>
   </button>
 );
 

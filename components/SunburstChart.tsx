@@ -72,7 +72,8 @@ const SunburstChart: React.FC<SunburstChartProps> = ({ patents }) => {
 
     const svg = d3.select(svgRef.current)
       .attr("viewBox", [-width / 2, -height / 2, width, height])
-      .style("font", "10px sans-serif");
+      .style("font-family", "var(--font-sans)")
+      .style("font-size", "10px");
 
     svg.selectAll("*").remove();
 
