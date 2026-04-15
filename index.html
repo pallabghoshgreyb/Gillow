@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PatentXchange | Patent Marketplace</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script>
@@ -47,10 +47,23 @@
       }
     </script>
     <style>
-      body {
+      html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        min-height: 100%;
+        overflow-x: hidden;
         background-color: #ffffff;
         color: #0f172a;
         font-family: 'Poppins', sans-serif;
+      }
+      body {
+        zoom: 0.67;
+        transform-origin: top center;
+      }
+      #root {
+        width: 100%;
+        min-height: 100vh;
       }
       ::-webkit-scrollbar {
         width: 8px;
@@ -82,6 +95,7 @@
     "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
     "react-router-dom": "https://esm.sh/react-router-dom@^7.13.0",
     "lucide-react": "https://esm.sh/lucide-react@^0.563.0",
+    "framer-motion": "https://esm.sh/framer-motion@^11.18.2?external=react,react-dom",
     "recharts": "https://esm.sh/recharts@^3.7.0",
     "d3": "https://esm.sh/d3@^7.9.0",
     "leaflet": "https://esm.sh/leaflet@1.9.4",

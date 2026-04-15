@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
     List, Map as MapIcon, SlidersHorizontal, 
     Save, LayoutGrid, Loader2,
-    CheckCircle2, Filter
+    CheckCircle2, Filter, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { usePatentFilters } from '../hooks/usePatentFilters';
 import FilterSidebar from '../components/FilterSidebar';
@@ -23,6 +23,8 @@ const Search: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showSavedToast, setShowSavedToast] = useState(false);
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+  const [pageSize, setPageSize] = useState(20);
+  const [currentPage, setCurrentPage] = useState(1);
   const quickDomainFilters = Array.from(new Set(PATENTS.map(patent => patent.domain).filter(Boolean))).sort().slice(0, 6);
   const activeFilterCount =
     filters.assignees.length +
@@ -34,6 +36,10 @@ const Search: React.FC = () => {
   useEffect(() => {
     if (query) addSearchHistory(query);
   }, [query, addSearchHistory]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [query, filters, view, pageSize]);
 
   const onSaveSearch = (name: string) => {
     setShowSavedToast(true);
@@ -54,8 +60,31 @@ const Search: React.FC = () => {
     updateFilters({ [field]: current.filter((item) => item !== value) } as any);
   };
 
+  const totalPages = Math.max(1, Math.ceil(filteredPatents.length / pageSize));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const startIndex = (safeCurrentPage - 1) * pageSize;
+  const paginatedPatents = filteredPatents.slice(startIndex, startIndex + pageSize);
+  const startResult = filteredPatents.length === 0 ? 0 : startIndex + 1;
+  const endResult = Math.min(startIndex + pageSize, filteredPatents.length);
+
+  const getVisiblePages = () => {
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, index) => index + 1);
+    }
+
+    if (safeCurrentPage <= 4) {
+      return [1, 2, 3, 4, 5, 'ellipsis-end', totalPages];
+    }
+
+    if (safeCurrentPage >= totalPages - 3) {
+      return [1, 'ellipsis-start', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+    }
+
+    return [1, 'ellipsis-start', safeCurrentPage - 1, safeCurrentPage, safeCurrentPage + 1, 'ellipsis-end', totalPages];
+  };
+
   return (
-    <div className="flex flex-col h-[calc(100vh-80px)] bg-white overflow-hidden font-sans">
+    <div className="flex flex-col min-h-[calc(100vh-80px)] bg-white font-sans">
       
       {/* Search & Action Toolbar */}
       <div className="flex-shrink-0 bg-white border-b border-slate-100 z-40 shadow-sm relative">
@@ -133,7 +162,7 @@ const Search: React.FC = () => {
           </div>
       </div>
 
-      <div className="flex-1 flex overflow-hidden relative">
+      <div className="flex-1 flex relative">
         {sidebarOpen && <div className="md:hidden fixed inset-0 bg-slate-900/40 z-[60] backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />}
 
         <div className={`
@@ -148,7 +177,7 @@ const Search: React.FC = () => {
           />
         </div>
 
-        <div className="flex-1 overflow-y-auto bg-slate-50/50 relative custom-scrollbar">
+        <div className="flex-1 bg-slate-50/50 relative">
             <div className="p-8">
                 <div className="flex items-center justify-between mb-8">
                     <div>
@@ -159,12 +188,28 @@ const Search: React.FC = () => {
                             Found {filteredPatents.length} patent{filteredPatents.length === 1 ? '' : 's'}
                         </div>
                     </div>
-                    <button 
-                        onClick={() => setIsSaveModalOpen(true)}
-                        className="flex items-center gap-2 text-xs font-black text-[#00bdcd] hover:bg-blue-50 px-5 py-3 rounded-xl transition-all bg-white border border-blue-100 shadow-sm"
-                    >
-                        <Save size={16} /> Save this search
-                    </button>
+                    <div className="flex flex-col items-stretch gap-3 md:flex-row md:items-center">
+                        {view !== 'map' && filteredPatents.length > 0 && (
+                            <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-2 shadow-sm">
+                                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Patents Per Page</span>
+                                <select
+                                  value={pageSize}
+                                  onChange={(e) => setPageSize(Number(e.target.value))}
+                                  className="bg-transparent text-sm font-black text-slate-700 outline-none"
+                                >
+                                  {[10, 20, 50, 100].map((size) => (
+                                    <option key={size} value={size}>{size}</option>
+                                  ))}
+                                </select>
+                            </div>
+                        )}
+                        <button 
+                            onClick={() => setIsSaveModalOpen(true)}
+                            className="flex items-center justify-center gap-2 text-xs font-black text-[#00bdcd] hover:bg-blue-50 px-5 py-3 rounded-xl transition-all bg-white border border-blue-100 shadow-sm"
+                        >
+                            <Save size={16} /> Save this search
+                        </button>
+                    </div>
                 </div>
 
                 {activeFilterCount > 0 && (
@@ -239,8 +284,17 @@ const Search: React.FC = () => {
                         />
                     </div>
                 ) : filteredPatents.length > 0 ? (
+                    <>
+                    <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm md:flex-row md:items-center md:justify-between">
+                        <div className="text-sm font-bold text-slate-600">
+                            Showing <span className="text-slate-900">{startResult}-{endResult}</span> of <span className="text-slate-900">{filteredPatents.length}</span> patents
+                        </div>
+                        <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                            Page {safeCurrentPage} of {totalPages}
+                        </div>
+                    </div>
                     <div className={`grid gap-8 ${view === 'grid' ? 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-3' : 'grid-cols-1'}`}>
-                        {filteredPatents.map(patent => (
+                        {paginatedPatents.map(patent => (
                             <div key={patent.id} className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                                 <PatentCard 
                                     patent={patent} 
@@ -252,6 +306,44 @@ const Search: React.FC = () => {
                             </div>
                         ))}
                     </div>
+                    {totalPages > 1 && (
+                        <div className="mt-10 flex flex-col items-center gap-4">
+                            <div className="flex flex-wrap items-center justify-center gap-2">
+                                <button
+                                  onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                                  disabled={safeCurrentPage === 1}
+                                  className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-600 shadow-sm transition-all hover:border-[#00bdcd] hover:text-[#00bdcd] disabled:cursor-not-allowed disabled:opacity-40"
+                                >
+                                  <ChevronLeft size={16} />
+                                  Prev
+                                </button>
+                                {getVisiblePages().map((page, index) => (
+                                  typeof page === 'number' ? (
+                                    <button
+                                      key={page}
+                                      onClick={() => setCurrentPage(page)}
+                                      className={`min-w-10 rounded-xl px-3 py-2 text-sm font-black shadow-sm transition-all ${page === safeCurrentPage ? 'bg-[#00bdcd] text-white' : 'border border-slate-200 bg-white text-slate-600 hover:border-[#00bdcd] hover:text-[#00bdcd]'}`}
+                                    >
+                                      {page}
+                                    </button>
+                                  ) : (
+                                    <span key={`${page}-${index}`} className="px-2 text-sm font-black text-slate-300">
+                                      ...
+                                    </span>
+                                  )
+                                ))}
+                                <button
+                                  onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                                  disabled={safeCurrentPage === totalPages}
+                                  className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-600 shadow-sm transition-all hover:border-[#00bdcd] hover:text-[#00bdcd] disabled:cursor-not-allowed disabled:opacity-40"
+                                >
+                                  Next
+                                  <ChevronRight size={16} />
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                    </>
                 ) : (
                     <div className="bg-white rounded-[2rem] border border-slate-200 p-24 flex flex-col items-center text-center max-w-2xl mx-auto shadow-sm mt-10">
                         <h3 className="text-3xl font-black text-slate-900 mb-4">No patents found</h3>

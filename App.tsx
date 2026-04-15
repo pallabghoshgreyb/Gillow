@@ -5,7 +5,7 @@ import Home from './pages/Home';
 import Search from './pages/Search';
 import Landscape from './pages/Landscape';
 import TechDetail from './pages/TechDetail';
-import PatentDetail from './pages/PatentDetail';
+import PatentDetail from './pages/PatentDetailRedesign';
 import Saved from './pages/Saved';
 import NotFound from './pages/NotFound';
 import { GillowProvider } from './context/GillowContext';

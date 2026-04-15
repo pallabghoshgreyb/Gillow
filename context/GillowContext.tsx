@@ -18,6 +18,124 @@ interface Notification {
   timestamp: number;
 }
 
+const NOTIFICATION_READ_KEY = 'GILLOW_NOTIFICATION_READ_IDS';
+
+const toTimestamp = (value?: string): number => {
+  if (!value) return 0;
+  const parsed = Date.parse(value);
+  return Number.isNaN(parsed) ? 0 : parsed;
+};
+
+const createPatentNotifications = (
+  patents: Patent[],
+  favorites: string[],
+  savedSearches: SavedSearch[],
+  readIds: string[]
+): Notification[] => {
+  const notifications: Notification[] = [];
+  const readSet = new Set(readIds);
+  const favoriteSet = new Set(favorites);
+
+  const pushNotification = (notification: Omit<Notification, 'read'>) => {
+    notifications.push({
+      ...notification,
+      read: readSet.has(notification.id),
+    });
+  };
+
+  patents
+    .filter((patent) => patent.maintenanceFees.totalPending > 0)
+    .sort((left, right) => right.maintenanceFees.totalPending - left.maintenanceFees.totalPending)
+    .slice(0, 2)
+    .forEach((patent) => {
+      pushNotification({
+        id: `maintenance-${patent.publicationNumber}`,
+        text: `${patent.publicationNumber} has $${patent.maintenanceFees.totalPending.toLocaleString()} in pending maintenance fees.`,
+        type: 'alert',
+        timestamp: toTimestamp(patent.estimatedExpirationDate),
+      });
+    });
+
+  patents
+    .filter((patent) => patent.flags.litigation || patent.flags.ptab || patent.flags.opposition)
+    .slice(0, 2)
+    .forEach((patent) => {
+      const signal = patent.flags.litigation
+        ? 'litigation activity'
+        : patent.flags.ptab
+          ? 'PTAB review'
+          : 'opposition activity';
+
+      pushNotification({
+        id: `dispute-${patent.publicationNumber}`,
+        text: `${patent.publicationNumber} is flagged for ${signal}.`,
+        type: 'alert',
+        timestamp: toTimestamp(patent.publicationDate),
+      });
+    });
+
+  patents
+    .filter((patent) => patent.licensingStatus === 'Available' || patent.licensingStatus === 'Under Negotiation')
+    .slice(0, 2)
+    .forEach((patent) => {
+      const priceText = patent.askingPrice ? ` Asking price: $${patent.askingPrice.toLocaleString()}.` : '';
+      pushNotification({
+        id: `licensing-${patent.publicationNumber}`,
+        text: `${patent.publicationNumber} is ${patent.licensingStatus.toLowerCase()}.${priceText}`,
+        type: 'update',
+        timestamp: toTimestamp(patent.publicationDate),
+      });
+    });
+
+  patents
+    .filter((patent) => patent.simpleLegalStatus === 'Dead' || favoriteSet.has(patent.publicationNumber))
+    .slice(0, 3)
+    .forEach((patent) => {
+      if (favoriteSet.has(patent.publicationNumber)) {
+        pushNotification({
+          id: `favorite-${patent.publicationNumber}`,
+          text: `${patent.publicationNumber} is on your watchlist with status ${patent.simpleLegalStatus || patent.legalStatus}.`,
+          type: 'update',
+          timestamp: toTimestamp(patent.publicationDate) || Date.now(),
+        });
+        return;
+      }
+
+      pushNotification({
+        id: `status-${patent.publicationNumber}`,
+        text: `${patent.publicationNumber} is marked ${patent.legalStatus} and no longer active.`,
+        type: 'alert',
+        timestamp: toTimestamp(patent.publicationDate),
+      });
+    });
+
+  patents
+    .slice()
+    .sort((left, right) => toTimestamp(right.publicationDate) - toTimestamp(left.publicationDate))
+    .slice(0, 2)
+    .forEach((patent) => {
+      pushNotification({
+        id: `publication-${patent.publicationNumber}`,
+        text: `${patent.publicationNumber} published in ${patent.domain || 'its technology domain'}.`,
+        type: 'update',
+        timestamp: toTimestamp(patent.publicationDate),
+      });
+    });
+
+  savedSearches.slice(0, 2).forEach((savedSearch) => {
+    pushNotification({
+      id: `saved-search-${savedSearch.id}`,
+      text: `Saved search "${savedSearch.name}" is ready for reuse.`,
+      type: 'saved',
+      timestamp: savedSearch.timestamp,
+    });
+  });
+
+  return notifications
+    .sort((left, right) => right.timestamp - left.timestamp)
+    .slice(0, 8);
+};
+
 interface GillowContextType {
   favorites: string[];
   toggleFavorite: (id: string) => void;
@@ -42,6 +160,7 @@ export const GillowProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const [comparisonList, setComparisonList] = useState<string[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [savedSearches, setSavedSearches] = useState<SavedSearch[]>([]);
+  const [readNotificationIds, setReadNotificationIds] = useState<string[]>([]);
 
   // Initialize from localStorage
   useEffect(() => {
@@ -49,20 +168,20 @@ export const GillowProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       const favs = localStorage.getItem('GILLOW_FAVORITES');
       const hist = localStorage.getItem('GILLOW_HISTORY');
       const saved = localStorage.getItem('GILLOW_SAVED_SEARCHES');
+      const readIds = localStorage.getItem(NOTIFICATION_READ_KEY);
       
       if (favs) setFavorites(JSON.parse(favs));
       if (hist) setSearchHistory(JSON.parse(hist));
       if (saved) setSavedSearches(JSON.parse(saved));
+      if (readIds) setReadNotificationIds(JSON.parse(readIds));
     } catch (e) {
       console.error("Error loading localStorage state", e);
     }
-
-    // Mock initial notifications for demo - keeping only the requested one
-    const demoPatentNumber = PATENTS[0]?.publicationNumber || 'the latest patent';
-    setNotifications([
-      { id: '2', text: `Recent valuation update for ${demoPatentNumber}`, type: 'update', read: false, timestamp: Date.now() - 3600000 }
-    ]);
   }, []);
+
+  useEffect(() => {
+    setNotifications(createPatentNotifications(PATENTS, favorites, savedSearches, readNotificationIds));
+  }, [favorites, savedSearches, readNotificationIds]);
 
   const toggleFavorite = (id: string) => {
     setFavorites(prev => {
@@ -98,6 +217,12 @@ export const GillowProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const clearComparison = () => setComparisonList([]);
 
   const markRead = (id: string) => {
+    setReadNotificationIds(prev => {
+      if (prev.includes(id)) return prev;
+      const next = [...prev, id];
+      localStorage.setItem(NOTIFICATION_READ_KEY, JSON.stringify(next));
+      return next;
+    });
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
   };
 

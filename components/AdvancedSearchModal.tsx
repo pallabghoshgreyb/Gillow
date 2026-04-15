@@ -1,26 +1,50 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { X, Search, Calendar, Zap, FileText, Filter, Layers, Target } from 'lucide-react';
+import { PATENTS } from '../data/patents';
+
+export type AdvancedSearchField = 'title' | 'abstract' | 'inventor' | 'assignee' | 'domain' | 'subdomain';
+
+export interface AdvancedSearchFormData {
+  booleanMode: 'AND' | 'OR';
+  searchIn: AdvancedSearchField[];
+  minValuation: number;
+  minCitations: number;
+  minClaims: number;
+  excludeExpired: boolean;
+  jurisdiction: string;
+}
 
 interface AdvancedSearchModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSearch: (filters: any) => void;
+  onSearch: (filters: AdvancedSearchFormData) => void;
+  initialValues?: AdvancedSearchFormData;
 }
 
-const AdvancedSearchModal: React.FC<AdvancedSearchModalProps> = ({ isOpen, onClose, onSearch }) => {
-  const [formData, setFormData] = useState({
+const DEFAULT_FORM_DATA: AdvancedSearchFormData = {
     booleanMode: 'AND',
-    searchIn: ['title', 'abstract', 'claims'],
+    searchIn: ['title', 'abstract', 'inventor', 'assignee', 'domain', 'subdomain'],
     minValuation: 0,
     minCitations: 0,
     minClaims: 0,
     excludeExpired: true,
     jurisdiction: 'All'
-  });
+};
+
+const AdvancedSearchModal: React.FC<AdvancedSearchModalProps> = ({ isOpen, onClose, onSearch, initialValues }) => {
+  const [formData, setFormData] = useState<AdvancedSearchFormData>(initialValues || DEFAULT_FORM_DATA);
+  const jurisdictions = useMemo(() => (
+    ['All', ...Array.from(new Set(PATENTS.map((patent) => patent.jurisdiction).filter(Boolean))).sort()]
+  ), []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setFormData(initialValues || DEFAULT_FORM_DATA);
+  }, [initialValues, isOpen]);
 
   if (!isOpen) return null;
 
-  const handleToggleIn = (field: string) => {
+  const handleToggleIn = (field: AdvancedSearchField) => {
     setFormData(prev => ({
       ...prev,
       searchIn: prev.searchIn.includes(field) 
@@ -76,7 +100,7 @@ const AdvancedSearchModal: React.FC<AdvancedSearchModalProps> = ({ isOpen, onClo
                 <Search size={14} /> Search Within
               </label>
               <div className="flex flex-wrap gap-2">
-                {['title', 'abstract', 'claims', 'inventor', 'assignee'].map(field => (
+                {(['title', 'abstract', 'inventor', 'assignee', 'domain', 'subdomain'] as AdvancedSearchField[]).map(field => (
                   <button 
                     key={field}
                     onClick={() => handleToggleIn(field)}
@@ -117,6 +141,23 @@ const AdvancedSearchModal: React.FC<AdvancedSearchModalProps> = ({ isOpen, onClo
 
             {/* Legal Filters */}
             <div className="md:col-span-2 space-y-4 pt-4 border-t border-slate-50">
+              <label className="text-xs font-black text-slate-400 uppercase tracking-[0.1em] flex items-center gap-2">
+                <Layers size={14} /> Jurisdiction
+              </label>
+              <select
+                value={formData.jurisdiction}
+                onChange={(e) => setFormData({ ...formData, jurisdiction: e.target.value })}
+                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 outline-none focus:border-blue-500"
+              >
+                {jurisdictions.map((jurisdiction) => (
+                  <option key={jurisdiction} value={jurisdiction}>
+                    {jurisdiction}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="md:col-span-2 space-y-4 pt-4 border-t border-slate-50">
               <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center">
@@ -140,13 +181,14 @@ const AdvancedSearchModal: React.FC<AdvancedSearchModalProps> = ({ isOpen, onClo
 
         <div className="p-8 bg-slate-50 border-t border-slate-100 flex gap-4">
           <button 
-            onClick={onClose}
+            onClick={() => setFormData(DEFAULT_FORM_DATA)}
             className="flex-1 px-6 py-3.5 bg-white border border-slate-200 text-slate-600 font-black rounded-2xl hover:bg-slate-50 transition-all uppercase text-xs tracking-widest"
           >
             Clear All
           </button>
           <button 
             onClick={() => { onSearch(formData); onClose(); }}
+            disabled={formData.searchIn.length === 0}
             className="flex-1 px-6 py-3.5 bg-blue-600 text-white font-black rounded-2xl shadow-xl shadow-blue-200 hover:bg-blue-700 transition-all uppercase text-xs tracking-widest flex items-center justify-center gap-2 active:scale-95"
           >
             Execute Search <ArrowRight size={16} />

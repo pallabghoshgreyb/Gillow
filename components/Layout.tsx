@@ -6,7 +6,7 @@ import {
   AlertCircle, ChevronRight, SlidersHorizontal, Map as MapIcon
 } from 'lucide-react';
 import { useGillow } from '../context/GillowContext';
-import AdvancedSearchModal from './AdvancedSearchModal';
+import AdvancedSearchModal, { type AdvancedSearchFormData } from './AdvancedSearchModal';
 import ServerConfigModal from './ServerConfigModal';
 import { api } from '../utils/api';
 import { PATENTS } from '../data/patents';
@@ -48,6 +48,32 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     if (!trimmedQuery) return searchSuggestions.slice(0, 8);
     return searchSuggestions.filter((suggestion) => suggestion.toLowerCase().includes(trimmedQuery)).slice(0, 8);
   }, [searchSuggestions, searchValue]);
+  const advancedSearchInitialValues = useMemo<AdvancedSearchFormData>(() => {
+    const params = new URLSearchParams(location.search);
+    const searchIn = params.getAll('in');
+
+    return {
+      booleanMode: params.get('mode') === 'or' ? 'OR' : 'AND',
+      searchIn: searchIn.length > 0 ? (searchIn as AdvancedSearchFormData['searchIn']) : ['title', 'abstract', 'inventor', 'assignee', 'domain', 'subdomain'],
+      minValuation: Math.floor((Number(params.get('minV')) || 0) / 1000000),
+      minCitations: Number(params.get('minCit')) || 0,
+      minClaims: Number(params.get('minC')) || 0,
+      excludeExpired: params.get('alive') === '1',
+      jurisdiction: params.get('jur') || 'All',
+    };
+  }, [location.search]);
+  const formatNotificationAge = (timestamp: number) => {
+    const delta = Math.max(0, Date.now() - timestamp);
+    const minute = 60 * 1000;
+    const hour = 60 * minute;
+    const day = 24 * hour;
+
+    if (delta < minute) return 'Just now';
+    if (delta < hour) return `${Math.floor(delta / minute)}m ago`;
+    if (delta < day) return `${Math.floor(delta / hour)}h ago`;
+    if (delta < 7 * day) return `${Math.floor(delta / day)}d ago`;
+    return new Date(timestamp).toLocaleDateString();
+  };
 
   useEffect(() => {
     setShowNotifications(false);
@@ -321,10 +347,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                                     notifications.map(n => (
                                         <div key={n.id} onClick={() => markRead(n.id)} className={`p-4 border-b border-slate-50 hover:bg-slate-50 cursor-pointer transition-colors ${!n.read ? 'bg-blue-50/50' : ''}`}>
                                             <div className="flex gap-3">
-                                                <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${n.type === 'alert' ? 'bg-blue-500' : 'bg-emerald-500'}`} />
+                                                <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${n.type === 'alert' ? 'bg-blue-500' : n.type === 'saved' ? 'bg-amber-500' : 'bg-emerald-500'}`} />
                                                 <div className="text-sm font-medium text-slate-700 leading-snug">{n.text}</div>
                                             </div>
-                                            <div className="text-[9px] text-slate-400 font-black mt-2 ml-5 uppercase tracking-wider">Just now</div>
+                                            <div className="text-[9px] text-slate-400 font-black mt-2 ml-5 uppercase tracking-wider">{formatNotificationAge(n.timestamp)}</div>
                                         </div>
                                     ))
                                 ) : (
@@ -481,8 +507,42 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       <AdvancedSearchModal 
         isOpen={isAdvancedOpen} 
         onClose={() => setIsAdvancedOpen(false)} 
+        initialValues={advancedSearchInitialValues}
         onSearch={(filters) => {
-          navigate(`/search?q=${encodeURIComponent(searchValue)}&adv=true`);
+          const params = new URLSearchParams();
+          const effectiveQuery = searchValue.trim() || new URLSearchParams(location.search).get('q')?.trim() || '';
+
+          if (effectiveQuery) {
+            params.set('q', effectiveQuery);
+          }
+
+          if (filters.booleanMode === 'OR') {
+            params.set('mode', 'or');
+          }
+
+          filters.searchIn.forEach((field) => params.append('in', field));
+
+          if (filters.minValuation > 0) {
+            params.set('minV', String(filters.minValuation * 1000000));
+          }
+
+          if (filters.minCitations > 0) {
+            params.set('minCit', String(filters.minCitations));
+          }
+
+          if (filters.minClaims > 0) {
+            params.set('minC', String(filters.minClaims));
+          }
+
+          if (filters.excludeExpired) {
+            params.set('alive', '1');
+          }
+
+          if (filters.jurisdiction !== 'All') {
+            params.set('jur', filters.jurisdiction);
+          }
+
+          navigate(`/search${params.toString() ? `?${params.toString()}` : ''}`);
         }}
       />
 

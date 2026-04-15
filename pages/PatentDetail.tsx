@@ -7,7 +7,8 @@ import {
     Scale, AlertTriangle, Tag, ListTree,
     Calendar, History, DollarSign, Clock,
     Zap, Gavel, ShieldAlert, BadgeCheck, XCircle, ArrowDown,
-    Dna, Layers, Cpu
+    Dna, Layers, Cpu, Flag, FileText,
+    type LucideIcon
 } from 'lucide-react';
 import { Patent } from '../types';
 import { api } from '../utils/api';
@@ -132,6 +133,36 @@ const PatentDetail: React.FC = () => {
   const hasRiskSidebar = isKnownNumber(patent.infringementRiskScore);
   const marketSidebarValue = hasText(patent.marketSector) ? patent.marketSector : `$${(patent.totalAddressableMarket / 1e9).toFixed(1)}B TAM`;
   const marketSidebarSub = isKnownNumber(patent.totalAddressableMarket) ? `TAM: $${(patent.totalAddressableMarket / 1e9).toFixed(1)}B` : 'Market Data';
+  const timelineMilestones = [
+    {
+      label: 'Priority',
+      date: patent.priorityDate,
+      detail: 'Earliest claimed priority',
+      icon: Flag,
+      tone: 'completed' as const,
+    },
+    {
+      label: 'Filing',
+      date: patent.priorityDate === patent.filingDate ? 'Self-Contained' : patent.filingDate,
+      detail: patent.priorityDate === patent.filingDate ? 'Filed without a separate provisional' : 'Formal application submitted',
+      icon: FileText,
+      tone: 'completed' as const,
+    },
+    {
+      label: 'Publication',
+      date: patent.publicationDate,
+      detail: 'Public disclosure milestone',
+      icon: Globe,
+      tone: 'completed' as const,
+    },
+    {
+      label: 'Estimated Expiration',
+      date: patent.estimatedExpirationDate,
+      detail: 'Projected end of enforceable term',
+      icon: Clock,
+      tone: 'pending' as const,
+    },
+  ];
 
   return (
     <div className="min-h-screen bg-white font-sans text-slate-900 pb-40">
@@ -173,7 +204,7 @@ const PatentDetail: React.FC = () => {
           </div>
       </div>
 
-      <div className="max-w-[1400px] mx-auto px-6 pt-16 grid grid-cols-1 lg:grid-cols-12 gap-16">
+      <div className="max-w-[1400px] mx-auto px-6 pt-16 grid grid-cols-1 lg:grid-cols-12 lg:items-start gap-16">
         <div className="lg:col-span-8 space-y-20">
             
             {/* Header Section */}
@@ -216,6 +247,44 @@ const PatentDetail: React.FC = () => {
                         } 
                         color="amber" 
                     />
+                </div>
+            </section>
+
+            {/* Patent Timeline */}
+            <section id="timeline" className="space-y-10 pt-8 border-t border-slate-100">
+                <div className="flex items-center gap-3">
+                    <div className="w-1.5 h-8 bg-blue-600 rounded-full" />
+                    <h2 className="text-2xl font-black text-slate-900 tracking-tight uppercase tracking-widest text-[14px]">Patent Timeline</h2>
+                </div>
+                <div className="rounded-[2.5rem] border border-slate-200/80 bg-gradient-to-br from-white via-sky-50/80 to-cyan-50/80 p-8 md:p-10 shadow-[0_30px_80px_-40px_rgba(14,116,144,0.35)] backdrop-blur-xl relative overflow-hidden">
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.16),_transparent_32%),radial-gradient(circle_at_bottom_right,_rgba(34,211,238,0.18),_transparent_28%)]" />
+                    <div className="absolute -bottom-10 -right-6 opacity-[0.07] text-slate-900"><Scale size={180} /></div>
+                    <div className="relative">
+                        <div className="mb-8 flex items-end justify-between gap-4">
+                            <div>
+                                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-sky-600">Lifecycle View</p>
+                                <p className="mt-2 max-w-2xl text-sm font-medium text-slate-500">Track the core prosecution milestones from earliest priority through the expected patent term endpoint.</p>
+                            </div>
+                        </div>
+                        <div className="relative">
+                            <div className="absolute left-8 right-8 top-7 hidden h-1 rounded-full bg-gradient-to-r from-slate-200 via-sky-200 to-cyan-200 md:block" />
+                            <div className="absolute left-8 right-8 top-7 hidden h-1 rounded-full bg-gradient-to-r from-blue-500 via-sky-500 to-cyan-400 md:block" />
+                            <div className="flex gap-6 overflow-x-auto px-1 pb-3 pt-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden md:grid md:grid-cols-4 md:gap-5 md:overflow-visible">
+                                {timelineMilestones.map((milestone, index) => (
+                                  <React.Fragment key={milestone.label}>
+                                    <TimelineNode
+                                      label={milestone.label}
+                                      date={milestone.date}
+                                      detail={milestone.detail}
+                                      icon={milestone.icon}
+                                      tone={milestone.tone}
+                                      isLast={index === timelineMilestones.length - 1}
+                                    />
+                                  </React.Fragment>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </section>
 
@@ -463,7 +532,7 @@ const PatentDetail: React.FC = () => {
 
         </div>
 
-        {/* Sidebar Marketplace Panel */}
+         {/* Sidebar Marketplace Panel */}
         <div className="lg:col-span-4">
             <div className="sticky top-40 space-y-10">
                 <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-2xl p-10 space-y-10 overflow-hidden relative">
@@ -493,10 +562,10 @@ const PatentDetail: React.FC = () => {
                        <History size={20} className="text-blue-400" /> Patent Timeline
                     </h3>
                     <div className="space-y-8">
-                       <TimelineNode label="Priority" date={patent.priorityDate} />
-                       <TimelineNode label="Filing" date={patent.priorityDate === patent.filingDate ? 'Self-Contained' : patent.filingDate} />
-                       <TimelineNode label="Publication" date={patent.publicationDate} />
-                       <TimelineNode label="Estimated Expiration" date={patent.estimatedExpirationDate} highlight />
+                       <SidebarTimelineEvent label="Priority" date={patent.priorityDate} />
+                       <SidebarTimelineEvent label="Filing" date={patent.priorityDate === patent.filingDate ? 'Self-Contained' : patent.filingDate} />
+                       <SidebarTimelineEvent label="Publication" date={patent.publicationDate} />
+                       <SidebarTimelineEvent label="Estimated Expiration" date={patent.estimatedExpirationDate} highlight />
                     </div>
                 </div>
             </div>
@@ -538,7 +607,43 @@ const SideStat = ({ label, value, sub }: { label: string, value: string, sub: st
     </div>
 );
 
-const TimelineNode = ({ label, date, highlight }: { label: string, date: string, highlight?: boolean }) => (
+const TimelineNode = ({
+    label,
+    date,
+    detail,
+    icon: Icon,
+    tone,
+    isLast,
+}: {
+    label: string,
+    date: string,
+    detail: string,
+    icon: LucideIcon,
+    tone: 'completed' | 'pending',
+    isLast?: boolean,
+}) => (
+    <div className="group min-w-[220px] flex-1 md:min-w-0">
+        <div className="flex flex-col items-center text-center">
+            <div className="relative">
+                {tone === 'completed' && <div className="absolute inset-1 rounded-full bg-sky-400/30 animate-pulse" />}
+                <div className={`relative z-10 flex h-14 w-14 items-center justify-center rounded-full text-white shadow-lg transition-transform duration-300 group-hover:scale-105 ${tone === 'pending' ? 'bg-gradient-to-br from-amber-500 to-orange-400 shadow-amber-200/80' : 'bg-gradient-to-br from-blue-600 to-cyan-400 shadow-sky-200/80'}`}>
+                    <Icon size={22} />
+                </div>
+            </div>
+            <div className={`mt-4 h-10 w-px ${tone === 'pending' ? 'bg-gradient-to-b from-amber-400 to-transparent' : 'bg-gradient-to-b from-sky-500 to-transparent'}`} />
+            <div className="w-full rounded-[1.5rem] border border-white/70 bg-white/80 p-5 shadow-[0_18px_45px_-30px_rgba(15,23,42,0.55)] backdrop-blur-md transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-[0_24px_50px_-28px_rgba(14,116,144,0.45)]">
+                <div className={`mb-3 inline-flex rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] ${tone === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-sky-100 text-sky-700'}`}>
+                    {label}
+                </div>
+                <div className={`text-base font-black tracking-tight ${tone === 'pending' ? 'text-amber-600' : 'text-slate-900'}`}>{date}</div>
+                <div className="mt-2 text-xs font-medium text-slate-500">{detail}</div>
+            </div>
+            {!isLast && <div className="mt-5 h-px w-full bg-gradient-to-r from-sky-200 via-cyan-200 to-transparent md:hidden" />}
+        </div>
+    </div>
+);
+
+const SidebarTimelineEvent = ({ label, date, highlight }: { label: string, date: string, highlight?: boolean }) => (
     <div className="flex gap-6 relative">
         <div className="flex flex-col items-center">
             <div className={`w-3.5 h-3.5 rounded-full border-2 ${highlight ? 'bg-blue-500 border-white' : 'bg-slate-800 border-slate-700'}`} />
