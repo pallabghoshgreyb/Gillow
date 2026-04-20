@@ -35,16 +35,25 @@ const ExaminationDetailsSection: React.FC<ExaminationDetailsSectionProps> = ({ p
     const nonPublicationCodes = patent.nonPublicationCodes.filter((code) => hasText(code));
 
     return {
-      gau: hasText(patent.gau) ? patent.gau : 'Not assigned',
-      gauDefinition: hasText(patent.gauDefinition)
-        ? patent.gauDefinition
-        : 'Definition not disclosed in the current record.',
-      patentType: hasText(patent.patentType) ? patent.patentType : 'Utility',
-      entityType: hasText(patent.entityType) ? patent.entityType : 'Regular',
+      gau: hasText(patent.gau) ? patent.gau : '',
+      gauDefinition: hasText(patent.gauDefinition) ? patent.gauDefinition : '',
+      patentType: hasText(patent.patentType) ? patent.patentType : '',
+      entityType: hasText(patent.entityType) ? patent.entityType : '',
       trackOneCodes,
       nonPublicationCodes,
     };
   }, [patent]);
+
+  if (
+    !hasText(details.gau) &&
+    !hasText(details.gauDefinition) &&
+    !hasText(details.patentType) &&
+    !hasText(details.entityType) &&
+    details.trackOneCodes.length === 0 &&
+    details.nonPublicationCodes.length === 0
+  ) {
+    return null;
+  }
 
   return (
     <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -56,7 +65,9 @@ const ExaminationDetailsSection: React.FC<ExaminationDetailsSectionProps> = ({ p
         <div className="space-y-1">
           <h3 className="text-sm font-semibold text-slate-900">Examination Details</h3>
           <p className="text-sm text-slate-500">
-            GAU {details.gau} - {details.patentType}
+            {[hasText(details.gau) ? `GAU ${details.gau}` : '', hasText(details.patentType) ? details.patentType : '']
+              .filter(Boolean)
+              .join(' - ')}
           </p>
         </div>
         <motion.span animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
@@ -75,69 +86,69 @@ const ExaminationDetailsSection: React.FC<ExaminationDetailsSectionProps> = ({ p
           >
             <div className="border-t border-slate-100 px-6 py-6 text-sm text-slate-600">
               <div className="space-y-6">
-                <div className="space-y-2">
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-                    GAU Code
-                  </p>
-                  <p className="font-mono text-base font-medium text-slate-900">{details.gau}</p>
-                  <p className="max-w-2xl leading-6 text-slate-500">{details.gauDefinition}</p>
-                </div>
+                {hasText(details.gau) && (
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                      GAU Code
+                    </p>
+                    <p className="font-mono text-base font-medium text-slate-900">{details.gau}</p>
+                    {hasText(details.gauDefinition) && (
+                      <p className="max-w-2xl leading-6 text-slate-500">{details.gauDefinition}</p>
+                    )}
+                  </div>
+                )}
 
-                <div className="space-y-2">
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-                    Patent Type
-                  </p>
-                  <span
-                    className={`inline-flex rounded-full border px-3 py-1 text-sm font-medium ${patentTypeClasses(details.patentType)}`}
-                  >
-                    {details.patentType}
-                  </span>
-                </div>
+                {hasText(details.patentType) && (
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                      Patent Type
+                    </p>
+                    <span
+                      className={`inline-flex rounded-full border px-3 py-1 text-sm font-medium ${patentTypeClasses(details.patentType)}`}
+                    >
+                      {details.patentType}
+                    </span>
+                  </div>
+                )}
 
-                <div className="space-y-2">
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-                    Entity Type
-                  </p>
-                  <span
-                    className={`inline-flex rounded-full border px-3 py-1 text-sm font-medium ${entityTypeClasses(details.entityType)}`}
-                  >
-                    {details.entityType}
-                  </span>
-                </div>
+                {hasText(details.entityType) && (
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                      Entity Type
+                    </p>
+                    <span
+                      className={`inline-flex rounded-full border px-3 py-1 text-sm font-medium ${entityTypeClasses(details.entityType)}`}
+                    >
+                      {details.entityType}
+                    </span>
+                  </div>
+                )}
 
-                <div className="space-y-3">
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-                    Track-One Codes
-                  </p>
-                  {details.trackOneCodes.length > 0 ? (
+                {details.trackOneCodes.length > 0 && (
+                  <div className="space-y-3">
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                      Track-One Codes
+                    </p>
                     <div className="flex flex-wrap gap-2">
                       {details.trackOneCodes.map((code) => (
                         <CodePill key={code} value={code} />
                       ))}
                     </div>
-                  ) : (
-                    <span className="inline-flex rounded-full bg-slate-50 px-3 py-1 text-xs font-medium text-slate-500">
-                      None
-                    </span>
-                  )}
-                </div>
+                  </div>
+                )}
 
-                <div className="space-y-3">
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-                    Non-Publication Codes
-                  </p>
-                  {details.nonPublicationCodes.length > 0 ? (
+                {details.nonPublicationCodes.length > 0 && (
+                  <div className="space-y-3">
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                      Non-Publication Codes
+                    </p>
                     <div className="flex flex-wrap gap-2">
                       {details.nonPublicationCodes.map((code) => (
                         <CodePill key={code} value={code} />
                       ))}
                     </div>
-                  ) : (
-                    <span className="inline-flex rounded-full bg-slate-50 px-3 py-1 text-xs font-medium text-slate-500">
-                      None
-                    </span>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             </div>
           </motion.div>

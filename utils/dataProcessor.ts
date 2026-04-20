@@ -43,12 +43,38 @@ export const parsePatentRow = (row: any): Patent => {
     HK: 'Hong Kong',
     MY: 'Malaysia',
   };
+  const countryRegionFromCountry: Record<string, string> = {
+    'United States of America': 'North America',
+    China: 'Asia',
+    'Europe (EPO)': 'Europe',
+    WIPO: 'International',
+    Taiwan: 'Asia',
+    Japan: 'Asia',
+    'South Korea': 'Asia',
+    Germany: 'Europe',
+    Australia: 'Oceania',
+    Mexico: 'North America',
+    Brazil: 'South America',
+    Canada: 'North America',
+    Spain: 'Europe',
+    'Hong Kong': 'Asia',
+    Malaysia: 'Asia',
+  };
 
   const isEmptyLike = (val: any): boolean => {
     if (val === undefined || val === null) return true;
     const normalized = String(val).trim();
     return normalized === '' || normalized === '-' || normalized === '—' || normalized === 'nan' || normalized === 'FALSE' || normalized === 'None';
   };
+
+  const hasRealValue = (val: any): boolean => {
+    if (isEmptyLike(val)) return false;
+    const normalized = String(val).trim();
+    const normalizedCurrency = normalized.replace(/[$,]/g, '').trim();
+    return normalizedCurrency !== '' && normalizedCurrency !== '-';
+  };
+
+  const firstPresentValue = (...values: any[]) => values.find((value) => hasRealValue(value));
 
   const splitPipe = (val: any): string[] => {
     if (isEmptyLike(val)) return [];
@@ -68,12 +94,27 @@ export const parsePatentRow = (row: any): Patent => {
     return String(val).split(',').map(s => s.trim()).filter(s => s);
   };
 
+  const splitCitationList = (val: any): string[] => {
+    if (isEmptyLike(val)) return [];
+    return String(val)
+      .split('|')
+      .map((s) => s.trim())
+      .filter((s) => s && s !== '0');
+  };
+
   const cleanNumeric = (val: any): number => {
     if (isEmptyLike(val)) return 0;
     return parseInt(String(val).replace(/[$,]/g, '')) || 0;
   };
 
   const normalizeText = (val: any): string => (isEmptyLike(val) ? '' : String(val).trim());
+
+  const normalizeAbstract = (val: any): string =>
+    normalizeText(val)
+      .replace(/<img\b[^>]*>/gi, ' ')
+      .replace(/<\/?[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
 
   const normalizeFtoStatus = (val: any): Patent['ftoStatus'] => {
     if (isEmptyLike(val)) return 'Unknown';
@@ -82,6 +123,11 @@ export const parsePatentRow = (row: any): Patent => {
     if (normalized === 'blocked') return 'Blocked';
     if (normalized === 'caution' || normalized === 'pending') return 'Caution';
     return 'Unknown';
+  };
+
+  const normalizeMaintenanceText = (val: any): string => {
+    if (isEmptyLike(val)) return '';
+    return String(val).trim();
   };
 
   const formatDateValue = (val: any): string => {
@@ -101,11 +147,54 @@ export const parsePatentRow = (row: any): Patent => {
     return familyCountryFromPrefix[normalized.toUpperCase()] || normalized;
   };
 
+  const regionsFromCountries = (values: string[]): string[] =>
+    Array.from(
+      new Set(
+        values
+          .map((value) => countryRegionFromCountry[value])
+          .filter((value): value is string => Boolean(value)),
+      ),
+    );
+
+  const deriveMarketSector = (explicitValue: any, regions: string[]): string => {
+    const explicit = normalizeText(explicitValue);
+    if (explicit) return explicit;
+    if (regions.length === 1) return `${regions[0]} coverage`;
+    if (regions.length > 1) return 'Multi-region coverage';
+    return '';
+  };
+
+  const derivePatentFamilyStrategy = (
+    explicitValue: any,
+    cipConDivValues: string[],
+    countries: string[],
+  ): Patent['patentFamilyStrategy'] => {
+    const explicit = normalizeText(explicitValue).toLowerCase();
+    if (explicit === 'single') return 'Single';
+    if (explicit === 'continuation') return 'Continuation';
+    if (explicit === 'divisional') return 'Divisional';
+    if (explicit === 'cip') return 'CIP';
+    if (explicit === 'provisional') return 'Provisional';
+
+    const normalizedSignals = cipConDivValues.map((value) => value.trim().toUpperCase());
+    if (normalizedSignals.includes('CIP')) return 'CIP';
+    if (normalizedSignals.includes('DIV')) return 'Divisional';
+    if (normalizedSignals.includes('CON')) return 'Continuation';
+    if (countries.length <= 1) return 'Single';
+    return '';
+  };
+
   const pubNum = normalizeText(row['Publication Number']);
   const currentAssignees = splitPipe(row['Current Assignees']);
   const originalAssignees = splitPipe(row['Original Assignees']);
-  const forwardCitations = splitPipe(row['Forward Citations']);
-  const backwardCitations = splitPipe(row['Backward Citations']);
+  const forwardCitations = splitCitationList(firstPresentValue(
+    row['Forward Citations'],
+    row['Forward Citing Patents'],
+  ));
+  const backwardCitations = splitCitationList(firstPresentValue(
+    row['Backward Citations'],
+    row['Backward Cited Patents'],
+  ));
 
   // Licensing Data
   const licensingStatus = String(row['Licensing Status'] || '') as LicensingStatus;
@@ -123,12 +212,14 @@ export const parsePatentRow = (row: any): Patent => {
   const commercialApplications = splitPipe(row['Commercial Applications']);
 
   // Market Data
-  const marketSector = normalizeText(row['Domain'] || row['Market Sector']);
+  const marketSector = normalizeText(row['Market Sector']);
   const totalAddressableMarket = cleanNumeric(row['Total Addressable Market USD']);
   const parsedMarketGrowthRate = parseFloat(String(row['Market Growth Rate'] || '0'));
   const marketGrowthRate = Number.isFinite(parsedMarketGrowthRate) ? parsedMarketGrowthRate : 0;
   const keyCompetitors = splitComma(row['Key Competitors']);
-  const marketRegion = splitComma(row['Market Region']);
+  const explicitMarketRegion = splitComma(
+    firstPresentValue(row['Market Region'], row['Geographical Distribution'], row['Geo Graphical Distribution']),
+  );
 
   // Risk Assessment
   const infringementRiskScore = cleanNumeric(row['Infringement Risk Score']);
@@ -138,7 +229,11 @@ export const parsePatentRow = (row: any): Patent => {
 
   // Portfolio Context
   const relatedPatents = splitPipe(row['Related Patents']);
-  const patentFamilyStrategy = String(row['Patent Family Strategy'] || '') as Patent['patentFamilyStrategy'];
+  const rawPatentFamilyStrategy = firstPresentValue(
+    row['Patent Family Strategy'],
+    row['Geographical Distribution'],
+    row['Geo Graphical Distribution'],
+  );
   const portfolioSegment = String(row['Portfolio Segment'] || '');
   const trackOneCodes = splitFlexible(row['Track-One Codes']);
   const nonPublicationCodes = splitFlexible(row['Non-Publication Codes']);
@@ -168,21 +263,36 @@ export const parsePatentRow = (row: any): Patent => {
     .filter((country): country is string => Boolean(country));
   const explicitCountries = splitPipe(row['Country'] || row['Country Code']).map(normalizeCountryValue);
   const countries = familyJurisdictions.length > 0 ? familyJurisdictions : explicitCountries;
+  const derivedRegions = regionsFromCountries(countries);
+  const marketRegion = explicitMarketRegion.length > 0 ? explicitMarketRegion : derivedRegions;
+  const resolvedMarketSector = deriveMarketSector(row['Market Sector'], marketRegion);
+  const patentFamilyStrategy = derivePatentFamilyStrategy(rawPatentFamilyStrategy, cipConDiv, countries);
 
-  // Dynamic Valuation Algorithm
-  const numericTail = parseInt(pubNum.replace(/\D/g, '').slice(-4)) || 0;
-  const techScore = 60 + (forwardCitations.length * 2) + (numericTail % 20) + (technologyReadinessLevel * 2);
-  const marketScore = 50 + (countries.length * 4);
-  const legalScore = ['true', 'yes', '1'].includes(String(row['Litigation Flag'] || row['Litigation'] || '').trim().toLowerCase()) ? 95 : 70;
-
-  const declaredValuation = cleanNumeric(row['Patent Valuation'] || row['Asking Price USD']);
+  const declaredValuation = cleanNumeric(firstPresentValue(
+    row['Patent Valuation'],
+    row['Patsnap Value'],
+    row['Asking Price USD'],
+  ));
   const strategicValue = cleanNumeric(row['Strategic value']);
   const marketValue = cleanNumeric(row['Market value']);
   const technologyValue = cleanNumeric(row['Technology value']);
   const economicValue = cleanNumeric(row['Economic value']);
   const legalValue = cleanNumeric(row['Legal value']);
-  const valuationEstimate = declaredValuation || (techScore * 5000) + (marketScore * 10000) + (legalScore * 2000);
-  const askingPrice = declaredValuation || (row['Asking Price USD'] ? cleanNumeric(row['Asking Price USD']) : undefined);
+  const valuationEstimate = declaredValuation;
+  const askingPriceValue = firstPresentValue(
+    row['Asking Price USD'],
+    row['Patsnap Value'],
+    row['Patent Valuation'],
+  );
+  const askingPrice = askingPriceValue ? cleanNumeric(askingPriceValue) : undefined;
+  const backwardCitationsCount = cleanNumeric(firstPresentValue(
+    row['Count of Backward Citation'],
+    row['Backward Citations Count'],
+  )) || backwardCitations.length;
+  const forwardCitationsCount = cleanNumeric(firstPresentValue(
+    row['Count of Forward Citation'],
+    row['Forward Citations Count'],
+  )) || forwardCitations.length;
   const independentClaimsCount = cleanNumeric(row['Independent Claims Count']);
   const dependentClaimsCount = cleanNumeric(row['Dependent Claims Count']);
   const explicitQualityInputs = [
@@ -194,7 +304,7 @@ export const parsePatentRow = (row: any): Patent => {
   ].filter((value) => value > 0);
   const qualityScore = explicitQualityInputs.length > 0
     ? Math.round(explicitQualityInputs.reduce((sum, value) => sum + value, 0) / explicitQualityInputs.length)
-    : Math.round((techScore + marketScore + legalScore) / 3);
+    : 0;
 
   return {
     id: pubNum,
@@ -213,7 +323,11 @@ export const parsePatentRow = (row: any): Patent => {
       year3_5: cleanNumeric(row['3.5 years']),
       year7_5: cleanNumeric(row['7.5 Years']),
       year11_5: cleanNumeric(row['11.5 Years']),
-      totalPending: cleanNumeric(row['Total Pending Fee'])
+      totalPending: cleanNumeric(row['Total Pending Fee']),
+      year3_5Text: normalizeMaintenanceText(row['3.5 years']),
+      year7_5Text: normalizeMaintenanceText(row['7.5 Years']),
+      year11_5Text: normalizeMaintenanceText(row['11.5 Years']),
+      totalPendingText: normalizeMaintenanceText(row['Total Pending Fee']),
     },
     originalAssignees,
     currentAssignees,
@@ -223,17 +337,17 @@ export const parsePatentRow = (row: any): Patent => {
     subdomain: normalizeText(row['Subdomain']),
     cpcs: splitPipe(row['CPCs']),
     ipcs: splitPipe(row['IPCs']),
-    abstract: normalizeText(row['Abstract']),
+    abstract: normalizeAbstract(row['Abstract']),
     legalStatus: normalizeText(row['Legal Status']),
     simpleLegalStatus: normalizeText(row['Simple Legal Status']),
     backwardCitations,
     forwardCitations,
-    backwardCitationsCount: backwardCitations.length,
-    forwardCitationsCount: forwardCitations.length,
+    backwardCitationsCount,
+    forwardCitationsCount,
     flags: {
       sep: ['yes', 'true', '1'].includes(String(row['SEP Flag'] || row['SEP'] || '').trim().toLowerCase()),
-      opposition: String(row['Oppositions Flag'] || '').toUpperCase() === 'TRUE',
-      ptab: String(row['PTAB Flag'] || '').toUpperCase() === 'TRUE',
+      opposition: ['true', 'yes', '1'].includes(String(firstPresentValue(row['Oppositions Flag'], row['Opposition Flag']) || '').trim().toLowerCase()),
+      ptab: ['true', 'yes', '1'].includes(String(firstPresentValue(row['PTAB Flag'], row['PTAB']) || '').trim().toLowerCase()),
       litigation: ['yes', 'true', '1'].includes(String(row['Litigation Flag'] || row['Litigation'] || '').trim().toLowerCase()),
       governmentInterest: ['yes', 'true', 'government interest'].includes(String(row['Govt. Interest'] || '').trim().toLowerCase())
     },
@@ -248,9 +362,9 @@ export const parsePatentRow = (row: any): Patent => {
     licensingStatus,
     previousDeals,
     valuationMetrics: {
-        technicalQuality: technologyValue || Math.min(techScore, 100),
-        marketBreadth: marketValue || Math.min(marketScore, 100),
-        enforcementStrength: legalValue || Math.min(legalScore, 100),
+        technicalQuality: technologyValue,
+        marketBreadth: marketValue,
+        enforcementStrength: legalValue,
         strategicValue,
         marketValue,
         technologyValue,
@@ -260,7 +374,7 @@ export const parsePatentRow = (row: any): Patent => {
     technologyReadinessLevel,
     trlDescription,
     commercialApplications,
-    marketSector,
+    marketSector: resolvedMarketSector,
     totalAddressableMarket,
     marketGrowthRate,
     keyCompetitors,
@@ -286,17 +400,12 @@ export const parsePatentRow = (row: any): Patent => {
 
     // Legacy fields
     status: normalizeText(row['Legal Status']),
-    citations: forwardCitations.length,
+    citations: forwardCitationsCount,
     independentClaimsCount,
     dependentClaimsCount,
     totalClaims: independentClaimsCount + dependentClaimsCount,
     valuation: { current: valuationEstimate },
-    citationTrend: [
-      { year: 2021, citations: Math.floor(Math.random() * 5) },
-      { year: 2022, citations: Math.floor(Math.random() * 10) },
-      { year: 2023, citations: Math.floor(Math.random() * 15) },
-      { year: 2024, citations: forwardCitations.length },
-    ],
+    citationTrend: [],
     assignee: {
       name: currentAssignees[0] || originalAssignees[0] || 'Unknown',
       type: normalizeText(row['Entity Type']) || 'Company'
@@ -308,6 +417,15 @@ export const calculateMaintenanceStatus = (patent: Patent) => {
   const filingDate = new Date(patent.filingDate);
   const isValidDate = !isNaN(filingDate.getTime());
   const today = new Date();
+  const normalizeStatus = (value: string): 'paid' | 'pending' | 'overdue' => {
+    const normalized = value.trim().toLowerCase();
+    if (!normalized) return 'pending';
+    if (normalized.includes('paid')) return 'paid';
+    if (normalized.includes('not due')) return 'pending';
+    if (normalized.includes('due soon')) return 'pending';
+    if (normalized.includes('unpaid') || normalized.includes('overdue') || normalized.includes('late')) return 'overdue';
+    return 'pending';
+  };
   
   const getSafeDate = (offsetYears: number) => {
     if (!isValidDate) return new Date();
@@ -319,22 +437,36 @@ export const calculateMaintenanceStatus = (patent: Patent) => {
   const due11_5 = getSafeDate(11.5);
   
   const { maintenanceFees } = patent;
-  let status3_5: 'paid' | 'pending' | 'overdue' = 'pending';
-  let status7_5: 'paid' | 'pending' | 'overdue' = 'pending';
-  let status11_5: 'paid' | 'pending' | 'overdue' = 'pending';
+  const textStatuses = [
+    maintenanceFees.year3_5Text,
+    maintenanceFees.year7_5Text,
+    maintenanceFees.year11_5Text,
+  ].some((value) => value.trim());
+
+  let status3_5: 'paid' | 'pending' | 'overdue' = textStatuses
+    ? normalizeStatus(maintenanceFees.year3_5Text)
+    : 'pending';
+  let status7_5: 'paid' | 'pending' | 'overdue' = textStatuses
+    ? normalizeStatus(maintenanceFees.year7_5Text)
+    : 'pending';
+  let status11_5: 'paid' | 'pending' | 'overdue' = textStatuses
+    ? normalizeStatus(maintenanceFees.year11_5Text)
+    : 'pending';
   
-  if (maintenanceFees.totalPending === 0) {
-    status3_5 = status7_5 = status11_5 = 'paid';
-  } else if (maintenanceFees.totalPending <= maintenanceFees.year11_5) {
-    status3_5 = status7_5 = 'paid';
-    status11_5 = today > due11_5 ? 'overdue' : 'pending';
-  } else if (maintenanceFees.totalPending <= (maintenanceFees.year7_5 + maintenanceFees.year11_5)) {
-    status3_5 = 'paid';
-    status7_5 = today > due7_5 ? 'overdue' : 'pending';
-    status11_5 = 'pending';
-  } else {
-    status3_5 = today > due3_5 ? 'overdue' : 'pending';
-    status7_5 = status11_5 = 'pending';
+  if (!textStatuses) {
+    if (maintenanceFees.totalPending === 0) {
+      status3_5 = status7_5 = status11_5 = 'paid';
+    } else if (maintenanceFees.totalPending <= maintenanceFees.year11_5) {
+      status3_5 = status7_5 = 'paid';
+      status11_5 = today > due11_5 ? 'overdue' : 'pending';
+    } else if (maintenanceFees.totalPending <= (maintenanceFees.year7_5 + maintenanceFees.year11_5)) {
+      status3_5 = 'paid';
+      status7_5 = today > due7_5 ? 'overdue' : 'pending';
+      status11_5 = 'pending';
+    } else {
+      status3_5 = today > due3_5 ? 'overdue' : 'pending';
+      status7_5 = status11_5 = 'pending';
+    }
   }
   
   return {

@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronDown } from 'lucide-react';
+import { ArrowRight, ChevronDown, Globe2 } from 'lucide-react';
 import { Patent } from '../types';
 import GeographicalDistributionMap from './GeographicalDistributionMap';
 
@@ -8,7 +8,7 @@ type GeographicalDistributionSectionProps = {
   patent: Patent;
 };
 
-type JurisdictionStatus = 'granted' | 'pending' | 'expired';
+type JurisdictionStatus = 'granted' | 'pending' | 'abandoned' | 'expired';
 
 type FamilyMember = {
   code: string;
@@ -16,6 +16,7 @@ type FamilyMember = {
   publicationNumber: string;
   priorityDate: string;
   status: JurisdictionStatus;
+  statusLabel: string;
 };
 
 type CountryGroup = {
@@ -23,15 +24,18 @@ type CountryGroup = {
   country: string;
   count: number;
   status: JurisdictionStatus;
+  statusLabel: string;
   members: FamilyMember[];
 };
 
 const EASE = [0.22, 1, 0.36, 1] as const;
+const cn = (...values: Array<string | false | null | undefined>) => values.filter(Boolean).join(' ');
 
 const STATUS_ORDER: Record<JurisdictionStatus, number> = {
   granted: 0,
   pending: 1,
-  expired: 2,
+  abandoned: 2,
+  expired: 3,
 };
 
 const COUNTRY_NAMES: Record<string, string> = {
@@ -59,7 +63,7 @@ const COUNTRY_NAMES: Record<string, string> = {
 
 const hasText = (value?: string | null) => Boolean(value && value.trim() && value.trim() !== '-');
 
-const formatDate = (value?: string, fallback = 'Not disclosed') => {
+const formatDate = (value?: string, fallback = '') => {
   if (!hasText(value)) return fallback;
   const parsed = new Date(value as string);
   if (Number.isNaN(parsed.getTime())) return value as string;
@@ -81,17 +85,34 @@ const normalizeMembers = (patent: Patent) => {
     .filter(Boolean);
 };
 
-const inferStatus = (publicationNumber: string): JurisdictionStatus => {
-  if (/(?:B\d?|C\d?|T\d?)$/.test(publicationNumber)) return 'granted';
-  if (/(?:A\d?)$/.test(publicationNumber)) return 'pending';
-  if (/expired|abandoned|lapsed|dead/.test(publicationNumber)) return 'expired';
-  return 'expired';
+const resolveLegalStatus = (
+  patent: Patent,
+): { status: JurisdictionStatus; label: string } => {
+  const legalStatus = `${patent.legalStatus || ''} ${patent.simpleLegalStatus || ''}`.trim();
+  const label = hasText(patent.legalStatus)
+    ? patent.legalStatus.trim()
+    : hasText(patent.simpleLegalStatus)
+      ? patent.simpleLegalStatus.trim()
+      : 'Pending';
+
+  if (/abandoned/i.test(legalStatus)) {
+    return { status: 'abandoned', label };
+  }
+
+  if (/expired|dead|lapsed/i.test(legalStatus)) {
+    return { status: 'expired', label };
+  }
+
+  if (/granted|issued|alive/i.test(legalStatus)) {
+    return { status: 'granted', label };
+  }
+
+  return { status: 'pending', label };
 };
 
 const statusMeta = (status: JurisdictionStatus) => {
   if (status === 'granted') {
     return {
-      label: 'Granted',
       badge: 'border-emerald-200 bg-emerald-50 text-emerald-700',
       dot: 'bg-emerald-500',
       pulse: 'rgba(16, 185, 129, 0.2)',
@@ -100,15 +121,21 @@ const statusMeta = (status: JurisdictionStatus) => {
 
   if (status === 'pending') {
     return {
-      label: 'Published',
       badge: 'border-amber-200 bg-amber-50 text-amber-700',
       dot: 'bg-amber-500',
       pulse: 'rgba(245, 158, 11, 0.2)',
     };
   }
 
+  if (status === 'abandoned') {
+    return {
+      badge: 'border-red-200 bg-red-50 text-red-700',
+      dot: 'bg-red-500',
+      pulse: 'rgba(239, 68, 68, 0.2)',
+    };
+  }
+
   return {
-    label: 'Expired',
     badge: 'border-slate-200 bg-slate-50 text-slate-500',
     dot: 'bg-slate-400',
     pulse: 'rgba(148, 163, 184, 0.18)',
@@ -117,26 +144,24 @@ const statusMeta = (status: JurisdictionStatus) => {
 
 const countryName = (code: string) => COUNTRY_NAMES[code] || code;
 
-const flagEmoji = (code: string) => {
-  const normalized = code.toUpperCase();
-
-  if (normalized === 'WO') {
-    return String.fromCodePoint(0x1F310);
-  }
-
-  const flagCode = normalized === 'EP' ? 'EU' : normalized;
-  if (!/^[A-Z]{2}$/.test(flagCode)) {
-    return String.fromCodePoint(0x1F3F3);
-  }
-
-  return String.fromCodePoint(
-    ...flagCode.split('').map((char) => 127397 + char.charCodeAt(0)),
-  );
-};
+const JurisdictionMark = ({ code, selected }: { code: string; selected: boolean }) => (
+  <div
+    className={cn(
+      'flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border text-sm font-semibold shadow-sm transition',
+      selected
+        ? 'border-teal-300 bg-teal-50 text-teal-700'
+        : 'border-slate-200 bg-white text-slate-700',
+    )}
+    aria-hidden="true"
+  >
+    {code === 'WO' ? <Globe2 size={18} /> : code}
+  </div>
+);
 
 const buildGroups = (patent: Patent): CountryGroup[] => {
   const grouped = new Map<string, FamilyMember[]>();
   const members = normalizeMembers(patent);
+  const resolvedStatus = resolveLegalStatus(patent);
 
   members.forEach((publicationNumber) => {
     const code = publicationNumber.slice(0, 2);
@@ -147,26 +172,14 @@ const buildGroups = (patent: Patent): CountryGroup[] => {
       country: countryName(code),
       publicationNumber,
       priorityDate: formatDate(patent.priorityDate),
-      status: inferStatus(publicationNumber),
+      status: resolvedStatus.status,
+      statusLabel: resolvedStatus.label,
     };
 
     const current = grouped.get(code) || [];
     current.push(next);
     grouped.set(code, current);
   });
-
-  if (grouped.size === 0 && hasText(patent.publicationNumber)) {
-    const fallbackCode = patent.publicationNumber.slice(0, 2).toUpperCase();
-    grouped.set(fallbackCode, [
-      {
-        code: fallbackCode,
-        country: countryName(fallbackCode),
-        publicationNumber: patent.publicationNumber.toUpperCase(),
-        priorityDate: formatDate(patent.priorityDate),
-        status: inferStatus(patent.publicationNumber.toUpperCase()),
-      },
-    ]);
-  }
 
   return Array.from(grouped.entries())
     .map(([code, membersForCountry]) => {
@@ -179,6 +192,8 @@ const buildGroups = (patent: Patent): CountryGroup[] => {
         ? 'granted'
         : sortedMembers.some((member) => member.status === 'pending')
           ? 'pending'
+          : sortedMembers.some((member) => member.status === 'recorded')
+            ? 'recorded'
           : 'expired';
 
       return {
@@ -186,6 +201,10 @@ const buildGroups = (patent: Patent): CountryGroup[] => {
         country: countryName(code),
         count: sortedMembers.length,
         status,
+        statusLabel:
+          sortedMembers.find((member) => member.status === status)?.statusLabel ||
+          sortedMembers[0]?.statusLabel ||
+          '',
         members: sortedMembers,
       };
     })
@@ -215,6 +234,10 @@ const GeographicalDistributionSection: React.FC<GeographicalDistributionSectionP
   );
   const jurisdictionCount = groups.length;
   const totalMembers = tableRows.length;
+
+  if (groups.length === 0) {
+    return null;
+  }
 
   const focusCountry = (code: string) => {
     setSelectedCode(code);
@@ -261,7 +284,7 @@ const GeographicalDistributionSection: React.FC<GeographicalDistributionSectionP
             <p className="text-sm text-slate-500">{totalMembers} total family members</p>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
             {groups.map((group) => {
               const meta = statusMeta(group.status);
               const isSelected = selectedCode === group.code;
@@ -279,56 +302,65 @@ const GeographicalDistributionSection: React.FC<GeographicalDistributionSectionP
                   whileHover={{ y: -2 }}
                   transition={{ type: 'spring', stiffness: 320, damping: 24 }}
                   className={[
-                    'rounded-lg border border-slate-100 bg-white p-3 text-left shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2',
+                    'flex min-h-[192px] flex-col rounded-2xl border bg-gradient-to-b from-white to-slate-50/70 p-4 text-left shadow-[0_8px_24px_rgba(15,23,42,0.05)] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 sm:p-5',
                     isSelected
-                      ? 'border-teal-300 shadow-md'
-                      : 'hover:border-teal-300 hover:shadow-md',
+                      ? 'border-teal-300 shadow-[0_14px_32px_rgba(13,148,136,0.14)]'
+                      : 'border-slate-200 hover:border-teal-300 hover:shadow-[0_14px_30px_rgba(15,23,42,0.08)]',
                   ].join(' ')}
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg" aria-hidden="true">
-                        {flagEmoji(group.code)}
-                      </span>
-                      <span className="text-sm font-semibold text-slate-900">{group.code}</span>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex min-w-0 items-start gap-3">
+                      <JurisdictionMark code={group.code} selected={isSelected} />
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                          Jurisdiction
+                        </p>
+                        <p className="mt-2 text-lg font-semibold leading-6 text-slate-900">
+                          {group.country}
+                        </p>
+                        <p className="mt-2 text-sm text-slate-500">
+                          {group.count} patent{group.count === 1 ? '' : 's'}
+                        </p>
+                      </div>
                     </div>
-                    <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                    <span className="inline-flex min-w-[2.5rem] items-center justify-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-500">
                       {group.count}
                     </span>
                   </div>
 
-                  <p className="mt-2 text-sm text-slate-600">
-                    {group.count} patent{group.count === 1 ? '' : 's'}
-                  </p>
-                  <p className="mt-1 text-sm font-medium text-slate-900">{group.country}</p>
-
-                  <div className="mt-3 flex items-center justify-between gap-3">
+                  <div className="mt-auto flex items-center justify-between gap-3 border-t border-slate-100 pt-4">
                     <span
-                      className={`inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-xs font-medium ${meta.badge}`}
+                      className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium ${meta.badge}`}
                     >
                       <span className={`h-2 w-2 rounded-full ${meta.dot}`} />
-                      {meta.label}
+                      {group.statusLabel}
                     </span>
-                    <span className="text-xs font-medium text-teal-700">
+                    <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-teal-700">
                       {isSelected ? 'Hide details' : 'View details'}
+                      <ArrowRight
+                        size={14}
+                        className={cn('transition', isSelected && 'rotate-90')}
+                      />
                     </span>
                   </div>
 
-                  <div className="mt-4 space-y-2 md:hidden">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-                      Family members
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {group.members.map((member) => (
-                        <span
-                          key={member.publicationNumber}
-                          className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-mono text-slate-600"
-                        >
-                          {member.publicationNumber}
-                        </span>
-                      ))}
+                  {isSelected && (
+                    <div className="mt-4 space-y-2 md:hidden">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+                        Family members
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {group.members.map((member) => (
+                          <span
+                            key={member.publicationNumber}
+                            className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-mono text-slate-600"
+                          >
+                            {member.publicationNumber}
+                          </span>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   <AnimatePresence initial={false}>
                     {isSelected && (
@@ -395,7 +427,7 @@ const GeographicalDistributionSection: React.FC<GeographicalDistributionSectionP
                           >
                             <td className="px-4 py-3 text-slate-700">
                               <div className="flex items-center gap-3">
-                                <span aria-hidden="true">{flagEmoji(member.code)}</span>
+                                <JurisdictionMark code={member.code} selected={isSelected} />
                                 <div>
                                   <p className="font-medium text-slate-900">{member.country}</p>
                                   <p className="text-xs text-slate-400">{member.code}</p>
@@ -410,7 +442,7 @@ const GeographicalDistributionSection: React.FC<GeographicalDistributionSectionP
                                 className={`inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-xs font-medium ${meta.badge}`}
                               >
                                 <span className={`h-2 w-2 rounded-full ${meta.dot}`} />
-                                {meta.label}
+                                {member.statusLabel}
                               </span>
                             </td>
                             <td className="px-4 py-3 text-slate-500">{member.priorityDate}</td>

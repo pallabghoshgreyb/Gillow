@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { Patent } from '../types';
 import { api } from '../utils/api';
-import { formatCompactCurrency } from '../utils/patentDisplay';
+import { formatCompactCurrency, isKnownNumber } from '../utils/patentDisplay';
 import { shareContent } from '../utils/shareUtils';
 import OwnershipSection from '../components/OwnershipSection';
 import FeeStatusSection from '../components/FeeStatusSection';
@@ -38,13 +38,6 @@ const EASE = [0.22, 1, 0.36, 1] as const;
 const CARD = 'rounded-3xl border border-slate-200 bg-white shadow-[0_2px_16px_rgba(15,23,42,0.03)]';
 const INTERACTIVE = `${CARD} transition duration-300 hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-[0_10px_28px_rgba(15,23,42,0.06)]`;
 const FOCUS = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2';
-
-const FAMILY_FALLBACK = [
-  { country: 'United States of America', code: 'US', status: 'Granted', note: 'Core grant jurisdiction.' },
-  { country: 'Europe (EPO)', code: 'EP', status: 'Published', note: 'Regional prosecution route.' },
-  { country: 'WIPO', code: 'WO', status: 'Filed', note: 'International family expansion.' },
-  { country: 'Japan', code: 'JP', status: 'Filed', note: 'Strategic robotics market coverage.' },
-];
 
 const QUICK_JUMP_ITEMS: QuickJumpItem[] = [
   { id: 'overview', label: 'Overview' },
@@ -121,14 +114,13 @@ type View = {
   number: string;
   assignee: string;
   status: { label: string; tone: Tone };
-  valuation: number;
-  confidence: number;
+  valuation: number | null;
   abstractPreview: string;
   abstractRest: string;
   timeline: Lifecycle;
   claims: Claim[];
   classifications: string[];
-  strength: number;
+  strength: number | null;
   strengthNote: string;
   strengthHighlights: string[];
   dates: Array<{ label: string; value: string }>;
@@ -139,10 +131,11 @@ type View = {
 
 const cn = (...values: Array<string | false | null | undefined>) => values.filter(Boolean).join(' ');
 const hasText = (value?: string | null) => Boolean(value && value.trim() && value.trim() !== '-');
+const hasItems = (items?: string[] | null) => Array.isArray(items) && items.some(hasText);
 const uniq = (items: string[]) => Array.from(new Set(items.filter(hasText).map((item) => item.trim())));
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
-const formatDate = (value?: string, fallback = 'Not disclosed') => {
+const formatDate = (value?: string, fallback = '') => {
   if (!hasText(value)) return fallback;
   const parsed = new Date(value as string);
   if (Number.isNaN(parsed.getTime())) return value as string;
@@ -155,7 +148,7 @@ const uniqUpper = (items: string[]) =>
   Array.from(new Set(items.filter(hasText).map((item) => normalizeUpper(item))));
 
 const leadAssignee = (patent: Patent) =>
-  patent.currentAssignees[0] || patent.originalAssignees[0] || patent.assignee.name || 'PatentIntent listing';
+  patent.currentAssignees[0] || patent.originalAssignees[0] || patent.assignee.name || '';
 
 const statusOf = (patent: Patent) => {
   const status = `${patent.legalStatus || ''} ${patent.simpleLegalStatus || ''}`;
@@ -473,12 +466,14 @@ const buildHistory = (patent: Patent, status: { label: string; tone: Tone }): Hi
 
 const buildFamily = (patent: Patent, status: { label: string; tone: Tone }) => {
   const countries = uniq(patent.countries);
-  const base = countries.length > 0 ? countries : FAMILY_FALLBACK.map((entry) => entry.country);
-  return base.slice(0, 6).map((country, index) => ({
+  return countries.slice(0, 6).map((country, index) => ({
     country,
-    code: COUNTRY_CODES[country] || FAMILY_FALLBACK[index]?.code || patent.jurisdiction || 'US',
-    status: index === 0 ? status.label : index < 3 ? 'Published' : 'Filed',
-    note: index === 0 ? `${status.label} in the reference jurisdiction.` : FAMILY_FALLBACK[index]?.note || 'Family member extending territorial coverage.',
+    code: COUNTRY_CODES[country] || patent.jurisdiction || 'US',
+    status: index === 0 ? status.label : 'Recorded',
+    note:
+      index === 0
+        ? `${status.label} in the reference jurisdiction.`
+        : 'Family member recorded in the current dataset.',
   }));
 };
 
@@ -494,48 +489,77 @@ const patentScore = (current: Patent, candidate: Patent) => {
 
 const relatedSummary = (patent: Patent) => {
   if (hasText(patent.abstract)) return patent.abstract.length > 140 ? `${patent.abstract.slice(0, 140).trimEnd()}...` : patent.abstract;
-  return `Technical fit in ${patent.domain || 'medical robotics'} with claim posture suited to comparison and diligence.`;
+  return '';
 };
 
 const makeView = (patent: Patent, catalog: Patent[]): View => {
-  const title = hasText(patent.title) ? patent.title : 'Surgical robotics systems and devices having a sterile restart, and methods thereof';
-  const abstract = hasText(patent.abstract)
-    ? patent.abstract
-    : 'This patent describes a surgical robotics platform designed to recover quickly after a sterile interruption, preserving instrument awareness, procedure continuity, and operator confidence. The disclosure combines robotic motion control, restart sequencing, and clinical workflow safeguards so an operating room team can resume a procedure without repeating every system setup step. The overall result is stronger uptime, lower procedural friction, and a more commercially licensable surgical robotics platform.';
+  const title = hasText(patent.title) ? patent.title : patent.publicationNumber;
+  const abstract = hasText(patent.abstract) ? patent.abstract : '';
   const status = statusOf(patent);
   const split = splitAbstract(abstract);
-  const totalClaims = patent.totalClaims || patent.independentClaimsCount + patent.dependentClaimsCount || 21;
-  const strength = clamp(patent.qualityScore || 87, 0, 100);
+  const totalClaims = patent.totalClaims || patent.independentClaimsCount + patent.dependentClaimsCount;
+  const strength = isKnownNumber(patent.qualityScore)
+    ? clamp(patent.qualityScore, 0, 100)
+    : null;
   const family = buildFamily(patent, status);
   const classifications = uniq([...patent.cpcs, ...patent.ipcs]).slice(0, 6);
+  const valuation = isKnownNumber(patent.askingPrice)
+    ? patent.askingPrice
+    : isKnownNumber(patent.valuationEstimate)
+      ? patent.valuationEstimate
+      : null;
   return {
     title,
-    number: patent.publicationNumber || 'US11844585B1',
+    number: patent.publicationNumber,
     assignee: leadAssignee(patent),
     status,
-    valuation: patent.askingPrice || patent.valuationEstimate || 1_400_000,
-    confidence: clamp(Math.round((strength * 0.78) + 20), 72, 98),
+    valuation,
     abstractPreview: split.preview,
     abstractRest: split.rest,
     timeline: buildTimeline(patent, status, catalog),
     claims: [
-      { label: 'Independent claims', value: patent.independentClaimsCount || 1, hint: 'Core coverage', icon: ShieldCheck },
-      { label: 'Dependent claims', value: patent.dependentClaimsCount || Math.max(totalClaims - (patent.independentClaimsCount || 1), 0), hint: 'Fallback protection', icon: Link2 },
+      { label: 'Independent claims', value: patent.independentClaimsCount, hint: 'Core coverage', icon: ShieldCheck },
+      { label: 'Dependent claims', value: patent.dependentClaimsCount, hint: 'Fallback protection', icon: Link2 },
       { label: 'Total claims', value: totalClaims, hint: 'Overall scope', icon: Scale },
     ],
-    classifications: classifications.length > 0 ? classifications : ['A61B34/37', 'A61B34/74', 'B25J9/0084', 'A61B46/10'],
+    classifications,
     strength,
-    strengthNote: strength >= 85 ? 'High-conviction filing posture with strong claim structure, commercial relevance, and territorial defensibility.' : strength >= 72 ? 'Balanced patent posture with credible licensing value and a prosecution record suited to diligence review.' : 'Promising asset, but legal and commercial diligence should stay tightly coupled before pricing decisions.',
-    strengthHighlights: [`${Math.max(patent.familySize || family.length, family.length)} family members`, `${Math.max(patent.forwardCitationsCount, patent.citations, 0)} forward citations`, `${hasText(patent.gau) ? `GAU ${patent.gau}` : 'Utility patent'} review path`],
+    strengthNote: strength !== null
+      ? strength >= 85
+        ? 'High disclosed quality score with strong commercial and legal weighting in the imported dataset.'
+        : strength >= 72
+          ? 'Balanced disclosed quality score across the valuation components in the imported dataset.'
+          : 'Lower disclosed quality score. Commercial and legal diligence should stay tightly coupled before pricing decisions.'
+      : '',
+    strengthHighlights: [
+      Math.max(patent.familySize || family.length, family.length) > 0
+        ? `${Math.max(patent.familySize || family.length, family.length)} family members`
+        : '',
+      Math.max(patent.forwardCitationsCount, patent.citations, 0) > 0
+        ? `${Math.max(patent.forwardCitationsCount, patent.citations, 0)} forward citations`
+        : '',
+      hasText(patent.gau) ? `GAU ${patent.gau}` : '',
+    ].filter(hasText),
     dates: [
-      { label: 'Filed', value: formatDate(patent.filingDate) },
-      { label: 'Published', value: formatDate(patent.publicationDate, 'Pending') },
-      { label: status.tone === 'granted' ? 'Granted' : 'Disposition', value: status.tone === 'granted' ? formatDate(patent.allowanceDate || patent.publicationDate) : status.label },
-      { label: 'Expires', value: formatDate(patent.estimatedExpirationDate) },
-    ],
+      hasText(patent.filingDate) ? { label: 'Filed', value: formatDate(patent.filingDate) } : null,
+      hasText(patent.publicationDate) ? { label: 'Published', value: formatDate(patent.publicationDate) } : null,
+      status.tone === 'granted' && hasText(patent.allowanceDate || patent.publicationDate)
+        ? {
+            label: 'Granted',
+            value: formatDate(patent.allowanceDate || patent.publicationDate),
+          }
+        : hasText(status.label)
+          ? { label: 'Disposition', value: status.label }
+          : null,
+      hasText(patent.estimatedExpirationDate)
+        ? { label: 'Expires', value: formatDate(patent.estimatedExpirationDate) }
+        : null,
+    ].filter((item): item is { label: string; value: string } => Boolean(item)),
     history: buildHistory(patent, status),
     family,
-    familySummary: `${Math.max(patent.familySize || family.length, family.length)} family member${Math.max(patent.familySize || family.length, family.length) === 1 ? '' : 's'} across ${family.length} jurisdiction${family.length === 1 ? '' : 's'}.`,
+    familySummary: family.length > 0
+      ? `${Math.max(patent.familySize || family.length, family.length)} family member${Math.max(patent.familySize || family.length, family.length) === 1 ? '' : 's'} across ${family.length} jurisdiction${family.length === 1 ? '' : 's'}.`
+      : 'No family jurisdictions are disclosed in the current dataset.',
   };
 };
 const PatentDetailRedesign: React.FC = () => {
@@ -552,6 +576,85 @@ const PatentDetailRedesign: React.FC = () => {
   const [activeJumpId, setActiveJumpId] = useState('overview');
   const [availableJumpIds, setAvailableJumpIds] = useState<string[]>([]);
   const view = useMemo(() => (patent ? makeView(patent, catalog) : null), [patent, catalog]);
+  const visibleQuickJumpItems = useMemo(() => {
+    if (!patent || !view) {
+      return QUICK_JUMP_ITEMS.filter((item) => item.id === 'overview');
+    }
+
+    const hasClaimsSection =
+      patent.totalClaims > 0 ||
+      patent.independentClaimsCount > 0 ||
+      patent.dependentClaimsCount > 0;
+    const hasClassificationSection = view.classifications.length > 0;
+    const hasStrengthSection =
+      view.strength !== null ||
+      Object.values(patent.valuationMetrics).some((value) => isKnownNumber(value));
+    const hasProsecutionSection =
+      hasText(patent.firstActionDate) ||
+      hasText(patent.allowanceDate) ||
+      isKnownNumber(patent.prosecutionDuration) ||
+      isKnownNumber(patent.officeActionsCount) ||
+      isKnownNumber(patent.rceCount);
+    const hasOwnershipSection =
+      hasItems(patent.currentAssignees) ||
+      hasItems(patent.originalAssignees) ||
+      hasItems(patent.inventors);
+    const hasFeeSection =
+      hasText(patent.maintenanceFees.year3_5Text) ||
+      hasText(patent.maintenanceFees.year7_5Text) ||
+      hasText(patent.maintenanceFees.year11_5Text) ||
+      hasText(patent.maintenanceFees.totalPendingText) ||
+      isKnownNumber(patent.maintenanceFees.year3_5) ||
+      isKnownNumber(patent.maintenanceFees.year7_5) ||
+      isKnownNumber(patent.maintenanceFees.year11_5) ||
+      isKnownNumber(patent.maintenanceFees.totalPending);
+    const hasRiskSection =
+      isKnownNumber(patent.infringementRiskScore) ||
+      patent.ftoStatus !== 'Unknown' ||
+      hasItems(patent.iprPgr) ||
+      patent.flags.litigation;
+    const hasTechnologySection =
+      hasText(patent.domain) ||
+      hasText(patent.subdomain) ||
+      isKnownNumber(patent.technologyReadinessLevel);
+    const hasGeographySection =
+      hasItems(patent.countries) ||
+      hasItems(patent.inpadocFamilyMembers);
+    const hasValuationBreakdownSection = Object.values(patent.valuationMetrics).some((value) =>
+      isKnownNumber(value),
+    );
+    const hasExaminationSection =
+      hasText(patent.gau) ||
+      hasText(patent.gauDefinition) ||
+      hasText(patent.patentType) ||
+      hasText(patent.entityType) ||
+      hasItems(patent.trackOneCodes) ||
+      hasItems(patent.nonPublicationCodes);
+    const hasGovernmentSection =
+      patent.flags.governmentInterest ||
+      patent.flags.sep ||
+      hasItems(patent.fit);
+    const hasRelatedSection = related.length > 0;
+    const visibleIds = new Set([
+      'overview',
+      'timeline',
+      ...(hasClaimsSection ? ['claims'] : []),
+      ...(hasClassificationSection ? ['classification'] : []),
+      ...(hasStrengthSection ? ['strength'] : []),
+      ...(hasProsecutionSection ? ['prosecution'] : []),
+      ...(hasOwnershipSection ? ['ownership'] : []),
+      ...(hasFeeSection ? ['fees'] : []),
+      ...(hasRiskSection ? ['risk'] : []),
+      ...(hasTechnologySection ? ['technology'] : []),
+      ...(hasGeographySection ? ['geography'] : []),
+      ...(hasValuationBreakdownSection ? ['valuation-breakdown'] : []),
+      ...(hasExaminationSection ? ['examination'] : []),
+      ...(hasGovernmentSection ? ['government'] : []),
+      ...(hasRelatedSection ? ['related'] : []),
+    ]);
+
+    return QUICK_JUMP_ITEMS.filter((item) => visibleIds.has(item.id));
+  }, [patent, related, view]);
 
   useEffect(() => {
     let alive = true;
@@ -613,7 +716,7 @@ const PatentDetailRedesign: React.FC = () => {
   useEffect(() => {
     if (!view) return;
 
-    const sectionNodes = QUICK_JUMP_ITEMS.map((item) => ({
+    const sectionNodes = visibleQuickJumpItems.map((item) => ({
       id: item.id,
       element: document.getElementById(item.id),
     }))
@@ -675,7 +778,7 @@ const PatentDetailRedesign: React.FC = () => {
       observer.disconnect();
       window.removeEventListener('scroll', updateFromScrollPosition);
     };
-  }, [view]);
+  }, [view, visibleQuickJumpItems]);
 
   const handleShare = async () => {
     if (!view) return;
@@ -703,6 +806,60 @@ const PatentDetailRedesign: React.FC = () => {
   const activeStep =
     view.timeline.steps.find((step) => step.id === activeStepId) ||
     view.timeline.steps[0];
+  const hasAbstractSection = hasText(view.abstractPreview);
+  const hasClaimsSection =
+    patent.totalClaims > 0 ||
+    patent.independentClaimsCount > 0 ||
+    patent.dependentClaimsCount > 0;
+  const hasClassificationSection = view.classifications.length > 0;
+  const hasStrengthSection =
+    view.strength !== null ||
+    Object.values(patent.valuationMetrics).some((value) => isKnownNumber(value));
+  const hasProsecutionSection =
+    hasText(patent.firstActionDate) ||
+    hasText(patent.allowanceDate) ||
+    isKnownNumber(patent.prosecutionDuration) ||
+    isKnownNumber(patent.officeActionsCount) ||
+    isKnownNumber(patent.rceCount);
+  const hasOwnershipSection =
+    hasItems(patent.currentAssignees) ||
+    hasItems(patent.originalAssignees) ||
+    hasItems(patent.inventors);
+  const hasFeeSection =
+    hasText(patent.maintenanceFees.year3_5Text) ||
+    hasText(patent.maintenanceFees.year7_5Text) ||
+    hasText(patent.maintenanceFees.year11_5Text) ||
+    hasText(patent.maintenanceFees.totalPendingText) ||
+    isKnownNumber(patent.maintenanceFees.year3_5) ||
+    isKnownNumber(patent.maintenanceFees.year7_5) ||
+    isKnownNumber(patent.maintenanceFees.year11_5) ||
+    isKnownNumber(patent.maintenanceFees.totalPending);
+  const hasRiskSection =
+    isKnownNumber(patent.infringementRiskScore) ||
+    patent.ftoStatus !== 'Unknown' ||
+    hasItems(patent.iprPgr) ||
+    patent.flags.litigation;
+  const hasTechnologySection =
+    hasText(patent.domain) ||
+    hasText(patent.subdomain) ||
+    isKnownNumber(patent.technologyReadinessLevel);
+  const hasGeographySection =
+    hasItems(patent.countries) ||
+    hasItems(patent.inpadocFamilyMembers);
+  const hasValuationBreakdownSection = Object.values(patent.valuationMetrics).some((value) =>
+    isKnownNumber(value),
+  );
+  const hasExaminationSection =
+    hasText(patent.gau) ||
+    hasText(patent.gauDefinition) ||
+    hasText(patent.patentType) ||
+    hasText(patent.entityType) ||
+    hasItems(patent.trackOneCodes) ||
+    hasItems(patent.nonPublicationCodes);
+  const hasGovernmentSection =
+    patent.flags.governmentInterest ||
+    patent.flags.sep ||
+    hasItems(patent.fit);
 
   return (
     <div className="min-h-screen bg-white text-slate-900">
@@ -720,19 +877,25 @@ const PatentDetailRedesign: React.FC = () => {
                     <FileText size={14} className="text-teal-600" />
                     {view.number}
                   </span>
-                  <span className="inline-flex items-center gap-2 text-slate-500">
-                    <CalendarDays size={14} className="text-slate-400" />
-                    Filed {formatDate(patent.filingDate)}
-                  </span>
+                  {hasText(patent.filingDate) && (
+                    <span className="inline-flex items-center gap-2 text-slate-500">
+                      <CalendarDays size={14} className="text-slate-400" />
+                      Filed {formatDate(patent.filingDate)}
+                    </span>
+                  )}
                   <span className={cn('inline-flex items-center gap-2 rounded-full border px-3 py-1.5 font-medium', statusClasses(view.status.tone))}>
                     <span className="h-2 w-2 rounded-full bg-current" />
                     {view.status.label}
                   </span>
                 </div>
                 <div className="space-y-4">
-                  <p className="text-sm font-medium uppercase tracking-[0.16em] text-slate-400">{view.assignee}</p>
+                  {hasText(view.assignee) && (
+                    <p className="text-sm font-medium uppercase tracking-[0.16em] text-slate-400">{view.assignee}</p>
+                  )}
                   <h1 className="max-w-[800px] text-[clamp(2.25rem,4vw,2.625rem)] font-semibold tracking-[-0.02em] leading-[1.18] text-slate-900">{view.title}</h1>
-                  <p className="max-w-[760px] text-base leading-7 text-slate-600">{view.abstractPreview}</p>
+                  {hasAbstractSection && (
+                    <p className="max-w-[760px] text-base leading-7 text-slate-600">{view.abstractPreview}</p>
+                  )}
                 </div>
               </div>
               <div className="lg:hidden">
@@ -740,166 +903,203 @@ const PatentDetailRedesign: React.FC = () => {
               </div>
             </motion.div>
 
-            <RevealBlock delay={0.2}>
-              <div className="space-y-5">
-                <SectionIntro eyebrow="Abstract" title="Core invention summary" description="Written for fast executive review first and technical review second." />
-                <motion.div whileHover={{ y: -2, boxShadow: '0 10px 28px rgba(15,23,42,0.06)' }} className={cn('p-6 sm:p-8', INTERACTIVE)}>
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <h2 className="text-xl font-semibold tracking-tight text-slate-900">Abstract</h2>
-                      <p className="mt-2 text-sm leading-6 text-slate-400">Editorial excerpt from the underlying patent record.</p>
+            {hasAbstractSection && (
+              <RevealBlock delay={0.2}>
+                <div className="space-y-5">
+                  <SectionIntro eyebrow="Abstract" title="Core invention summary" description="Written for fast executive review first and technical review second." />
+                  <motion.div whileHover={{ y: -2, boxShadow: '0 10px 28px rgba(15,23,42,0.06)' }} className={cn('p-6 sm:p-8', INTERACTIVE)}>
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <h2 className="text-xl font-semibold tracking-tight text-slate-900">Abstract</h2>
+                        <p className="mt-2 text-sm leading-6 text-slate-400">Editorial excerpt from the underlying patent record.</p>
+                      </div>
+                      <button type="button" onClick={() => setShowFullAbstract((value) => !value)} className={cn('inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-teal-200 hover:text-teal-700', FOCUS)}>
+                        {showFullAbstract ? 'Show less' : 'Read full abstract'}
+                        <motion.span animate={{ rotate: showFullAbstract ? 180 : 0 }} transition={{ duration: 0.25 }}>
+                          <ChevronDown size={16} />
+                        </motion.span>
+                      </button>
                     </div>
-                    <button type="button" onClick={() => setShowFullAbstract((value) => !value)} className={cn('inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-teal-200 hover:text-teal-700', FOCUS)}>
-                      {showFullAbstract ? 'Show less' : 'Read full abstract'}
-                      <motion.span animate={{ rotate: showFullAbstract ? 180 : 0 }} transition={{ duration: 0.25 }}>
-                        <ChevronDown size={16} />
-                      </motion.span>
-                    </button>
-                  </div>
-                  <div className="mt-6 space-y-4 text-base leading-7 text-slate-600">
-                    <p>{view.abstractPreview}</p>
-                    <AnimatePresence initial={false}>
-                      {showFullAbstract && view.abstractRest && (
-                        <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.3, ease: EASE }} className="overflow-hidden">
-                          <p className="pt-1">{view.abstractRest}</p>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                </motion.div>
-              </div>
-            </RevealBlock>
+                    <div className="mt-6 space-y-4 text-base leading-7 text-slate-600">
+                      <p>{view.abstractPreview}</p>
+                      <AnimatePresence initial={false}>
+                        {showFullAbstract && view.abstractRest && (
+                          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.3, ease: EASE }} className="overflow-hidden">
+                            <p className="pt-1">{view.abstractRest}</p>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  </motion.div>
+                </div>
+              </RevealBlock>
+            )}
 
             <motion.section id="timeline" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, delay: 0.22, ease: EASE }} className="scroll-mt-28 space-y-5">
               <SectionIntro eyebrow="Patent lifecycle" title={view.timeline.title} description={view.timeline.description} />
-              <PatentTimeline timeline={view.timeline} activeStep={activeStep} activeStepId={activeStepId} mobileStepId={mobileStepId} onDesktopHover={setActiveStepId} onMobileToggle={setMobileStepId} onOpenPatent={(publicationNumber) => navigate(`/patent/${publicationNumber}`)} />
+              <PatentTimeline timeline={view.timeline} activeStep={activeStep} activeStepId={activeStepId} mobileStepId={mobileStepId} onDesktopHover={setActiveStepId} onMobileToggle={setMobileStepId} />
             </motion.section>
 
-            <RevealBlock id="claims" delay={0.24}>
-              <div className="space-y-5">
-                <SectionIntro eyebrow="Claims & scope" title="Claim architecture" description="A minimal snapshot of breadth, fallback protection, and overall scope." />
-                <div className="grid gap-3 sm:grid-cols-3">
-                  {view.claims.map((claim) => (
-                    <motion.div key={claim.label} whileHover={{ y: -2, boxShadow: '0 10px 28px rgba(15,23,42,0.06)' }} className={cn('flex items-center gap-4 px-5 py-4', INTERACTIVE)}>
-                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-50 text-teal-600">
-                        <claim.icon size={20} />
-                      </div>
-                      <div>
-                        <p className="text-2xl font-semibold tabular-nums text-slate-900">{claim.value}</p>
-                        <p className="text-sm font-medium text-slate-500">{claim.label}</p>
-                        <p className="text-xs text-slate-400">{claim.hint}</p>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-            </RevealBlock>
-
-            <RevealBlock id="classification" delay={0.26}>
-              <div className="space-y-5">
-                <SectionIntro eyebrow="Technology classification" title="IPC and CPC coding" description="Classification tags that situate the patent in search, diligence, and comparables." />
-                <div className={cn('p-6 sm:p-8 bg-slate-50/60', CARD)}>
-                  <div className="flex flex-wrap gap-3">
-                    {view.classifications.map((tag) => (
-                      <motion.span key={tag} whileHover={{ y: -2 }} className="inline-flex items-center rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-teal-700 shadow-[0_2px_12px_rgba(15,23,42,0.03)]">
-                        {tag}
-                      </motion.span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </RevealBlock>
-
-            <RevealBlock id="strength" delay={0.28}>
-              <div className="space-y-5">
-                <SectionIntro eyebrow="Intellectual property strength" title="Strength assessment" description="A concise read on commercial quality, family breadth, and prosecution posture." />
-                <motion.div whileHover={{ y: -2, boxShadow: '0 10px 28px rgba(15,23,42,0.06)' }} className={cn('p-6 sm:p-8', INTERACTIVE)}>
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                    <div>
-                      <p className="text-sm font-medium uppercase tracking-[0.16em] text-teal-700">PatentIntent score</p>
-                      <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Licensing-readiness signal</h2>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-4xl font-semibold tabular-nums tracking-tight text-slate-900">{view.strength}</p>
-                      <p className="text-sm text-slate-400">out of 100</p>
-                    </div>
-                  </div>
-                  <div className="mt-6 h-3 overflow-hidden rounded-full bg-slate-100">
-                    <motion.div initial={{ width: 0 }} whileInView={{ width: `${view.strength}%` }} viewport={{ once: true, amount: 0.8 }} transition={{ duration: 0.8, delay: 0.1, ease: EASE }} className="h-full rounded-full bg-gradient-to-r from-teal-400 to-teal-600" />
-                  </div>
-                  <p className="mt-5 text-base leading-7 text-slate-600">{view.strengthNote}</p>
-                  <div className="mt-5 flex flex-wrap gap-2">
-                    {view.strengthHighlights.map((item) => (
-                      <span key={item} className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-600">{item}</span>
-                    ))}
-                  </div>
-                </motion.div>
-              </div>
-            </RevealBlock>
-
-            <RevealBlock id="prosecution" delay={0.3}>
-              <div className="space-y-5">
-                <SectionIntro eyebrow="Prosecution history" title="Readable file history" description="An editorial pass over the major recorded events surfaced from the prosecution record." />
-                <div className={cn('overflow-hidden', CARD)}>
-                  <div className="space-y-px bg-slate-100">
-                    {view.history.map((item, index) => (
-                      <motion.div key={item.id} initial={{ opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.35 }} transition={{ duration: 0.45, delay: index * 0.08, ease: EASE }} className={cn('grid gap-4 px-6 py-5 sm:grid-cols-[160px_minmax(0,1fr)_120px] sm:px-8', index % 2 === 0 ? 'bg-white' : 'bg-slate-50')}>
-                        <div className="text-sm font-medium text-slate-500">{item.date}</div>
-                        <div>
-                          <p className="text-base font-semibold text-slate-900">{item.title}</p>
-                          <p className="mt-1 text-sm leading-6 text-slate-600">{item.detail}</p>
+            {hasClaimsSection && (
+              <RevealBlock id="claims" delay={0.24}>
+                <div className="space-y-5">
+                  <SectionIntro eyebrow="Claims & scope" title="Claim architecture" description="A minimal snapshot of breadth, fallback protection, and overall scope." />
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    {view.claims.map((claim) => (
+                      <motion.div key={claim.label} whileHover={{ y: -2, boxShadow: '0 10px 28px rgba(15,23,42,0.06)' }} className={cn('flex items-center gap-4 px-5 py-4', INTERACTIVE)}>
+                        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-50 text-teal-600">
+                          <claim.icon size={20} />
                         </div>
-                        <div className="sm:text-right">
-                          <span className={cn('inline-flex rounded-full border px-3 py-1 text-xs font-medium', item.tone === 'done' ? 'border-teal-200 bg-teal-50 text-teal-700' : item.tone === 'active' ? 'border-sky-200 bg-sky-50 text-sky-700' : 'border-slate-200 bg-white text-slate-600')}>
-                            {item.tone === 'done' ? 'Recorded' : item.tone === 'active' ? 'Open' : 'Historical'}
-                          </span>
+                        <div>
+                          <p className="text-2xl font-semibold tabular-nums text-slate-900">{claim.value}</p>
+                          <p className="text-sm font-medium text-slate-500">{claim.label}</p>
+                          <p className="text-xs text-slate-400">{claim.hint}</p>
                         </div>
                       </motion.div>
                     ))}
                   </div>
                 </div>
-              </div>
-            </RevealBlock>
+              </RevealBlock>
+            )}
 
-            <RevealBlock id="ownership" delay={0.32}>
-              <OwnershipSection
-                currentAssignees={patent.currentAssignees}
-                originalAssignees={patent.originalAssignees}
-                inventors={patent.inventors}
-              />
-            </RevealBlock>
+            {hasClassificationSection && (
+              <RevealBlock id="classification" delay={0.26}>
+                <div className="space-y-5">
+                  <SectionIntro eyebrow="Technology classification" title="IPC and CPC coding" description="Classification tags that situate the patent in search, diligence, and comparables." />
+                  <div className={cn('p-6 sm:p-8 bg-slate-50/60', CARD)}>
+                    <div className="flex flex-wrap gap-3">
+                      {view.classifications.map((tag) => (
+                        <motion.span key={tag} whileHover={{ y: -2 }} className="inline-flex items-center rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-teal-700 shadow-[0_2px_12px_rgba(15,23,42,0.03)]">
+                          {tag}
+                        </motion.span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </RevealBlock>
+            )}
 
-            <RevealBlock id="fees" delay={0.34}>
-              <FeeStatusSection patent={patent} />
-            </RevealBlock>
+            {hasStrengthSection && (
+              <RevealBlock id="strength" delay={0.28}>
+                <div className="space-y-5">
+                  <SectionIntro eyebrow="Intellectual property strength" title="Strength assessment" description="A concise read on commercial quality, family breadth, and prosecution posture." />
+                  <motion.div whileHover={{ y: -2, boxShadow: '0 10px 28px rgba(15,23,42,0.06)' }} className={cn('p-6 sm:p-8', INTERACTIVE)}>
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                      <div>
+                        <p className="text-sm font-medium uppercase tracking-[0.16em] text-teal-700">Dataset quality score</p>
+                        <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">Valuation component summary</h2>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-4xl font-semibold tabular-nums tracking-tight text-slate-900">
+                          {view.strength !== null ? view.strength : 'N/A'}
+                        </p>
+                        <p className="text-sm text-slate-400">
+                          {view.strength !== null ? 'out of 100' : 'not scored'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-6 h-3 overflow-hidden rounded-full bg-slate-100">
+                      <motion.div initial={{ width: 0 }} whileInView={{ width: `${view.strength || 0}%` }} viewport={{ once: true, amount: 0.8 }} transition={{ duration: 0.8, delay: 0.1, ease: EASE }} className="h-full rounded-full bg-gradient-to-r from-teal-400 to-teal-600" />
+                    </div>
+                    {view.strengthNote && (
+                      <p className="mt-5 text-base leading-7 text-slate-600">{view.strengthNote}</p>
+                    )}
+                    {view.strengthHighlights.length > 0 && (
+                      <div className="mt-5 flex flex-wrap gap-2">
+                        {view.strengthHighlights.map((item) => (
+                          <span key={item} className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-600">{item}</span>
+                        ))}
+                      </div>
+                    )}
+                  </motion.div>
+                </div>
+              </RevealBlock>
+            )}
 
-            <RevealBlock id="risk" delay={0.36}>
-              <RiskAssessmentSection patent={patent} />
-            </RevealBlock>
+            {hasProsecutionSection && (
+              <RevealBlock id="prosecution" delay={0.3}>
+                <div className="space-y-5">
+                  <SectionIntro eyebrow="Prosecution history" title="Readable file history" description="An editorial pass over the major recorded events surfaced from the prosecution record." />
+                  <div className={cn('overflow-hidden', CARD)}>
+                    <div className="space-y-px bg-slate-100">
+                      {view.history.map((item, index) => (
+                        <motion.div key={item.id} initial={{ opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.35 }} transition={{ duration: 0.45, delay: index * 0.08, ease: EASE }} className={cn('grid gap-4 px-6 py-5 sm:grid-cols-[160px_minmax(0,1fr)_120px] sm:px-8', index % 2 === 0 ? 'bg-white' : 'bg-slate-50')}>
+                          <div className="text-sm font-medium text-slate-500">{item.date}</div>
+                          <div>
+                            <p className="text-base font-semibold text-slate-900">{item.title}</p>
+                            <p className="mt-1 text-sm leading-6 text-slate-600">{item.detail}</p>
+                          </div>
+                          <div className="sm:text-right">
+                            <span className={cn('inline-flex rounded-full border px-3 py-1 text-xs font-medium', item.tone === 'done' ? 'border-teal-200 bg-teal-50 text-teal-700' : item.tone === 'active' ? 'border-sky-200 bg-sky-50 text-sky-700' : 'border-slate-200 bg-white text-slate-600')}>
+                              {item.tone === 'done' ? 'Recorded' : item.tone === 'active' ? 'Open' : 'Historical'}
+                            </span>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </RevealBlock>
+            )}
 
-            <RevealBlock id="technology" delay={0.38}>
-              <TechnologyProfileSection patent={patent} />
-            </RevealBlock>
+            {hasOwnershipSection && (
+              <RevealBlock id="ownership" delay={0.32}>
+                <OwnershipSection
+                  currentAssignees={patent.currentAssignees}
+                  originalAssignees={patent.originalAssignees}
+                  inventors={patent.inventors}
+                />
+              </RevealBlock>
+            )}
 
-            <RevealBlock id="geography" delay={0.4}>
-              <GeographicalDistributionSection patent={patent} />
-            </RevealBlock>
+            {hasFeeSection && (
+              <RevealBlock id="fees" delay={0.34}>
+                <FeeStatusSection patent={patent} />
+              </RevealBlock>
+            )}
 
-            <RevealBlock id="valuation-breakdown" delay={0.42}>
-              <ValuationBreakdownSection patent={patent} valuation={view.valuation} />
-            </RevealBlock>
+            {hasRiskSection && (
+              <RevealBlock id="risk" delay={0.36}>
+                <RiskAssessmentSection patent={patent} />
+              </RevealBlock>
+            )}
 
-            <RevealBlock id="examination" delay={0.44}>
-              <ExaminationDetailsSection patent={patent} />
-            </RevealBlock>
+            {hasTechnologySection && (
+              <RevealBlock id="technology" delay={0.38}>
+                <TechnologyProfileSection patent={patent} />
+              </RevealBlock>
+            )}
 
-            <RevealBlock id="continuity" delay={0.46}>
-              <ContinuitySection patent={patent} />
-            </RevealBlock>
+            {hasGeographySection && (
+              <RevealBlock id="geography" delay={0.4}>
+                <GeographicalDistributionSection patent={patent} />
+              </RevealBlock>
+            )}
 
-            <RevealBlock id="government" delay={0.48}>
-              <GovernmentStandardsSection patent={patent} />
-            </RevealBlock>
+            {hasValuationBreakdownSection && (
+              <RevealBlock id="valuation-breakdown" delay={0.42}>
+                <ValuationBreakdownSection patent={patent} valuation={view.valuation} />
+              </RevealBlock>
+            )}
+
+            {hasExaminationSection && (
+              <RevealBlock id="examination" delay={0.44}>
+                <ExaminationDetailsSection patent={patent} />
+              </RevealBlock>
+            )}
+
+            {/* Continuity block removed per request */}
+            {false && (
+              <RevealBlock id="continuity" delay={0.46}>
+                <ContinuitySection patent={patent} />
+              </RevealBlock>
+            )}
+
+            {hasGovernmentSection && (
+              <RevealBlock id="government" delay={0.48}>
+                <GovernmentStandardsSection patent={patent} />
+              </RevealBlock>
+            )}
 
             {/* Global Patent Family is intentionally hidden for now and can be restored later.
             <RevealBlock delay={0.46}>
@@ -911,37 +1111,44 @@ const PatentDetailRedesign: React.FC = () => {
           <aside className="mt-10 hidden lg:block lg:mt-0">
             <div className="sticky top-28">
               <SidebarCard patent={patent} view={view} shareFeedback={shareFeedback} onDownload={() => window.print()} onShare={() => void handleShare()} />
-              <QuickJumpNavigation activeId={activeJumpId} availableIds={availableJumpIds} items={QUICK_JUMP_ITEMS} onJump={handleQuickJump} />
+              <QuickJumpNavigation activeId={activeJumpId} availableIds={availableJumpIds} items={visibleQuickJumpItems} onJump={handleQuickJump} />
             </div>
           </aside>
         </div>
 
-        <RevealBlock id="related" delay={0.5} className="mt-14 scroll-mt-28 border-t border-slate-100 pt-10">
-          <div className="space-y-6">
-            <SectionIntro eyebrow="Related patents" title="Continue browsing" description="Comparable filings and adjacent inventions that keep the user in a discovery flow." />
-            <div className="-mx-4 flex snap-x gap-4 overflow-x-auto px-4 pb-2 sm:-mx-6 sm:px-6 md:mx-0 md:grid md:grid-cols-3 md:overflow-visible md:px-0">
-              {related.map((item) => {
-                const itemStatus = statusOf(item);
-                return (
-                  <Link key={item.id} to={`/patent/${item.id}`} className={cn('min-w-[280px] snap-start md:min-w-0', FOCUS)}>
-                    <motion.article whileHover={{ y: -2, boxShadow: '0 10px 28px rgba(15,23,42,0.06)' }} className={cn('flex h-full flex-col p-6', INTERACTIVE)}>
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="text-xs font-medium uppercase tracking-[0.16em] text-slate-400">{item.domain || 'Medical technology'}</span>
-                        <span className={cn('inline-flex rounded-full border px-2.5 py-1 text-xs font-medium', statusClasses(itemStatus.tone))}>{itemStatus.label}</span>
-                      </div>
-                      <h3 className="mt-4 text-lg font-semibold leading-7 tracking-tight text-slate-900">{item.title}</h3>
-                      <p className="mt-3 text-sm leading-6 text-slate-600">{relatedSummary(item)}</p>
-                      <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4 text-sm text-slate-500">
-                        <span>{item.publicationNumber}</span>
-                        <span className="inline-flex items-center gap-1 font-medium text-teal-700">View patent<ArrowUpRight size={16} /></span>
-                      </div>
-                    </motion.article>
-                  </Link>
-                );
-              })}
+        {related.length > 0 && (
+          <RevealBlock id="related" delay={0.5} className="mt-14 scroll-mt-28 border-t border-slate-100 pt-10">
+            <div className="space-y-6">
+              <SectionIntro eyebrow="Related patents" title="Continue browsing" description="Comparable filings and adjacent inventions that keep the user in a discovery flow." />
+              <div className="-mx-4 flex snap-x gap-4 overflow-x-auto px-4 pb-2 sm:-mx-6 sm:px-6 md:mx-0 md:grid md:grid-cols-3 md:overflow-visible md:px-0">
+                {related.map((item) => {
+                  const itemStatus = statusOf(item);
+                  const summary = relatedSummary(item);
+                  return (
+                    <Link key={item.id} to={`/patent/${item.id}`} className={cn('min-w-[280px] snap-start md:min-w-0', FOCUS)}>
+                      <motion.article whileHover={{ y: -2, boxShadow: '0 10px 28px rgba(15,23,42,0.06)' }} className={cn('flex h-full flex-col p-6', INTERACTIVE)}>
+                        <div className="flex items-center justify-between gap-3">
+                          {hasText(item.domain) && (
+                            <span className="text-xs font-medium uppercase tracking-[0.16em] text-slate-400">{item.domain}</span>
+                          )}
+                          <span className={cn('inline-flex rounded-full border px-2.5 py-1 text-xs font-medium', statusClasses(itemStatus.tone))}>{itemStatus.label}</span>
+                        </div>
+                        <h3 className="mt-4 text-lg font-semibold leading-7 tracking-tight text-slate-900">{item.title}</h3>
+                        {hasText(summary) && (
+                          <p className="mt-3 text-sm leading-6 text-slate-600">{summary}</p>
+                        )}
+                        <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4 text-sm text-slate-500">
+                          <span>{item.publicationNumber}</span>
+                          <span className="inline-flex items-center gap-1 font-medium text-teal-700">View patent<ArrowUpRight size={16} /></span>
+                        </div>
+                      </motion.article>
+                    </Link>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        </RevealBlock>
+          </RevealBlock>
+        )}
 
         <div className="mt-8 border-t border-slate-100 pt-5 text-sm text-slate-400">
           PatentIntent editorial view combines structured patent metadata with a calmer, reader-first detail experience for quick diligence.
@@ -980,6 +1187,9 @@ const continuityStatusClasses = (tone: ContinuityTone) => {
   return 'bg-slate-400';
 };
 
+const CONTINUITY_TOOLTIP =
+  'Detailed patent page coming soon. This family member is not linked yet.';
+
 const TrackOneBadge: React.FC<{ code: string }> = ({ code }) => {
   const colors: Record<string, string> = {
     T1ON: 'bg-blue-50 text-blue-700 border-blue-200',
@@ -1006,7 +1216,6 @@ const PatentTimeline = ({
   mobileStepId,
   onDesktopHover,
   onMobileToggle,
-  onOpenPatent,
 }: {
   timeline: Lifecycle;
   activeStep: Step;
@@ -1014,7 +1223,6 @@ const PatentTimeline = ({
   mobileStepId: string;
   onDesktopHover: (id: string) => void;
   onMobileToggle: (id: string) => void;
-  onOpenPatent: (publicationNumber: string) => void;
 }) => {
   const { steps, trackCodes, continuityApps } = timeline;
   const currentIndex = Math.max(0, steps.findIndex((step) => step.state === 'current'));
@@ -1038,7 +1246,7 @@ const PatentTimeline = ({
               Primary application
             </p>
             <p className="mt-2 text-sm font-medium text-slate-900">
-              {steps[0]?.date || 'Filing not disclosed'}
+              {steps[0]?.date}
             </p>
           </div>
           {trackCodes.length > 0 ? (
@@ -1135,6 +1343,9 @@ const PatentTimeline = ({
                 <p className="mt-1 text-sm text-slate-600">
                   Continuations, divisionals, and CIPs branching from the family.
                 </p>
+                <p className="mt-1 text-xs font-medium text-slate-400">
+                  Detail pages for these family members will unlock once their records are added.
+                </p>
               </div>
               {continuityApps.length > 3 ? (
                 <button
@@ -1150,13 +1361,17 @@ const PatentTimeline = ({
             <div className="relative mt-5 space-y-4 pl-7">
               <div className="absolute bottom-0 left-3 top-2 w-px bg-slate-200" />
               {visibleContinuityApps.map((app) => (
-                <button
+                <div
                   key={`${app.relation}-${app.publicationNumber}`}
-                  type="button"
-                  onClick={() => onOpenPatent(app.publicationNumber)}
-                  className={cn('group relative block w-full rounded-2xl border border-slate-200 bg-slate-50/70 p-4 text-left transition hover:-translate-y-0.5 hover:border-teal-200 hover:bg-white hover:shadow-[0_10px_28px_rgba(15,23,42,0.06)]', FOCUS)}
+                  title={CONTINUITY_TOOLTIP}
+                  aria-label={`${app.publicationNumber}. ${CONTINUITY_TOOLTIP}`}
+                  tabIndex={0}
+                  className={cn('group relative block w-full cursor-help rounded-2xl border border-slate-200 bg-slate-50/70 p-4 text-left transition hover:-translate-y-0.5 hover:border-slate-300 hover:bg-white hover:shadow-[0_10px_28px_rgba(15,23,42,0.06)]', FOCUS)}
                 >
                   <span className="absolute left-[-20px] top-6 h-px w-5 bg-slate-200" />
+                  <span className="pointer-events-none absolute right-4 top-[-0.65rem] rounded-full border border-slate-200 bg-slate-900 px-3 py-1 text-[11px] font-medium text-white opacity-0 shadow-lg transition duration-200 group-hover:opacity-100 group-focus-visible:opacity-100">
+                    Detail page coming soon
+                  </span>
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
@@ -1200,7 +1415,7 @@ const PatentTimeline = ({
                       ))}
                     </div>
                   ) : null}
-                </button>
+                </div>
               ))}
             </div>
           </div>
@@ -1276,6 +1491,9 @@ const PatentTimeline = ({
                 <p className="mt-1 text-sm text-slate-600">
                   Swipe through related continuations and divisionals.
                 </p>
+                <p className="mt-1 text-xs font-medium text-slate-400">
+                  Detailed family-member pages are not linked yet.
+                </p>
               </div>
               {continuityApps.length > 3 ? (
                 <button
@@ -1290,11 +1508,12 @@ const PatentTimeline = ({
 
             <div className="-mx-5 mt-4 flex snap-x gap-3 overflow-x-auto px-5 pb-1">
               {visibleContinuityApps.map((app) => (
-                <button
+                <div
                   key={`mobile-${app.relation}-${app.publicationNumber}`}
-                  type="button"
-                  onClick={() => onOpenPatent(app.publicationNumber)}
-                  className={cn('min-w-[260px] snap-start rounded-2xl border border-slate-200 bg-slate-50/70 p-4 text-left transition hover:border-teal-200', FOCUS)}
+                  title={CONTINUITY_TOOLTIP}
+                  aria-label={`${app.publicationNumber}. ${CONTINUITY_TOOLTIP}`}
+                  tabIndex={0}
+                  className={cn('group min-w-[260px] snap-start cursor-help rounded-2xl border border-slate-200 bg-slate-50/70 p-4 text-left transition hover:border-slate-300', FOCUS)}
                 >
                   <div className="flex flex-wrap items-center gap-2">
                     <span className={cn('inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold font-mono', relationClasses(app.relation))}>
@@ -1314,7 +1533,10 @@ const PatentTimeline = ({
                       <TrackOneBadge key={`mobile-${app.publicationNumber}-${code}`} code={code} />
                     ))}
                   </div>
-                </button>
+                  <p className="mt-4 text-xs font-medium text-slate-400">
+                    Detail page coming soon
+                  </p>
+                </div>
               ))}
             </div>
           </div>
@@ -1324,38 +1546,54 @@ const PatentTimeline = ({
   );
 };
 
-const SidebarCard = ({ patent, view, shareFeedback, onDownload, onShare }: { patent: Patent; view: View; shareFeedback: string; onDownload: () => void; onShare: () => void }) => (
-  <div className={cn('p-6 sm:p-7', CARD)}>
-    <div className="space-y-6">
-      <div className="rounded-[28px] border border-amber-100 bg-amber-50/80 p-6 shadow-[0_16px_36px_rgba(245,158,11,0.12)]">
-        <p className="text-xs font-medium uppercase tracking-[0.16em] text-amber-600">Indicative valuation</p>
-        <p className="mt-3 text-[3rem] font-semibold leading-none tracking-tight text-amber-500 tabular-nums">{formatCompactCurrency(view.valuation)}</p>
-        <div className="mt-5 rounded-2xl border border-white/80 bg-white/80 px-4 py-3">
-          <div className="flex items-center justify-between gap-3 text-sm"><span className="font-medium text-slate-500">Confidence score</span><span className="font-semibold tabular-nums text-slate-900">{view.confidence}/100</span></div>
-          <div className="mt-3 h-2 rounded-full bg-slate-100"><div className="h-full rounded-full bg-teal-500" style={{ width: `${view.confidence}%` }} /></div>
+const SidebarCard = ({ patent, view, shareFeedback, onDownload, onShare }: { patent: Patent; view: View; shareFeedback: string; onDownload: () => void; onShare: () => void }) => {
+  const familyCount = Math.max(patent.familySize, view.family.length);
+  const hasValuation = isKnownNumber(view.valuation);
+  const hasStrength = view.strength !== null;
+
+  return (
+    <div className={cn('p-6 sm:p-7', CARD)}>
+      <div className="space-y-6">
+        {(hasValuation || hasStrength) && (
+          <div className="rounded-[28px] border border-amber-100 bg-amber-50/80 p-6 shadow-[0_16px_36px_rgba(245,158,11,0.12)]">
+            {hasValuation && (
+              <>
+                <p className="text-xs font-medium uppercase tracking-[0.16em] text-amber-600">Indicative valuation</p>
+                <p className="mt-3 text-[3rem] font-semibold leading-none tracking-tight text-amber-500 tabular-nums">{formatCompactCurrency(view.valuation)}</p>
+              </>
+            )}
+            {hasStrength && (
+              <div className={cn('rounded-2xl border border-white/80 bg-white/80 px-4 py-3', hasValuation ? 'mt-5' : '')}>
+                <div className="flex items-center justify-between gap-3 text-sm"><span className="font-medium text-slate-500">Quality score</span><span className="font-semibold tabular-nums text-slate-900">{`${view.strength}/100`}</span></div>
+                <div className="mt-3 h-2 rounded-full bg-slate-100"><div className="h-full rounded-full bg-teal-500" style={{ width: `${view.strength || 0}%` }} /></div>
+              </div>
+            )}
+          </div>
+        )}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between gap-4"><p className="text-sm font-medium text-slate-500">Legal status</p><span className={cn('inline-flex rounded-full border px-3 py-1 text-xs font-medium', statusClasses(view.status.tone))}>{view.status.label}</span></div>
+          {hasText(view.assignee) && <div className="flex items-center justify-between gap-4"><p className="text-sm font-medium text-slate-500">Assignee</p><p className="max-w-[60%] text-right text-sm font-semibold text-slate-900">{view.assignee}</p></div>}
+          {familyCount > 0 && <div className="flex items-center justify-between gap-4"><p className="text-sm font-medium text-slate-500">Family size</p><p className="text-sm font-semibold tabular-nums text-slate-900">{familyCount}</p></div>}
         </div>
-      </div>
-      <div className="space-y-4">
-        <div className="flex items-center justify-between gap-4"><p className="text-sm font-medium text-slate-500">Legal status</p><span className={cn('inline-flex rounded-full border px-3 py-1 text-xs font-medium', statusClasses(view.status.tone))}>{view.status.label}</span></div>
-        <div className="flex items-center justify-between gap-4"><p className="text-sm font-medium text-slate-500">Assignee</p><p className="max-w-[60%] text-right text-sm font-semibold text-slate-900">{view.assignee}</p></div>
-        <div className="flex items-center justify-between gap-4"><p className="text-sm font-medium text-slate-500">Family size</p><p className="text-sm font-semibold tabular-nums text-slate-900">{Math.max(patent.familySize, view.family.length)}</p></div>
-      </div>
-      <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
-        <div className="flex items-center gap-2"><Clock3 size={16} className="text-teal-600" /><p className="text-sm font-semibold text-slate-900">Key dates</p></div>
-        <div className="mt-4 space-y-3">
-          {view.dates.map((item) => (
-            <div key={item.label} className="flex items-center justify-between gap-4"><span className="text-sm text-slate-500">{item.label}</span><span className="text-sm font-medium text-slate-900">{item.value}</span></div>
-          ))}
+        {view.dates.length > 0 && (
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+            <div className="flex items-center gap-2"><Clock3 size={16} className="text-teal-600" /><p className="text-sm font-semibold text-slate-900">Key dates</p></div>
+            <div className="mt-4 space-y-3">
+              {view.dates.map((item) => (
+                <div key={item.label} className="flex items-center justify-between gap-4"><span className="text-sm text-slate-500">{item.label}</span><span className="text-sm font-medium text-slate-900">{item.value}</span></div>
+              ))}
+            </div>
+          </div>
+        )}
+        <div className="space-y-3">
+          <button type="button" onClick={onDownload} className={cn('flex w-full items-center justify-center gap-2 rounded-2xl bg-teal-600 px-4 py-3.5 text-sm font-semibold text-white transition hover:bg-teal-700', FOCUS)}><Download size={16} />Download PDF</button>
+          <button type="button" onClick={onShare} className={cn('flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-sm font-semibold text-slate-700 transition hover:border-teal-200 hover:text-teal-700', FOCUS)}><Share2 size={16} />Share</button>
         </div>
+        <AnimatePresence initial={false}>{shareFeedback ? <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">{shareFeedback}</motion.div> : null}</AnimatePresence>
       </div>
-      <div className="space-y-3">
-        <button type="button" onClick={onDownload} className={cn('flex w-full items-center justify-center gap-2 rounded-2xl bg-teal-600 px-4 py-3.5 text-sm font-semibold text-white transition hover:bg-teal-700', FOCUS)}><Download size={16} />Download PDF</button>
-        <button type="button" onClick={onShare} className={cn('flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-sm font-semibold text-slate-700 transition hover:border-teal-200 hover:text-teal-700', FOCUS)}><Share2 size={16} />Share</button>
-      </div>
-      <AnimatePresence initial={false}>{shareFeedback ? <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">{shareFeedback}</motion.div> : null}</AnimatePresence>
     </div>
-  </div>
-);
+  );
+};
 
 const Shimmer = ({ className }: { className: string }) => (
   <div className={cn('relative overflow-hidden rounded-3xl bg-white', className)}>

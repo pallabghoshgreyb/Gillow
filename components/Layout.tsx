@@ -3,7 +3,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { 
   Search as SearchIcon, Heart, User, Building2, 
   Menu, Info, Bell, X, Trash2, Clock, 
-  AlertCircle, ChevronRight, SlidersHorizontal, Map as MapIcon
+  ChevronRight, SlidersHorizontal, Map as MapIcon
 } from 'lucide-react';
 import { useGillow } from '../context/GillowContext';
 import AdvancedSearchModal, { type AdvancedSearchFormData } from './AdvancedSearchModal';
@@ -195,23 +195,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   return (
     <div className={`flex w-full bg-white text-slate-900 font-sans ${isLandscapePage ? 'h-screen overflow-hidden flex-col' : 'min-h-screen flex-col'}`}>
-      
-      {/* Demo Banner */}
-      <div className="relative z-[60] flex items-center justify-center gap-4 bg-slate-900 px-6 py-2 text-xs font-medium uppercase tracking-[0.16em] text-white">
-          <span className="flex items-center gap-1.5 text-blue-400">
-            <AlertCircle size={12} /> PROTOTYPE MODE
-          </span>
-          <span className="opacity-40">|</span>
-          <span>SAMPLE DATA ONLY</span>
-          <span className="opacity-40">|</span>
-          <button 
-            onClick={() => setIsServerConfigOpen(true)}
-            className="underline hover:text-blue-400"
-          >
-            CONNECT TO BACKEND
-          </button>
-      </div>
-
       {/* Top Navigation */}
       <header className="h-20 bg-white/95 backdrop-blur-md border-b border-slate-100 flex-shrink-0 z-50 sticky top-0 shadow-sm">
         <div className="max-w-[1400px] mx-auto px-6 h-full flex items-center justify-between gap-6">
@@ -375,7 +358,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <button
                   onClick={() => setInfoDialog({
                     title: 'Sign In',
-                    description: 'Authentication is not enabled in this prototype yet. You can still explore search, landscape, exports, and patent detail workflows right now.',
+                    description: 'Authentication is not configured in this local environment yet. You can still explore marketplace, landscape, exports, and patent detail workflows with the imported dataset.',
                     actionLabel: 'Open Marketplace',
                     actionType: 'browse',
                   })}
@@ -439,8 +422,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                       <h4 className="mb-10 text-sm font-medium uppercase tracking-[0.16em] text-slate-400">Company</h4>
                       <ul className="space-y-6 text-sm font-medium text-slate-600">
                           <li><button onClick={() => setInfoDialog({ title: 'Our Mission', description: 'PatentIntent helps teams explore patent landscapes, evaluate portfolio strength, and move from discovery to transaction faster.', actionLabel: 'Go Home', actionType: 'home' })} className="hover:text-[#00bdcd] transition-colors">Our Mission</button></li>
-                          <li><button onClick={() => setInfoDialog({ title: 'Security', description: 'This prototype runs on local sample data and browser storage. Backend connectivity is optional and can be configured from the server connection panel.', actionLabel: 'Open Server Config', actionType: 'server-config' })} className="hover:text-[#00bdcd] transition-colors">Security</button></li>
-                          <li><button onClick={() => setInfoDialog({ title: 'Privacy', description: 'Search history, favorites, and saved searches are currently stored in your browser for this prototype session.', actionLabel: 'Open Marketplace', actionType: 'browse' })} className="hover:text-[#00bdcd] transition-colors">Privacy</button></li>
+                          <li><button onClick={() => setInfoDialog({ title: 'Security', description: 'This workspace runs locally with browser-stored preferences. Backend connectivity is optional and can be configured from the server connection panel.', actionLabel: 'Open Server Config', actionType: 'server-config' })} className="hover:text-[#00bdcd] transition-colors">Security</button></li>
+                          <li><button onClick={() => setInfoDialog({ title: 'Privacy', description: 'Search history, favorites, and saved searches are stored in your browser on this device unless you connect an external backend.', actionLabel: 'Open Marketplace', actionType: 'browse' })} className="hover:text-[#00bdcd] transition-colors">Privacy</button></li>
                           <li><button onClick={() => { window.location.href = 'mailto:support@gillow.ai?subject=PatentIntent%20Support'; }} className="hover:text-[#00bdcd] transition-colors">Support</button></li>
                       </ul>
                   </div>
@@ -468,7 +451,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                       © 2025 PatentIntent • Built for Global IP Excellence
                   </div>
                   <div className="flex gap-8 text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
-                    <button onClick={() => setInfoDialog({ title: 'Terms of Use', description: 'This prototype is intended for evaluation workflows with sample data. Final legal terms can be added once production authentication and backend policies are in place.' })} className="hover:text-slate-900">Terms of Use</button>
+                    <button onClick={() => setInfoDialog({ title: 'Terms of Use', description: 'This interface is intended for patent review and portfolio evaluation. Confirm legal and commercial conclusions against official records before making decisions.' })} className="hover:text-slate-900">Terms of Use</button>
                     <button onClick={() => setInfoDialog({ title: 'Compliance', description: 'Compliance workflows depend on your connected backend and data source policies. Use the server configuration panel to point the app at your approved systems.', actionLabel: 'Open Server Config', actionType: 'server-config' })} className="hover:text-slate-900">Compliance</button>
                     <button onClick={() => setIsServerConfigOpen(true)} className="hover:text-slate-900">Patent Search API</button>
                   </div>

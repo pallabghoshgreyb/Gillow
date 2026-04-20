@@ -8,13 +8,14 @@ import {
   ZoomableGroup,
 } from 'react-simple-maps';
 
-type JurisdictionStatus = 'granted' | 'pending' | 'expired';
+type JurisdictionStatus = 'granted' | 'pending' | 'abandoned' | 'expired';
 
 type MapGroup = {
   code: string;
   country: string;
   count: number;
   status: JurisdictionStatus;
+  statusLabel: string;
 };
 
 type GeographicalDistributionMapProps = {
@@ -30,6 +31,12 @@ type TooltipState = {
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json';
+const STATUS_ORDER: Record<JurisdictionStatus, number> = {
+  granted: 0,
+  pending: 1,
+  abandoned: 2,
+  expired: 3,
+};
 
 const COUNTRY_COORDS: Record<string, [number, number]> = {
   AU: [134, -25],
@@ -58,10 +65,12 @@ const clamp = (value: number, min: number, max: number) => Math.min(max, Math.ma
 
 const statusMeta = (status: JurisdictionStatus) =>
   status === 'granted'
-    ? { label: 'Granted', dot: 'bg-emerald-500', fill: '#10B981' }
+    ? { dot: 'bg-emerald-500', fill: '#10B981' }
     : status === 'pending'
-      ? { label: 'Pending', dot: 'bg-amber-500', fill: '#F59E0B' }
-      : { label: 'Expired', dot: 'bg-slate-400', fill: '#94A3B8' };
+      ? { dot: 'bg-amber-500', fill: '#F59E0B' }
+      : status === 'abandoned'
+        ? { dot: 'bg-red-500', fill: '#EF4444' }
+        : { dot: 'bg-slate-400', fill: '#94A3B8' };
 
 const flagEmoji = (code: string) => {
   if (code === 'WO') return String.fromCodePoint(0x1F310);
@@ -82,6 +91,18 @@ const GeographicalDistributionMap: React.FC<GeographicalDistributionMapProps> = 
     zoom: 1,
   });
   const mapRef = useRef<HTMLDivElement | null>(null);
+  const legendItems = Array.from(
+    new Map(
+      groups.map((group) => [
+        `${group.status}:${group.statusLabel}`,
+        { status: group.status, label: group.statusLabel },
+      ]),
+    ).values(),
+  ).sort((left, right) => {
+    const statusDelta = STATUS_ORDER[left.status] - STATUS_ORDER[right.status];
+    if (statusDelta !== 0) return statusDelta;
+    return left.label.localeCompare(right.label);
+  });
 
   const showTooltip = (group: MapGroup, event: React.MouseEvent<SVGGElement>) => {
     const rect = mapRef.current?.getBoundingClientRect();
@@ -219,7 +240,7 @@ const GeographicalDistributionMap: React.FC<GeographicalDistributionMapProps> = 
                     {tooltip.group.count} patent{tooltip.group.count === 1 ? '' : 's'}
                   </span>
                   <span className="text-xs font-medium text-slate-500">
-                    {statusMeta(tooltip.group.status).label}
+                    {tooltip.group.statusLabel}
                   </span>
                 </div>
                 <p className="mt-3 text-xs text-slate-500">Click to view details</p>
@@ -232,16 +253,12 @@ const GeographicalDistributionMap: React.FC<GeographicalDistributionMapProps> = 
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
             Legend
           </p>
-          {(['granted', 'pending', 'expired'] as JurisdictionStatus[]).map((status) => (
-            <div key={status} className="inline-flex items-center gap-2 text-sm text-slate-500">
-              <span className={`h-2.5 w-2.5 rounded-full ${statusMeta(status).dot}`} />
-              {statusMeta(status).label}
+          {legendItems.map((item) => (
+            <div key={`${item.status}-${item.label}`} className="inline-flex items-center gap-2 text-sm text-slate-500">
+              <span className={`h-2.5 w-2.5 rounded-full ${statusMeta(item.status).dot}`} />
+              {item.label}
             </div>
           ))}
-          <div className="inline-flex items-center gap-2 text-sm text-slate-500">
-            <span className="h-2.5 w-2.5 rounded-full border border-slate-300 bg-white" />
-            Not filed
-          </div>
           <p className="ml-auto text-xs text-slate-400">
             Marker size reflects the number of patent family members.
           </p>

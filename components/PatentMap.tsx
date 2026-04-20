@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Navigation, TrendingUp, Building } from 'lucide-react';
 import { Patent } from '../types';
-import { formatCompactCurrency } from '../utils/patentDisplay';
+import { formatCompactCurrency, isKnownNumber } from '../utils/patentDisplay';
+import { countryMapping } from '../utils/geoUtils';
 
 interface PatentMapProps {
   patents: Patent[];
@@ -12,11 +13,38 @@ const PatentMap: React.FC<PatentMapProps> = ({ patents, onSelectPatent }) => {
   const [hoveredPatent, setHoveredPatent] = useState<Patent | null>(null);
   const [hoverPos, setHoverPos] = useState({ x: 0, y: 0 });
 
+  const fallbackCountries: Record<string, string> = {
+    US: 'United States of America',
+    CN: 'China',
+    EP: 'Europe (EPO)',
+    WO: 'WIPO',
+    TW: 'Taiwan',
+    JP: 'Japan',
+    KR: 'South Korea',
+    DE: 'Germany',
+    AU: 'Australia',
+    MX: 'Mexico',
+    BR: 'Brazil',
+    CA: 'Canada',
+    ES: 'Spain',
+    HK: 'Hong Kong',
+    MY: 'Malaysia',
+  };
+
+  const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+
   const getCoords = (patent: Patent) => {
-    const seed = patent.publicationNumber.charCodeAt(5) + patent.assignee.name.charCodeAt(0);
+    const countryName = patent.countries[0] || fallbackCountries[patent.jurisdiction];
+    const mapping = countryName ? countryMapping[countryName] : undefined;
+
+    if (!mapping) {
+      return { x: 50, y: 52 };
+    }
+
+    const [lat, lon] = mapping.coords;
     return {
-      x: 10 + (seed * 1.5) % 80, 
-      y: 15 + (seed * 2.1) % 70  
+      x: clamp(((lon + 180) / 360) * 100, 6, 94),
+      y: clamp(((90 - lat) / 180) * 100, 10, 84),
     };
   };
 
@@ -89,7 +117,7 @@ const PatentMap: React.FC<PatentMapProps> = ({ patents, onSelectPatent }) => {
           <div className="flex items-center justify-between mb-2">
             <span className="rounded bg-blue-50 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.14em] text-[#00bdcd]">{hoveredPatent.publicationNumber}</span>
             <div className="flex items-center gap-1 text-[10px] font-medium text-emerald-600">
-               <TrendingUp size={10} /> {hoveredPatent.qualityScore}% Quality
+               <TrendingUp size={10} /> {isKnownNumber(hoveredPatent.qualityScore) ? `${hoveredPatent.qualityScore}% Quality` : 'Not scored'}
             </div>
           </div>
           <h4 className="mb-2 line-clamp-2 text-sm font-semibold leading-snug text-slate-900">{hoveredPatent.title}</h4>
@@ -106,7 +134,7 @@ const PatentMap: React.FC<PatentMapProps> = ({ patents, onSelectPatent }) => {
             </div>
             <div>
                <div className="text-xs font-medium uppercase tracking-[0.16em] leading-none text-slate-900">Geo-Intelligence</div>
-               <div className="text-[10px] text-slate-500 font-medium">Clustered by Assignee HQ</div>
+               <div className="text-[10px] text-slate-500 font-medium">Positioned by filing jurisdiction</div>
             </div>
          </div>
       </div>

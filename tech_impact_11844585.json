@@ -1,0 +1,51 @@
+{
+  "patent_number_original": "US11844585B1",
+  "patent_number_clean": "11844585",
+  "patent_title": "Surgical robotics systems and devices having a sterile restart, and methods thereof",
+  "category": "Technological Impact",
+  "total_score": 10,
+  "max_possible": 25,
+  "percentage": 40.0,
+  "components": {
+    "forward_citations": {
+      "metric": "Forward Citations (ACTUAL citing patents)",
+      "citation_count": 4,
+      "citing_patents_sample": [
+        "12082899",
+        "12089908",
+        "12349998",
+        "12427647"
+      ],
+      "velocity_per_year": 1.72,
+      "sector_average": 10.0,
+      "step_score": 3,
+      "normalized_score": 3.0,
+      "final_score": 3,
+      "max_possible": 15
+    },
+    "citation_velocity": {
+      "metric": "Citation Velocity",
+      "citations_per_year": 1.72,
+      "score": 2,
+      "max_possible": 5
+    },
+    "classification_breadth": {
+      "metric": "Classification Breadth",
+      "ipc_count": 4,
+      "cpc_count": 13,
+      "score": 5,
+      "max_possible": 5
+    }
+  },
+  "raw_data": {
+    "citing_patents_count": 4,
+    "citing_patents_sample": [
+      "US12082899B2",
+      "US12089908B2",
+      "US12349998B2",
+      "US12427647B2"
+    ],
+    "priority_filing_date": "2023-02-10",
+    "patent_issue_date": "2023-12-19"
+  }
+}

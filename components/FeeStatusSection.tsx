@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { Patent } from '../types';
+import { isKnownNumber } from '../utils/patentDisplay';
 
 const FOCUS_RING =
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2';
@@ -10,14 +11,16 @@ type FeeRow = {
   dueDate: Date | null;
   shortDate: string;
   exactDate: string;
-  statusLabel: 'Not Due' | 'Due Soon' | 'Overdue';
-  tone: 'notDue' | 'dueSoon' | 'overdue';
+  statusLabel: string;
+  tone: 'good' | 'warning' | 'critical' | 'neutral';
 };
 
 type FeeBaseRow = {
   label: string;
   key: 'year3_5' | 'year7_5' | 'year11_5';
   dueDate: Date | null;
+  rawStatus: string;
+  amount: number;
 };
 
 type FeeStatusSectionProps = {
@@ -41,7 +44,7 @@ const formatExactDate = (date: Date | null) =>
         day: 'numeric',
         year: 'numeric',
       })
-    : 'Exact due date unavailable';
+    : 'Estimated due date unavailable';
 
 const addYears = (date: Date, years: number) =>
   new Date(date.getTime() + years * 365.25 * 24 * 60 * 60 * 1000);
@@ -63,65 +66,40 @@ const getDueDates = (filingDate: string) => {
   };
 };
 
-const getBaseStatuses = (patent: Patent) => {
-  const { maintenanceFees } = patent;
-  const dueDates = getDueDates(patent.filingDate);
-  const now = new Date();
+const hasMeaningfulText = (value?: string | null) =>
+  Boolean(value && value.trim() && value.trim() !== '-');
 
-  let year3_5: 'paid' | 'pending' | 'overdue' = 'pending';
-  let year7_5: 'paid' | 'pending' | 'overdue' = 'pending';
-  let year11_5: 'paid' | 'pending' | 'overdue' = 'pending';
+const normalizeStatusText = (value?: string | null) =>
+  hasMeaningfulText(value) ? String(value).trim() : '';
 
-  if (maintenanceFees.totalPending === 0) {
-    year3_5 = 'paid';
-    year7_5 = 'paid';
-    year11_5 = 'paid';
-  } else if (maintenanceFees.totalPending <= maintenanceFees.year11_5) {
-    year3_5 = 'paid';
-    year7_5 = 'paid';
-    year11_5 =
-      dueDates.year11_5 && now > dueDates.year11_5 ? 'overdue' : 'pending';
-  } else if (
-    maintenanceFees.totalPending <=
-    maintenanceFees.year7_5 + maintenanceFees.year11_5
-  ) {
-    year3_5 = 'paid';
-    year7_5 = dueDates.year7_5 && now > dueDates.year7_5 ? 'overdue' : 'pending';
-    year11_5 = 'pending';
-  } else {
-    year3_5 = dueDates.year3_5 && now > dueDates.year3_5 ? 'overdue' : 'pending';
-    year7_5 = 'pending';
-    year11_5 = 'pending';
+const mapDisplayStatus = (rawStatus: string) => {
+  const normalized = rawStatus.trim().toLowerCase();
+
+  if (!normalized) {
+    return { statusLabel: 'Not disclosed', tone: 'neutral' as const };
   }
 
-  return {
-    dueDates,
-    base: { year3_5, year7_5, year11_5 },
-  };
-};
-
-const mapDisplayStatus = (
-  baseStatus: 'paid' | 'pending' | 'overdue',
-  dueDate: Date | null,
-) => {
-  if (baseStatus === 'overdue') {
-    return { statusLabel: 'Overdue' as const, tone: 'overdue' as const };
+  if (normalized.includes('paid')) {
+    return { statusLabel: rawStatus, tone: 'good' as const };
   }
 
-  if (baseStatus === 'pending' && dueDate) {
-    const now = new Date();
-    const sixMonthsFromNow = new Date(now);
-    sixMonthsFromNow.setMonth(sixMonthsFromNow.getMonth() + 6);
-    if (dueDate >= now && dueDate <= sixMonthsFromNow) {
-      return { statusLabel: 'Due Soon' as const, tone: 'dueSoon' as const };
-    }
+  if (normalized.includes('not due')) {
+    return { statusLabel: rawStatus, tone: 'good' as const };
   }
 
-  return { statusLabel: 'Not Due' as const, tone: 'notDue' as const };
+  if (normalized.includes('unpaid') || normalized.includes('overdue') || normalized.includes('late')) {
+    return { statusLabel: rawStatus, tone: 'critical' as const };
+  }
+
+  if (normalized === 'due' || normalized.includes('due')) {
+    return { statusLabel: rawStatus, tone: 'warning' as const };
+  }
+
+  return { statusLabel: rawStatus, tone: 'neutral' as const };
 };
 
 const toneClasses = (tone: FeeRow['tone']) => {
-  if (tone === 'overdue') {
+  if (tone === 'critical') {
     return {
       dot: 'bg-red-500',
       text: 'text-red-600',
@@ -129,7 +107,7 @@ const toneClasses = (tone: FeeRow['tone']) => {
     };
   }
 
-  if (tone === 'dueSoon') {
+  if (tone === 'warning') {
     return {
       dot: 'bg-amber-500',
       text: 'text-amber-600',
@@ -137,8 +115,16 @@ const toneClasses = (tone: FeeRow['tone']) => {
     };
   }
 
+  if (tone === 'good') {
+    return {
+      dot: 'bg-emerald-500',
+      text: 'text-emerald-600',
+      row: 'hover:border-emerald-200 hover:bg-emerald-50/40',
+    };
+  }
+
   return {
-    dot: 'bg-emerald-500',
+    dot: 'bg-slate-400',
     text: 'text-slate-600',
     row: 'hover:border-slate-200 hover:bg-slate-50',
   };
@@ -146,34 +132,69 @@ const toneClasses = (tone: FeeRow['tone']) => {
 
 const formatCurrency = (value: number) => `$${value.toLocaleString('en-US')}`;
 
+const feeStatusText = (patent: Patent, key: FeeBaseRow['key']) => {
+  if (key === 'year3_5') return patent.maintenanceFees.year3_5Text;
+  if (key === 'year7_5') return patent.maintenanceFees.year7_5Text;
+  return patent.maintenanceFees.year11_5Text;
+};
+
 const FeeStatusSection: React.FC<FeeStatusSectionProps> = ({ patent }) => {
   const feeData = useMemo(() => {
-    const { dueDates, base } = getBaseStatuses(patent);
+    const dueDates = getDueDates(patent.filingDate);
 
     const baseRows: FeeBaseRow[] = [
-      { label: '3.5 Year', dueDate: dueDates.year3_5, key: 'year3_5' },
-      { label: '7.5 Year', dueDate: dueDates.year7_5, key: 'year7_5' },
-      { label: '11.5 Year', dueDate: dueDates.year11_5, key: 'year11_5' },
+      {
+        label: '3.5 Year',
+        dueDate: dueDates.year3_5,
+        key: 'year3_5',
+        rawStatus: normalizeStatusText(feeStatusText(patent, 'year3_5')),
+        amount: patent.maintenanceFees.year3_5,
+      },
+      {
+        label: '7.5 Year',
+        dueDate: dueDates.year7_5,
+        key: 'year7_5',
+        rawStatus: normalizeStatusText(feeStatusText(patent, 'year7_5')),
+        amount: patent.maintenanceFees.year7_5,
+      },
+      {
+        label: '11.5 Year',
+        dueDate: dueDates.year11_5,
+        key: 'year11_5',
+        rawStatus: normalizeStatusText(feeStatusText(patent, 'year11_5')),
+        amount: patent.maintenanceFees.year11_5,
+      },
     ];
 
-    const rows: FeeRow[] = baseRows.map((row) => {
-      const display = mapDisplayStatus(base[row.key], row.dueDate);
-      return {
-        label: row.label,
-        dueDate: row.dueDate,
-        shortDate: formatShortDate(row.dueDate),
-        exactDate: formatExactDate(row.dueDate),
-        statusLabel: display.statusLabel,
-        tone: display.tone,
-      };
-    });
+    const rows: FeeRow[] = baseRows
+      .filter((row) => row.rawStatus || isKnownNumber(row.amount))
+      .map((row) => {
+        const display = mapDisplayStatus(row.rawStatus);
+        return {
+          label: row.label,
+          dueDate: row.dueDate,
+          shortDate: formatShortDate(row.dueDate),
+          exactDate: formatExactDate(row.dueDate),
+          statusLabel: display.statusLabel,
+          tone: display.tone,
+        };
+      });
+
+    const alertRows = rows.filter((row) => row.tone === 'critical' || row.tone === 'warning');
+    const totalPendingDisplay = isKnownNumber(patent.maintenanceFees.totalPending)
+      ? formatCurrency(patent.maintenanceFees.totalPending)
+      : normalizeStatusText(patent.maintenanceFees.totalPendingText);
 
     return {
       rows,
-      totalPending: patent.maintenanceFees.totalPending,
-      overdueCount: rows.filter((row) => row.tone === 'overdue').length,
+      alertRows,
+      totalPendingDisplay,
     };
   }, [patent]);
+
+  if (feeData.rows.length === 0 && !feeData.totalPendingDisplay) {
+    return null;
+  }
 
   return (
     <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -183,14 +204,13 @@ const FeeStatusSection: React.FC<FeeStatusSectionProps> = ({ patent }) => {
         </h3>
       </div>
 
-      {feeData.overdueCount > 0 && (
+      {feeData.alertRows.length > 0 && (
         <div className="mt-6 flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           <AlertTriangle size={16} className="mt-0.5 shrink-0" />
           <div>
-            <p className="font-semibold">Action required</p>
+            <p className="font-semibold">Review maintenance status</p>
             <p className="mt-1 text-red-600">
-              {feeData.overdueCount} maintenance fee
-              {feeData.overdueCount > 1 ? 's are' : ' is'} overdue.
+              {feeData.alertRows.map((row) => `${row.label}: ${row.statusLabel}`).join(' | ')}
             </p>
           </div>
         </div>
@@ -206,7 +226,7 @@ const FeeStatusSection: React.FC<FeeStatusSectionProps> = ({ patent }) => {
                 group relative rounded-lg border border-transparent px-3 py-3 transition
                 ${styles.row} ${FOCUS_RING}
               `}
-              title={`Exact due date: ${row.exactDate}`}
+              title={`Estimated due date: ${row.exactDate}`}
               tabIndex={0}
             >
               <div className="flex items-start justify-between gap-4">
@@ -221,7 +241,7 @@ const FeeStatusSection: React.FC<FeeStatusSectionProps> = ({ patent }) => {
                     <span className={`text-sm font-medium ${styles.text}`}>
                       {row.statusLabel}
                     </span>
-                    {row.tone === 'overdue' && (
+                    {row.tone === 'critical' && (
                       <span className="rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-red-700">
                         Action Required
                       </span>
@@ -231,17 +251,17 @@ const FeeStatusSection: React.FC<FeeStatusSectionProps> = ({ patent }) => {
               </div>
 
               <div className="pointer-events-none absolute right-3 top-full z-10 mt-2 rounded-md bg-slate-900 px-2 py-1 text-xs text-white opacity-0 shadow-lg transition group-hover:opacity-100 group-focus-visible:opacity-100">
-                Exact due date: {row.exactDate}
+                Estimated due date: {row.exactDate}
               </div>
             </div>
           );
         })}
       </div>
 
-      {feeData.totalPending > 0 && (
+      {feeData.totalPendingDisplay && (
         <div className="mt-6 border-t border-slate-100 pt-4">
           <p className="text-sm font-medium text-amber-600">
-            Total Pending: {formatCurrency(feeData.totalPending)}
+            Total Pending: {feeData.totalPendingDisplay}
           </p>
         </div>
       )}
@@ -250,3 +270,4 @@ const FeeStatusSection: React.FC<FeeStatusSectionProps> = ({ patent }) => {
 };
 
 export default FeeStatusSection;
+

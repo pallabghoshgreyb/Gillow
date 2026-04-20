@@ -10,6 +10,32 @@ interface SidePanelProps {
   onClose: () => void;
 }
 
+const hasText = (value?: string | null) => Boolean(value && value.trim());
+
+const formatGrowth = (growth: number) => {
+  if (growth > 0) return { label: `+${growth}% vs prior period`, className: 'text-emerald-600' };
+  if (growth < 0) return { label: `${growth}% vs prior period`, className: 'text-red-600' };
+  return { label: 'No visible change vs prior period', className: 'text-slate-500' };
+};
+
+const buildContextCopy = (node: TechNode) => {
+  const scope =
+    node.level === TechLevel.DOMAIN
+      ? `${node.name} is a primary technology domain in this landscape.`
+      : `${node.name} is a level 2 subdomain within ${node.domain}.`;
+  const momentum =
+    node.growth > 0
+      ? `Filing activity is up ${node.growth}% versus the prior comparison period.`
+      : node.growth < 0
+        ? `Filing activity is down ${Math.abs(node.growth)}% versus the prior comparison period.`
+        : 'Filing activity is flat versus the prior comparison period.';
+  const assignee = hasText(node.topAssignee)
+    ? `${node.topAssignee} appears most often in the current dataset for this segment.`
+    : 'No lead entity is disclosed in the current dataset for this segment.';
+
+  return `${scope} ${momentum} ${assignee}`;
+};
+
 const SidePanel: React.FC<SidePanelProps> = ({ node, onClose }) => {
   const navigate = useNavigate();
   const [trends, setTrends] = useState<ChartDataPoint[]>([]);
@@ -32,6 +58,9 @@ const SidePanel: React.FC<SidePanelProps> = ({ node, onClose }) => {
   }, [node]);
 
   if (!node) return null;
+
+  const growth = formatGrowth(node.growth);
+  const leadEntity = hasText(node.topAssignee) ? node.topAssignee : 'Not disclosed';
 
   return (
     <div className="fixed top-16 right-0 bottom-0 w-full md:w-[450px] bg-white border-l border-slate-200 shadow-2xl z-30 flex flex-col animate-in slide-in-from-right duration-300">
@@ -58,9 +87,9 @@ const SidePanel: React.FC<SidePanelProps> = ({ node, onClose }) => {
                     <span className="text-xs uppercase font-semibold">Volume</span>
                 </div>
                 <div className="text-2xl font-semibold text-slate-900">{node.patentCount.toLocaleString()}</div>
-                <div className="text-xs text-emerald-600 flex items-center gap-1 mt-1 font-medium">
+                <div className={`mt-1 flex items-center gap-1 text-xs font-medium ${growth.className}`}>
                     <TrendingUp size={12} />
-                    +{node.growth}% Growth
+                    {growth.label}
                 </div>
             </div>
             <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
@@ -68,7 +97,7 @@ const SidePanel: React.FC<SidePanelProps> = ({ node, onClose }) => {
                     <Building2 size={16} />
                     <span className="text-xs uppercase font-semibold">Lead Entity</span>
                 </div>
-                <div className="line-clamp-2 text-sm font-semibold text-slate-800">{node.topAssignee}</div>
+                <div className="line-clamp-2 text-sm font-semibold text-slate-800">{leadEntity}</div>
             </div>
         </div>
 
@@ -108,10 +137,7 @@ const SidePanel: React.FC<SidePanelProps> = ({ node, onClose }) => {
         <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
              <h4 className="mb-1 text-sm font-medium text-blue-800">Landscape Context</h4>
              <p className="text-xs text-blue-700 leading-relaxed">
-                 {node.level === TechLevel.DOMAIN
-                   ? `${node.name} is a primary technology domain in this landscape.`
-                   : `${node.name} is a key level 2 subdomain within ${node.domain}.`}
-                 {' '}This segment is currently showing strong momentum with {node.topAssignee} maintaining a dominant position.
+                 {buildContextCopy(node)}
              </p>
         </div>
 

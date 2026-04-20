@@ -26,6 +26,31 @@ const toTimestamp = (value?: string): number => {
   return Number.isNaN(parsed) ? 0 : parsed;
 };
 
+const normalizeMaintenanceSignal = (value?: string) => {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (!normalized || normalized === '-') return '';
+  if (normalized.includes('not due')) return '';
+  if (normalized.includes('unpaid') || normalized.includes('overdue') || normalized.includes('late')) {
+    return String(value).trim();
+  }
+  if (normalized === 'due' || normalized.includes('due')) {
+    return String(value).trim();
+  }
+  return '';
+};
+
+const getMaintenanceAlerts = (patent: Patent) =>
+  [
+    { label: '3.5 year', value: patent.maintenanceFees.year3_5Text },
+    { label: '7.5 year', value: patent.maintenanceFees.year7_5Text },
+    { label: '11.5 year', value: patent.maintenanceFees.year11_5Text },
+  ]
+    .map(({ label, value }) => {
+      const status = normalizeMaintenanceSignal(value);
+      return status ? `${label} (${status})` : '';
+    })
+    .filter(Boolean);
+
 const createPatentNotifications = (
   patents: Patent[],
   favorites: string[],
@@ -44,13 +69,29 @@ const createPatentNotifications = (
   };
 
   patents
-    .filter((patent) => patent.maintenanceFees.totalPending > 0)
-    .sort((left, right) => right.maintenanceFees.totalPending - left.maintenanceFees.totalPending)
+    .map((patent) => ({
+      patent,
+      alerts: getMaintenanceAlerts(patent),
+    }))
+    .filter(({ patent, alerts }) => alerts.length > 0 || patent.maintenanceFees.totalPending > 0)
+    .sort((left, right) => {
+      const leftWeight = left.alerts.length + (left.patent.maintenanceFees.totalPending > 0 ? 1 : 0);
+      const rightWeight = right.alerts.length + (right.patent.maintenanceFees.totalPending > 0 ? 1 : 0);
+      if (leftWeight !== rightWeight) return rightWeight - leftWeight;
+      return right.patent.maintenanceFees.totalPending - left.patent.maintenanceFees.totalPending;
+    })
     .slice(0, 2)
-    .forEach((patent) => {
+    .forEach(({ patent, alerts }) => {
+      const pendingAmount = patent.maintenanceFees.totalPending > 0
+        ? ` Pending amount: $${patent.maintenanceFees.totalPending.toLocaleString()}.`
+        : '';
+      const alertText = alerts.length > 0
+        ? `maintenance fee action on ${alerts.join(', ')}`
+        : 'pending maintenance fees';
+
       pushNotification({
         id: `maintenance-${patent.publicationNumber}`,
-        text: `${patent.publicationNumber} has $${patent.maintenanceFees.totalPending.toLocaleString()} in pending maintenance fees.`,
+        text: `${patent.publicationNumber} has ${alertText}.${pendingAmount}`,
         type: 'alert',
         timestamp: toTimestamp(patent.estimatedExpirationDate),
       });

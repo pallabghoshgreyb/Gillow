@@ -113,8 +113,12 @@ const OwnershipSection: React.FC<OwnershipSectionProps> = ({
     return () => window.clearTimeout(timer);
   }, [copiedField]);
 
-  const primaryCurrent = currentList[0] || originalList[0] || 'Ownership not disclosed';
-  const primaryOriginal = originalList[0] || 'Not disclosed';
+  if (currentList.length === 0 && originalList.length === 0 && inventorList.length === 0) {
+    return null;
+  }
+
+  const primaryCurrent = currentList[0] || originalList[0] || '';
+  const primaryOriginal = originalList[0] || '';
   const visibleInventors = inventorList.slice(0, 3);
   const extraInventors = inventorList.slice(3);
 
@@ -127,45 +131,49 @@ const OwnershipSection: React.FC<OwnershipSectionProps> = ({
       </div>
 
       <div className="space-y-6 pt-6">
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-            Current Assignee
-          </p>
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0">
-              <p className="text-lg font-medium text-slate-900">{primaryCurrent}</p>
-              {currentList.length > 1 && (
-                <p className="mt-1 text-sm text-slate-400">
-                  +{currentList.length - 1} additional assignee
-                  {currentList.length > 2 ? 's' : ''}
-                </p>
-              )}
+        {primaryCurrent && (
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+              Current Assignee
+            </p>
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-lg font-medium text-slate-900">{primaryCurrent}</p>
+                {currentList.length > 1 && (
+                  <p className="mt-1 text-sm text-slate-400">
+                    +{currentList.length - 1} additional assignee
+                    {currentList.length > 2 ? 's' : ''}
+                  </p>
+                )}
+              </div>
+              <CopyButton
+                label="Copy current assignee"
+                value={primaryCurrent}
+                copiedKey="current"
+                isCopied={copiedField === 'current'}
+                onCopied={setCopiedField}
+              />
             </div>
-            <CopyButton
-              label="Copy current assignee"
-              value={primaryCurrent}
-              copiedKey="current"
-              isCopied={copiedField === 'current'}
-              onCopied={setCopiedField}
-            />
           </div>
-        </div>
+        )}
 
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-            Original Assignee
-          </p>
-          <div className="flex items-start justify-between gap-4">
-            <p className="min-w-0 text-sm leading-6 text-slate-600">{primaryOriginal}</p>
-            <CopyButton
-              label="Copy original assignee"
-              value={primaryOriginal}
-              copiedKey="original"
-              isCopied={copiedField === 'original'}
-              onCopied={setCopiedField}
-            />
+        {primaryOriginal && (
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+              Original Assignee
+            </p>
+            <div className="flex items-start justify-between gap-4">
+              <p className="min-w-0 text-sm leading-6 text-slate-600">{primaryOriginal}</p>
+              <CopyButton
+                label="Copy original assignee"
+                value={primaryOriginal}
+                copiedKey="original"
+                isCopied={copiedField === 'original'}
+                onCopied={setCopiedField}
+              />
+            </div>
           </div>
-        </div>
+        )}
 
         <div className="space-y-3">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
@@ -209,9 +217,7 @@ const OwnershipSection: React.FC<OwnershipSectionProps> = ({
                 </button>
               )}
             </>
-          ) : (
-            <p className="text-sm text-slate-500">Inventor list not disclosed.</p>
-          )}
+          ) : null}
         </div>
       </div>
     </section>

@@ -14,6 +14,6 @@ const compactCurrencyFormatter = new Intl.NumberFormat('en-US', {
 });
 
 export const formatCompactCurrency = (value?: number | null): string => {
-  if (!isKnownNumber(value)) return '$0';
+  if (!isKnownNumber(value)) return 'Not listed';
   return compactCurrencyFormatter.format(value);
 };

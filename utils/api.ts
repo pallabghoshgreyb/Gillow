@@ -1,6 +1,6 @@
 import { TechNode, Patent, TechLevel, ChartDataPoint } from '../types';
-import { MAP_WIDTH, MAP_HEIGHT, DOMAIN_COLORS, PLACEHOLDER_IMAGES, TECH_CATEGORIES } from '../constants';
-import { PATENTS, getPatentById, searchPatents } from '../data/patents';
+import { MAP_WIDTH, MAP_HEIGHT, DOMAIN_COLORS, PLACEHOLDER_IMAGES } from '../constants';
+import { PATENTS, getPatentById } from '../data/patents';
 
 const FAV_KEY = 'GILLOW_FAVORITES';
 const SERVER_URL_KEY = 'GILLOW_SERVER_URL';
@@ -14,6 +14,67 @@ export const setServerUrl = (url: string): void => {
     } else {
         localStorage.removeItem(SERVER_URL_KEY);
     }
+};
+
+const patentYear = (patent: Patent) => {
+    const parsed = new Date(patent.filingDate);
+    const year = parsed.getFullYear();
+    return Number.isNaN(year) ? null : year;
+};
+
+const computeGrowth = (patents: Patent[]) => {
+    const years = patents
+        .map(patentYear)
+        .filter((year): year is number => year !== null)
+        .sort((left, right) => left - right);
+
+    if (years.length === 0) return 0;
+
+    const latestYear = years[years.length - 1];
+    const previousYear = latestYear - 1;
+    const latestCount = patents.filter((patent) => patentYear(patent) === latestYear).length;
+    const previousCount = patents.filter((patent) => patentYear(patent) === previousYear).length;
+
+    if (previousCount === 0) {
+        return latestCount > 0 ? 100 : 0;
+    }
+
+    return Math.round(((latestCount - previousCount) / previousCount) * 100);
+};
+
+const topAssigneeFor = (patents: Patent[]) => {
+    const counts = new Map<string, number>();
+    patents.forEach((patent) => {
+        const assignees = patent.currentAssignees.length > 0
+            ? patent.currentAssignees
+            : patent.originalAssignees.length > 0
+                ? patent.originalAssignees
+                : [patent.assignee.name];
+
+        assignees
+            .filter(Boolean)
+            .forEach((assignee) => counts.set(assignee, (counts.get(assignee) || 0) + 1));
+    });
+
+    const ranked = Array.from(counts.entries()).sort((left, right) =>
+        right[1] - left[1] || left[0].localeCompare(right[0])
+    );
+
+    return ranked[0]?.[0] || 'Unknown';
+};
+
+const buildTrendSeries = (patents: Patent[]): ChartDataPoint[] => {
+    const counts = new Map<number, number>();
+
+    patents.forEach((patent) => {
+        const year = patentYear(patent);
+        if (year === null) return;
+        counts.set(year, (counts.get(year) || 0) + 1);
+    });
+
+    return Array.from(counts.entries())
+        .sort((left, right) => left[0] - right[0])
+        .map(([year, count]) => ({ year, count }));
 };
 
 export const api = {
@@ -39,8 +100,8 @@ export const api = {
                 y: domainY,
                 radius: 120 + (domainPatents.length * 5),
                 patentCount: domainPatents.length,
-                growth: Math.floor(Math.random() * 25) + 5,
-                topAssignee: domainPatents[0]?.assignee.name || 'Unknown',
+                growth: computeGrowth(domainPatents),
+                topAssignee: topAssigneeFor(domainPatents),
                 color: DOMAIN_COLORS[domain] || DOMAIN_COLORS.Default,
                 imageUrl: PLACEHOLDER_IMAGES[domain] || PLACEHOLDER_IMAGES.Default
             };
@@ -63,8 +124,8 @@ export const api = {
                     y: domainY + Math.sin(subAngle) * subDist,
                     radius: 40 + (subPatents.length * 8),
                     patentCount: subPatents.length,
-                    growth: Math.floor(Math.random() * 20) + 10,
-                    topAssignee: subPatents[0]?.assignee.name || 'Unknown',
+                    growth: computeGrowth(subPatents),
+                    topAssignee: topAssigneeFor(subPatents),
                     color: domainNode.color,
                     imageUrl: domainNode.imageUrl
                 });
@@ -103,14 +164,9 @@ export const api = {
                 value: (patent.valuation.current / 5) * (1 + (ct.year - 2020) * 0.2)
             }));
         }
-        
-        const baseVal = patent?.valuation.current || 1000000;
-        return [2021, 2022, 2023, 2024].map((year, i) => ({
-            year,
-            citations: Math.floor(Math.random() * 20),
-            count: Math.floor(Math.random() * 10),
-            value: Math.floor(baseVal * (0.8 + (i * 0.1)))
-        }));
+
+        const patents = await api.getPatents(id);
+        return buildTrendSeries(patents);
     },
 
     toggleFavorite: (id: string) => {

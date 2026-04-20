@@ -13,45 +13,17 @@ type IndicatorTone = {
 
 const hasText = (value?: string | null) => Boolean(value && value.trim() && value.trim() !== '-');
 
-const booleanIndicator = (value: boolean | null | undefined): IndicatorTone => {
-  if (value === true) {
-    return {
-      dot: 'bg-teal-500',
-      text: 'text-teal-700',
-      label: 'Yes',
-    };
-  }
+const positiveIndicator = (label = 'Yes'): IndicatorTone => ({
+  dot: 'bg-teal-500',
+  text: 'text-teal-700',
+  label,
+});
 
-  if (value === false) {
-    return {
-      dot: 'bg-slate-300',
-      text: 'text-slate-500',
-      label: 'No',
-    };
-  }
-
-  return {
-    dot: 'bg-slate-200',
-    text: 'text-slate-400',
-    label: 'Not specified',
-  };
-};
-
-const fitIndicator = (fitValues: string[]): IndicatorTone => {
-  if (fitValues.length > 0) {
-    return {
-      dot: 'bg-teal-500',
-      text: 'text-slate-700',
-      label: fitValues.join(', '),
-    };
-  }
-
-  return {
-    dot: 'bg-slate-200',
-    text: 'text-slate-400',
-    label: 'None specified',
-  };
-};
+const fitIndicator = (fitValues: string[]): IndicatorTone => ({
+  dot: 'bg-teal-500',
+  text: 'text-slate-700',
+  label: fitValues.join(', '),
+});
 
 const StatusRow = ({
   label,
@@ -72,24 +44,47 @@ const StatusRow = ({
 const GovernmentStandardsSection: React.FC<GovernmentStandardsSectionProps> = ({ patent }) => {
   const sectionData = useMemo(() => {
     const fitValues = patent.fit.filter((value) => hasText(value));
-    const governmentInterest = booleanIndicator(patent.flags.governmentInterest);
-    const sep = booleanIndicator(patent.flags.sep);
-    const fit = fitIndicator(fitValues);
+    const rows: Array<{ label: React.ReactNode; indicator: IndicatorTone }> = [];
 
-    const shouldHide =
-      fitValues.length === 0 &&
-      patent.flags.governmentInterest == null &&
-      patent.flags.sep == null;
+    if (patent.flags.governmentInterest) {
+      rows.push({
+        label: 'Government Interest',
+        indicator: positiveIndicator(),
+      });
+    }
+
+    if (patent.flags.sep) {
+      rows.push({
+        label: (
+          <>
+            Standard Essential
+            <br />
+            Patent (SEP)
+          </>
+        ),
+        indicator: positiveIndicator(),
+      });
+    }
+
+    if (fitValues.length > 0) {
+      rows.push({
+        label: (
+          <>
+            Field of Use
+            <br />
+            (FIT)
+          </>
+        ),
+        indicator: fitIndicator(fitValues),
+      });
+    }
 
     return {
-      governmentInterest,
-      sep,
-      fit,
-      shouldHide,
+      rows,
     };
   }, [patent]);
 
-  if (sectionData.shouldHide) return null;
+  if (sectionData.rows.length === 0) return null;
 
   return (
     <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -100,32 +95,13 @@ const GovernmentStandardsSection: React.FC<GovernmentStandardsSectionProps> = ({
       </div>
 
       <div className="space-y-6 pt-6">
-        <StatusRow
-          label="Government Interest"
-          indicator={sectionData.governmentInterest}
-        />
-
-        <StatusRow
-          label={
-            <>
-              Standard Essential
-              <br />
-              Patent (SEP)
-            </>
-          }
-          indicator={sectionData.sep}
-        />
-
-        <StatusRow
-          label={
-            <>
-              Field of Use
-              <br />
-              (FIT)
-            </>
-          }
-          indicator={sectionData.fit}
-        />
+        {sectionData.rows.map((row, index) => (
+          <StatusRow
+            key={index}
+            label={row.label}
+            indicator={row.indicator}
+          />
+        ))}
       </div>
     </section>
   );

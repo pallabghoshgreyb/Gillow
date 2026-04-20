@@ -1,12 +1,12 @@
 import React, { useMemo, useState } from 'react';
-import { ChevronDown, Globe2 } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import { Patent } from '../types';
 
 type GlobalPatentFamilySectionProps = {
   patent: Patent;
 };
 
-type FamilyStatus = 'Granted' | 'Pending' | 'Abandoned' | 'Expired';
+type FamilyStatus = 'Granted' | 'Pending' | 'Recorded' | 'Abandoned' | 'Expired';
 
 type FamilyMember = {
   code: string;
@@ -35,24 +35,6 @@ const COUNTRY_NAMES: Record<string, string> = {
   TW: 'Taiwan',
 };
 
-const COUNTRY_FLAGS: Record<string, string> = {
-  US: '🇺🇸',
-  EP: '🇪🇺',
-  WO: '🌐',
-  CN: '🇨🇳',
-  JP: '🇯🇵',
-  KR: '🇰🇷',
-  DE: '🇩🇪',
-  AU: '🇦🇺',
-  BR: '🇧🇷',
-  CA: '🇨🇦',
-  ES: '🇪🇸',
-  HK: '🇭🇰',
-  MX: '🇲🇽',
-  MY: '🇲🇾',
-  TW: '🇹🇼',
-};
-
 const hasText = (value?: string | null) => Boolean(value && value.trim() && value.trim() !== '-');
 
 const formatDate = (value?: string, fallback = 'Not disclosed') => {
@@ -75,25 +57,42 @@ const inferStatus = (publicationNumber: string, patent: Patent): FamilyStatus =>
     if (/abandoned/i.test(legalStatus)) return 'Abandoned';
     if (/expired|dead|lapsed/i.test(legalStatus)) return 'Expired';
     if (/granted|issued|alive/i.test(legalStatus)) return 'Granted';
+    return 'Pending';
   }
 
-  if (/(?:B\d?|C\d?|T\d?)$/.test(normalized)) return 'Granted';
-  if (/expired|lapsed/i.test(legalStatus) && normalized.startsWith(patent.jurisdiction)) return 'Expired';
-  if (/abandoned/i.test(legalStatus) && normalized.startsWith(patent.jurisdiction)) return 'Abandoned';
-  return 'Pending';
+  return 'Recorded';
 };
 
 const getStatusClasses = (status: FamilyStatus) => {
   if (status === 'Granted') return { dot: 'bg-emerald-500', text: 'text-emerald-700' };
+  if (status === 'Recorded') return { dot: 'bg-sky-500', text: 'text-sky-700' };
   if (status === 'Abandoned') return { dot: 'bg-red-500', text: 'text-red-700' };
   if (status === 'Expired') return { dot: 'bg-slate-400', text: 'text-slate-500' };
   return { dot: 'bg-amber-500', text: 'text-amber-700' };
 };
 
+const flagEmoji = (code: string) => {
+  const normalized = code.toUpperCase();
+
+  if (normalized === 'WO') {
+    return String.fromCodePoint(0x1F310);
+  }
+
+  const flagCode = normalized === 'EP' ? 'EU' : normalized;
+  if (!/^[A-Z]{2}$/.test(flagCode)) {
+    return String.fromCodePoint(0x1F3F3);
+  }
+
+  return String.fromCodePoint(
+    ...flagCode.split('').map((char) => 127397 + char.charCodeAt(0)),
+  );
+};
+
 const parseFamilyMembers = (patent: Patent): FamilyMember[] => {
   const members = patent.inpadocFamilyMembers.filter((member) => hasText(member));
+  const source = members.length > 0 ? members : [patent.publicationNumber];
 
-  return members.map((member) => {
+  return source.map((member) => {
     const publicationNumber = member.trim().toUpperCase();
     const code = publicationNumber.slice(0, 2);
     return {
@@ -102,7 +101,7 @@ const parseFamilyMembers = (patent: Patent): FamilyMember[] => {
       publicationNumber,
       status: inferStatus(publicationNumber, patent),
       priorityDate: formatDate(patent.priorityDate),
-      flag: COUNTRY_FLAGS[code] || '🏳️',
+      flag: flagEmoji(code),
     };
   });
 };

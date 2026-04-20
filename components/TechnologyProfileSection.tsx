@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { Patent } from '../types';
+import { isKnownNumber } from '../utils/patentDisplay';
 
 type TechnologyProfileSectionProps = {
   patent: Patent;
@@ -8,7 +9,11 @@ type TechnologyProfileSectionProps = {
 const hasText = (value?: string | null) => Boolean(value && value.trim() && value.trim() !== '-');
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
-const getTrlStage = (level: number) => {
+const getTrlStage = (level: number | null) => {
+  if (!level) {
+    return { label: 'Not disclosed in current dataset', text: 'text-slate-500' };
+  }
+
   if (level >= 9) {
     return { label: 'Proven in operation', text: 'text-emerald-600' };
   }
@@ -26,14 +31,20 @@ const getTrlStage = (level: number) => {
 
 const TechnologyProfileSection: React.FC<TechnologyProfileSectionProps> = ({ patent }) => {
   const profile = useMemo(() => {
-    const level = clamp(patent.technologyReadinessLevel || 8, 1, 9);
+    const level = isKnownNumber(patent.technologyReadinessLevel)
+      ? clamp(patent.technologyReadinessLevel, 1, 9)
+      : null;
     return {
-      domain: hasText(patent.domain) ? patent.domain : 'Wearable Medical Devices',
-      subdomain: hasText(patent.subdomain) ? patent.subdomain : 'Surgical Robotics',
+      domain: hasText(patent.domain) ? patent.domain : '',
+      subdomain: hasText(patent.subdomain) ? patent.subdomain : '',
       level,
       stage: getTrlStage(level),
     };
   }, [patent]);
+
+  if (!profile.domain && !profile.subdomain && profile.level === null) {
+    return null;
+  }
 
   return (
     <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -44,51 +55,63 @@ const TechnologyProfileSection: React.FC<TechnologyProfileSectionProps> = ({ pat
       </div>
 
       <div className="space-y-6 pt-6">
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-            Domain
-          </p>
-          <p className="text-lg font-medium leading-7 text-slate-900">{profile.domain}</p>
-        </div>
-
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-            Subdomain
-          </p>
-          <p className="text-sm leading-6 text-slate-600">{profile.subdomain}</p>
-        </div>
-
-        <div className="border-t border-slate-100 pt-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-            Technology Readiness Level
-          </p>
-
-          <div className="mt-4 flex items-center gap-4">
-            <div className="grid flex-1 grid-cols-9 gap-2">
-              {Array.from({ length: 9 }, (_, index) => {
-                const segment = index + 1;
-                const isFilled = segment <= profile.level;
-                const isCurrent = segment === profile.level;
-                return (
-                  <div
-                    key={segment}
-                    className={[
-                      'h-3 rounded-full transition',
-                      isFilled ? 'bg-teal-500' : 'bg-slate-200',
-                      isCurrent ? 'ring-2 ring-teal-200 ring-offset-2 ring-offset-white' : '',
-                    ].join(' ')}
-                    aria-hidden="true"
-                  />
-                );
-              })}
-            </div>
-            <span className="text-sm font-semibold tabular-nums text-slate-900">
-              {profile.level}/9
-            </span>
+        {profile.domain && (
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+              Domain
+            </p>
+            <p className="text-lg font-medium leading-7 text-slate-900">{profile.domain}</p>
           </div>
+        )}
 
-          <p className={`mt-3 text-sm font-medium ${profile.stage.text}`}>{profile.stage.label}</p>
-        </div>
+        {profile.subdomain && (
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+              Subdomain
+            </p>
+            <p className="text-sm leading-6 text-slate-600">{profile.subdomain}</p>
+          </div>
+        )}
+
+        {profile.level && (
+          <div
+            className={
+              profile.domain || profile.subdomain
+                ? 'border-t border-slate-100 pt-6'
+                : ''
+            }
+          >
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+              Technology Readiness Level
+            </p>
+
+            <div className="mt-4 flex items-center gap-4">
+              <div className="grid flex-1 grid-cols-9 gap-2">
+                {Array.from({ length: 9 }, (_, index) => {
+                  const segment = index + 1;
+                  const isFilled = profile.level ? segment <= profile.level : false;
+                  const isCurrent = profile.level === segment;
+                  return (
+                    <div
+                      key={segment}
+                      className={[
+                        'h-3 rounded-full transition',
+                        isFilled ? 'bg-teal-500' : 'bg-slate-200',
+                        isCurrent ? 'ring-2 ring-teal-200 ring-offset-2 ring-offset-white' : '',
+                      ].join(' ')}
+                      aria-hidden="true"
+                    />
+                  );
+                })}
+              </div>
+              <span className="text-sm font-semibold tabular-nums text-slate-900">
+                {profile.level}/9
+              </span>
+            </div>
+
+            <p className={`mt-3 text-sm font-medium ${profile.stage.text}`}>{profile.stage.label}</p>
+          </div>
+        )}
       </div>
     </section>
   );

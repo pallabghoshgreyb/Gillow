@@ -3,7 +3,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Heart, Building2, Users, Globe, Zap, ShieldCheck, AlertTriangle, Fingerprint, Tag, Scale, Rocket, ShieldAlert } from 'lucide-react';
 import { Patent } from '../types';
-import { formatCompactCurrency } from '../utils/patentDisplay';
+import { formatCompactCurrency, isKnownNumber } from '../utils/patentDisplay';
 
 interface PatentCardProps {
   patent: Patent;
@@ -49,14 +49,20 @@ const PatentCard: React.FC<PatentCardProps> = ({ patent, isFavorite, onToggleFav
           )}
         </div>
 
-        <div className="absolute bottom-3 left-3 z-10 flex gap-1.5">
-            <div className={`flex items-center gap-1 rounded px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-[0.14em] text-white shadow-sm ${patent.technologyReadinessLevel >= 7 ? 'bg-emerald-500' : patent.technologyReadinessLevel >= 4 ? 'bg-blue-500' : 'bg-amber-500'}`}>
-                <Rocket size={8} /> TRL {patent.technologyReadinessLevel}
-            </div>
-            <div className={`flex items-center gap-1 rounded px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-[0.14em] text-white shadow-sm ${patent.infringementRiskScore >= 8 ? 'bg-red-500' : 'bg-slate-700'}`}>
-                <ShieldAlert size={8} /> Risk {patent.infringementRiskScore}
-            </div>
-        </div>
+        {(isKnownNumber(patent.technologyReadinessLevel) || isKnownNumber(patent.infringementRiskScore)) && (
+          <div className="absolute bottom-3 left-3 z-10 flex gap-1.5">
+            {isKnownNumber(patent.technologyReadinessLevel) && (
+              <div className={`flex items-center gap-1 rounded px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-[0.14em] text-white shadow-sm ${patent.technologyReadinessLevel >= 7 ? 'bg-emerald-500' : patent.technologyReadinessLevel >= 4 ? 'bg-blue-500' : 'bg-amber-500'}`}>
+                  <Rocket size={8} /> TRL {patent.technologyReadinessLevel}
+              </div>
+            )}
+            {isKnownNumber(patent.infringementRiskScore) && (
+              <div className={`flex items-center gap-1 rounded px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-[0.14em] text-white shadow-sm ${patent.infringementRiskScore >= 8 ? 'bg-red-500' : 'bg-slate-700'}`}>
+                  <ShieldAlert size={8} /> Risk {patent.infringementRiskScore}
+              </div>
+            )}
+          </div>
+        )}
 
         <button 
           onClick={(e) => {
@@ -78,7 +84,7 @@ const PatentCard: React.FC<PatentCardProps> = ({ patent, isFavorite, onToggleFav
           </div>
           <div className="flex flex-col items-end gap-1">
             <div className="flex items-center gap-1 rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.14em] text-blue-600">
-              {patent.qualityScore}% Quality
+              {isKnownNumber(patent.qualityScore) ? `${patent.qualityScore}% Quality` : 'Not scored'}
             </div>
             <span className={`rounded border px-2 py-0.5 text-[9px] font-medium uppercase tracking-[0.14em] ${
               patent.independentClaimsCount >= 4 ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :

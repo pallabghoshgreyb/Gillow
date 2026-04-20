@@ -34,6 +34,10 @@ export interface MaintenanceFees {
   year7_5: number;
   year11_5: number;
   totalPending: number;
+  year3_5Text: string;
+  year7_5Text: string;
+  year11_5Text: string;
+  totalPendingText: string;
 }
 
 export interface PatentFlags {
