@@ -445,7 +445,7 @@ const buildHistory = (patent: Patent, status: { label: string; tone: Tone }): Hi
     id: 'exam',
     title: hasText(patent.firstActionDate) ? 'First examination event' : 'Examination posture',
     date: hasText(patent.firstActionDate) ? formatDate(patent.firstActionDate) : 'Awaiting detail',
-    detail: patent.officeActionsCount > 0 ? `${patent.officeActionsCount} office action${patent.officeActionsCount === 1 ? '' : 's'} recorded, indicating an active prosecution history.` : 'The current dataset does not surface a dated office action yet.',
+    detail: patent.officeActionsCount > 0 ? `${patent.officeActionsCount} office action${patent.officeActionsCount === 1 ? '' : 's'} appear in the prosecution history, indicating an active examination path.` : 'The current dataset does not surface a dated office action yet.',
     tone: hasText(patent.firstActionDate) ? 'done' : 'active',
   },
   {
@@ -1019,7 +1019,7 @@ const PatentDetailRedesign: React.FC = () => {
             {hasProsecutionSection && (
               <RevealBlock id="prosecution" delay={0.3}>
                 <div className="space-y-5">
-                  <SectionIntro eyebrow="Prosecution history" title="Readable file history" description="An editorial pass over the major recorded events surfaced from the prosecution record." />
+                  <SectionIntro eyebrow="Prosecution history" title="Readable file history" description="An editorial pass over the major prosecution events surfaced from the file history." />
                   <div className={cn('overflow-hidden', CARD)}>
                     <div className="space-y-px bg-slate-100">
                       {view.history.map((item, index) => (
@@ -1031,7 +1031,7 @@ const PatentDetailRedesign: React.FC = () => {
                           </div>
                           <div className="sm:text-right">
                             <span className={cn('inline-flex rounded-full border px-3 py-1 text-xs font-medium', item.tone === 'done' ? 'border-teal-200 bg-teal-50 text-teal-700' : item.tone === 'active' ? 'border-sky-200 bg-sky-50 text-sky-700' : 'border-slate-200 bg-white text-slate-600')}>
-                              {item.tone === 'done' ? 'Recorded' : item.tone === 'active' ? 'Open' : 'Historical'}
+                              {item.tone === 'done' ? 'Completed' : item.tone === 'active' ? 'Open' : 'Historical'}
                             </span>
                           </div>
                         </motion.div>
@@ -1151,7 +1151,7 @@ const PatentDetailRedesign: React.FC = () => {
         )}
 
         <div className="mt-8 border-t border-slate-100 pt-5 text-sm text-slate-400">
-          PatentIntent editorial view combines structured patent metadata with a calmer, reader-first detail experience for quick diligence.
+          PatIndex editorial view combines structured patent metadata with a calmer, reader-first detail experience for quick diligence.
         </div>
       </main>
     </div>
