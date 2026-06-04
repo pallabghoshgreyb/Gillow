@@ -69,7 +69,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ patentId, isOpen, onClose }) 
                </button>
 
                <div className="flex items-center justify-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center pt-2">
-                  <ShieldCheck size={14} className="text-emerald-500" /> Secure marketplace transaction
+                  <ShieldCheck size={14} className="text-emerald-500" /> Secure PatIndex transaction
                </div>
             </form>
           </>

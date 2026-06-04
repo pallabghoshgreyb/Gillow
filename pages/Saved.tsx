@@ -109,13 +109,13 @@ const Saved: React.FC = () => {
                   </div>
                   <h3 className="mb-2 text-2xl font-semibold text-slate-800">Portfolio Empty</h3>
                   <p className="text-slate-500 mb-8 leading-relaxed">
-                      Discover high-value patents in the marketplace and save them to your tracker.
+                      Discover high-value patents in the PatIndex and save them to your tracker.
                   </p>
                   <button 
                       onClick={() => window.location.hash = '#/browse'}
                       className="flex items-center gap-2 rounded-xl bg-slate-900 px-8 py-3 font-semibold text-white shadow-lg transition-all hover:bg-slate-800 active:scale-95"
                   >
-                      Explore Marketplace <ArrowRight size={18} />
+                      Explore PatIndex <ArrowRight size={18} />
                   </button>
               </div>
           )}

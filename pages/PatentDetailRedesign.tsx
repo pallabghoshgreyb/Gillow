@@ -1626,8 +1626,8 @@ const NotFound = ({ onBack }: { onBack: () => void }) => (
       <div className={cn('w-full p-8 text-center sm:p-10', CARD)}>
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-50 text-teal-600"><FileSearch2 size={24} /></div>
         <h1 className="mt-6 text-3xl font-semibold tracking-tight text-slate-900">Patent not found</h1>
-        <p className="mt-3 text-base leading-7 text-slate-600">The selected record could not be loaded. Try returning to the marketplace and opening a different patent detail page.</p>
-        <button type="button" onClick={onBack} className={cn('mt-8 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-teal-200 hover:text-teal-700', FOCUS)}><ArrowLeft size={16} />Back to marketplace</button>
+        <p className="mt-3 text-base leading-7 text-slate-600">The selected record could not be loaded. Try returning to the PatIndex and opening a different patent detail page.</p>
+        <button type="button" onClick={onBack} className={cn('mt-8 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-teal-200 hover:text-teal-700', FOCUS)}><ArrowLeft size={16} />Back to PatIndex</button>
       </div>
     </main>
   </div>

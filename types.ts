@@ -102,7 +102,7 @@ export interface Patent {
   inpadocFamilyMembers: string[];
   familySize: number;
 
-  // MARKETPLACE EXTENSIONS
+  // PatIndex EXTENSIONS
   id: string; 
   askingPrice?: number;
   valuationEstimate: number;

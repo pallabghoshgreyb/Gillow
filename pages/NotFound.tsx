@@ -32,7 +32,7 @@ const NotFound: React.FC = () => {
           onClick={() => navigate('/browse')}
           className="flex items-center justify-center gap-2 rounded-2xl border-2 border-slate-200 bg-white px-8 py-4 font-semibold text-slate-800 transition-all hover:bg-slate-50 active:scale-95"
         >
-          <MapIcon size={18} /> Explore Marketplace
+          <MapIcon size={18} /> Explore PatIndex
         </button>
       </div>
 

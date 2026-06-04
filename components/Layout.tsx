@@ -209,14 +209,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   }}
                   className="flex items-center gap-2 group flex-shrink-0"
                 >
-                    <div className="w-10 h-10 rounded-xl bg-[#00bdcd] flex items-center justify-center shadow-lg shadow-blue-200 group-hover:rotate-6 transition-all">
-                        <span className="text-xl font-semibold text-white">G</span>
+                    <div className="w-10 h-10 rounded-xl overflow-hidden bg-white flex items-center justify-center shadow-lg shadow-blue-200 group-hover:rotate-6 transition-all">
+                        <img src="/logo.gif" alt="Gillow logo" className="w-full h-full object-contain" />
                     </div>
-                    <span className="text-2xl font-semibold tracking-tight text-slate-900 transition-colors group-hover:text-blue-600">PatIndex</span>
+                    <span className="sr-only">PatIndex</span>
                 </button>
 
                 <nav className="hidden xl:flex items-center space-x-8">
-                    <NavLink to="/browse" className={({isActive}) => `text-sm font-medium transition-colors hover:text-[#00bdcd] ${isActive ? 'text-[#00bdcd]' : 'text-slate-500'}`}>Marketplace</NavLink>
+                    <NavLink to="/browse" className={({isActive}) => `text-sm font-medium transition-colors hover:text-[#00bdcd] ${isActive ? 'text-[#00bdcd]' : 'text-slate-500'}`}>PatIndex</NavLink>
                     <NavLink to="/landscape" className={({isActive}) => `text-sm font-medium transition-colors hover:text-[#00bdcd] ${isActive ? 'text-[#00bdcd]' : 'text-slate-500'}`}>Landscape</NavLink>
                 </nav>
             </div>
@@ -358,8 +358,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <button
                   onClick={() => setInfoDialog({
                     title: 'Sign In',
-                    description: 'Authentication is not configured in this local environment yet. You can still explore marketplace, landscape, exports, and patent detail workflows with the imported dataset.',
-                    actionLabel: 'Open Marketplace',
+                    description: 'Authentication is not configured in this local environment yet. You can still explore PatIndex, landscape, exports, and patent detail workflows with the imported dataset.',
+                    actionLabel: 'Open PatIndex',
                     actionType: 'browse',
                   })}
                   className="flex h-10 items-center gap-3 rounded-xl bg-slate-900 px-6 text-sm font-semibold text-white shadow-lg shadow-slate-200 transition-all hover:bg-slate-800 active:scale-95"
@@ -384,10 +384,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <div className="grid grid-cols-1 md:grid-cols-12 gap-16 md:gap-8 mb-24">
                   <div className="md:col-span-5">
                       <div className="flex items-center gap-2 mb-10">
-                          <div className="w-10 h-10 rounded-xl bg-[#00bdcd] flex items-center justify-center shadow-xl shadow-blue-200">
-                              <span className="text-xl font-semibold text-white">G</span>
+                          <div className="w-10 h-10 rounded-xl overflow-hidden bg-white flex items-center justify-center shadow-xl shadow-blue-200">
+                              <img src="/logo.gif" alt="Gillow logo" className="w-full h-full object-contain" />
                           </div>
-                          <span className="text-2xl font-semibold tracking-tight">PatIndex</span>
+                          <span className="sr-only">PatIndex</span>
                       </div>
                       <p className="text-slate-400 max-w-sm mb-12 text-lg font-medium leading-relaxed">
                           Reimagining intellectual property management for the modern era. Navigate, value, and acquire patents with global transparency.
@@ -400,7 +400,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                             label="Open product tour info"
                             onClick={() => setInfoDialog({
                               title: 'Video Tours',
-                              description: 'Recorded product walkthroughs are not published yet, but the live Landscape and Marketplace pages are ready to explore.',
+                              description: 'Recorded product walkthroughs are not published yet, but the live Landscape and PatIndex pages are ready to explore.',
                               actionLabel: 'Open Landscape',
                               actionType: 'landscape',
                             })}
@@ -411,7 +411,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   <div className="md:col-span-2">
                       <h4 className="mb-10 text-sm font-medium uppercase tracking-[0.16em] text-slate-400">Platform</h4>
                       <ul className="space-y-6 text-sm font-medium text-slate-600">
-                          <li><button onClick={() => navigate('/browse')} className="hover:text-[#00bdcd] transition-colors">Marketplace</button></li>
+                          <li><button onClick={() => navigate('/browse')} className="hover:text-[#00bdcd] transition-colors">PatIndex</button></li>
                           <li><button onClick={() => navigate('/landscape')} className="hover:text-[#00bdcd] transition-colors">Landscape</button></li>
                           <li><button onClick={() => setInfoDialog({ title: 'AI Valuation', description: 'Valuation insights are available inside each patent detail page, including pricing, quality score, and risk context.', actionLabel: 'Open Sample Patent', actionType: 'sample-patent' })} className="hover:text-[#00bdcd] transition-colors">AI Valuation</button></li>
                           <li><button onClick={() => setIsServerConfigOpen(true)} className="hover:text-[#00bdcd] transition-colors">API Docs</button></li>
@@ -423,7 +423,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                       <ul className="space-y-6 text-sm font-medium text-slate-600">
                           <li><button onClick={() => setInfoDialog({ title: 'Our Mission', description: 'PatIndex helps teams explore patent landscapes, evaluate portfolio strength, and move from discovery to transaction faster.', actionLabel: 'Go Home', actionType: 'home' })} className="hover:text-[#00bdcd] transition-colors">Our Mission</button></li>
                           <li><button onClick={() => setInfoDialog({ title: 'Security', description: 'This workspace runs locally with browser-stored preferences. Backend connectivity is optional and can be configured from the server connection panel.', actionLabel: 'Open Server Config', actionType: 'server-config' })} className="hover:text-[#00bdcd] transition-colors">Security</button></li>
-                          <li><button onClick={() => setInfoDialog({ title: 'Privacy', description: 'Search history, favorites, and saved searches are stored in your browser on this device unless you connect an external backend.', actionLabel: 'Open Marketplace', actionType: 'browse' })} className="hover:text-[#00bdcd] transition-colors">Privacy</button></li>
+                          <li><button onClick={() => setInfoDialog({ title: 'Privacy', description: 'Search history, favorites, and saved searches are stored in your browser on this device unless you connect an external backend.', actionLabel: 'Open PatIndex', actionType: 'browse' })} className="hover:text-[#00bdcd] transition-colors">Privacy</button></li>
                           <li><button onClick={() => { window.location.href = 'mailto:support@gillow.ai?subject=PatIndex%20Support'; }} className="hover:text-[#00bdcd] transition-colors">Support</button></li>
                       </ul>
                   </div>

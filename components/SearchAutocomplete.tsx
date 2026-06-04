@@ -26,8 +26,11 @@ const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({ onSearch, place
   }, [query, suggestions]);
 
   const handleSearch = (q: string) => {
-    setQuery(q);
-    onSearch(q);
+    const trimmed = q.trim();
+    setQuery(trimmed);
+    if (trimmed) {
+      onSearch(trimmed);
+    }
     setIsFocused(false);
   };
 
@@ -45,33 +48,48 @@ const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({ onSearch, place
 
   return (
     <div ref={containerRef} className={`relative ${className}`}>
-      <div className={`relative flex items-center transition-all duration-300 ${isFocused ? 'scale-[1.02]' : ''}`}>
-        <Search className={`absolute left-5 transition-colors duration-300 ${isFocused ? 'text-[#00bdcd]' : 'text-slate-400'}`} size={22} />
-        <input 
-          type="text"
-          value={query}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setTimeout(() => setIsFocused(false), 200)}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleSearch(query)}
-          placeholder={placeholder || "Search patents by ID, title, or tech..."}
-          className="h-16 w-full rounded-full border-2 border-slate-100 bg-white pl-14 pr-16 text-base font-medium text-slate-800 shadow-xl shadow-slate-200/50 outline-none transition-all placeholder:text-slate-400 focus:border-[#00bdcd]"
-        />
-        {query && (
-          <button onClick={() => handleSearch('')} className="absolute right-14 text-slate-300 hover:text-slate-500">
-            <X size={18} />
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleSearch(query);
+        }}
+        className="relative"
+      >
+        <div className={`relative flex items-center transition-all duration-300 ${isFocused ? 'scale-[1.02]' : ''}`}>
+          <Search className={`absolute left-5 transition-colors duration-300 ${isFocused ? 'text-[#00bdcd]' : 'text-slate-400'}`} size={22} />
+          <input 
+            type="text"
+            value={query}
+            autoComplete="off"
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setTimeout(() => setIsFocused(false), 200)}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={placeholder || "Search patents by ID, title, or tech..."}
+            className="h-16 w-full rounded-full border-2 border-slate-100 bg-white pl-14 pr-16 text-base font-medium text-slate-800 shadow-xl shadow-slate-200/50 outline-none transition-all placeholder:text-slate-400 focus:border-[#00bdcd]"
+          />
+          {query && (
+            <button
+              type="button"
+              onClick={() => {
+                setQuery('');
+                setIsFocused(false);
+              }}
+              className="absolute right-14 text-slate-300 hover:text-slate-500"
+            >
+              <X size={18} />
+            </button>
+          )}
+          <button 
+            type="submit"
+            className="absolute right-2 top-2 h-12 w-12 bg-[#00bdcd] text-white rounded-full flex items-center justify-center hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200 active:scale-95"
+          >
+            <Search size={24} />
           </button>
-        )}
-        <button 
-          onClick={() => handleSearch(query)}
-          className="absolute right-2 top-2 h-12 w-12 bg-[#00bdcd] text-white rounded-full flex items-center justify-center hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200 active:scale-95"
-        >
-          <Search size={24} />
-        </button>
-      </div>
+        </div>
+      </form>
 
       {isFocused && filteredSuggestions.length > 0 && (
-        <div className="absolute left-0 right-0 top-full z-30 mt-3 rounded-3xl border border-slate-200 bg-white p-3 shadow-2xl">
+        <div className="absolute left-0 right-0 top-full z-50 mt-3 rounded-3xl border border-slate-200 bg-white p-3 shadow-2xl">
           <div className="px-3 pb-2 text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
             Suggested Subdomains & Assignees
           </div>

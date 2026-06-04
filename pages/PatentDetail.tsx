@@ -96,7 +96,7 @@ const PatentDetail: React.FC = () => {
         <Info size={48} className="text-slate-200 mb-4" />
         <h2 className="text-2xl font-bold text-slate-800">Patent Not Found</h2>
         <button onClick={() => navigate('/browse')} className="mt-4 text-blue-600 font-bold hover:underline flex items-center gap-2">
-            <ArrowLeft size={18} /> Marketplace Hub
+            <ArrowLeft size={18} /> PatIndex Hub
         </button>
     </div>
   );
@@ -171,7 +171,7 @@ const PatentDetail: React.FC = () => {
       <div className="sticky top-20 z-40 bg-white/95 backdrop-blur-md border-b border-slate-100 py-3 px-6 shadow-sm">
           <div className="max-w-[1400px] mx-auto flex items-center justify-between">
               <nav className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-[0.1em]">
-                  <Link to="/browse" className="hover:text-blue-600 transition-colors">Marketplace</Link>
+                  <Link to="/browse" className="hover:text-blue-600 transition-colors">PatIndex</Link>
                   <ChevronRight size={12} />
                   <span className="text-slate-600 truncate max-w-[150px]">{patent.domain}</span>
                   <ChevronRight size={12} />
@@ -532,7 +532,7 @@ const PatentDetail: React.FC = () => {
 
         </div>
 
-         {/* Sidebar Marketplace Panel */}
+         {/* Sidebar PatIndex Panel */}
         <div className="lg:col-span-4">
             <div className="sticky top-40 space-y-10">
                 <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-2xl p-10 space-y-10 overflow-hidden relative">

@@ -1,4 +1,4 @@
-# Gillow | Patent & IP Marketplace
+# Gillow | Patent & IP PatIndex
 
 Gillow is a high-fidelity, Zillow-inspired technology and patent intelligence platform. It allows users to browse, analyze, and track intellectual property assets with a focus on visual data, map-based discovery, and deep-link filtering.
 

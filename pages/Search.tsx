@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
     List, Map as MapIcon, SlidersHorizontal, 
@@ -9,7 +9,6 @@ import { usePatentFilters } from '../hooks/usePatentFilters';
 import FilterSidebar from '../components/FilterSidebar';
 import PatentCard from '../components/PatentCard';
 import PatentMap from '../components/PatentMap';
-import SearchAutocomplete from '../components/SearchAutocomplete';
 import SaveSearchModal from '../components/SaveSearchModal';
 import { useGillow } from '../context/GillowContext';
 import { PATENTS } from '../data/patents';
@@ -25,7 +24,12 @@ const Search: React.FC = () => {
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
   const [pageSize, setPageSize] = useState(20);
   const [currentPage, setCurrentPage] = useState(1);
-  const quickDomainFilters = Array.from(new Set(PATENTS.map(patent => patent.domain).filter(Boolean))).sort().slice(0, 6);
+  
+  // Memoize quickDomainFilters to prevent unnecessary recalculations
+  const quickDomainFilters = useMemo(
+    () => Array.from(new Set(PATENTS.map(patent => patent.domain).filter(Boolean))).sort().slice(0, 6),
+    []
+  );
   const activeFilterCount =
     filters.assignees.length +
     filters.categories.length +
@@ -50,8 +54,7 @@ const Search: React.FC = () => {
     setSidebarOpen(false);
     setIsSaveModalOpen(false);
     setShowSavedToast(false);
-    const baseUrl = window.location.href.split('#')[0];
-    window.location.assign(`${baseUrl}#/patent/${publicationNumber}`);
+    navigate(`/patent/${publicationNumber}`);
   };
 
   const removeFilterValue = (field: keyof typeof filters, value: string) => {
@@ -91,11 +94,10 @@ const Search: React.FC = () => {
           <div className="max-w-[1400px] mx-auto px-6 py-4 flex flex-col gap-4">
               <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                   <div className="w-full md:w-[500px]">
-                      <SearchAutocomplete 
-                        onSearch={setQuery} 
-                        className="scale-90 origin-left" 
-                        placeholder="Search patents, assignees, domains, or subdomains..."
-                      />
+                    <div className="rounded-3xl border border-slate-200 bg-slate-50 px-5 py-5 text-sm text-slate-600 shadow-sm">
+                      <div className="font-semibold text-slate-900 mb-2">Search is under construction</div>
+                      <div>Our patent search experience is being rebuilt. Use filters or explore landscapes while we finish this feature.</div>
+                    </div>
                   </div>
 
                   <div className="flex items-center gap-4 w-full md:w-auto">
@@ -141,23 +143,29 @@ const Search: React.FC = () => {
                   </div>
               </div>
 
-              {/* Filtering Pills */}
+              {/* Filtering Pills - Always visible even when no results */}
               <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
                   <div className="mr-2 flex items-center gap-1 rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium uppercase tracking-[0.16em] text-white">
                     <Filter size={12} /> Technology Domains
                   </div>
-                  {quickDomainFilters.map(domain => {
-                      const isActive = filters.categories.includes(domain);
-                      return (
-                          <button 
-                            key={domain}
-                            onClick={() => updateFilters({ categories: isActive ? [] : [domain] })}
-                            className={`whitespace-nowrap rounded-full border px-4 py-1.5 text-xs font-medium transition-all shadow-sm ${isActive ? 'bg-[#00bdcd] border-[#00bdcd] text-white' : 'bg-white border-slate-200 text-slate-600 hover:border-[#00bdcd]'}`}
-                          >
-                              {domain}
-                          </button>
-                      );
-                  })}
+                  {quickDomainFilters && quickDomainFilters.length > 0 ? (
+                    quickDomainFilters.map(domain => {
+                        const isActive = filters.categories.includes(domain);
+                        return (
+                            <button 
+                              key={domain}
+                              onClick={() => {
+                                updateFilters({ categories: isActive ? [] : [domain] });
+                              }}
+                              className={`whitespace-nowrap rounded-full border px-4 py-1.5 text-xs font-medium transition-all shadow-sm ${isActive ? 'bg-[#00bdcd] border-[#00bdcd] text-white' : 'bg-white border-slate-200 text-slate-600 hover:border-[#00bdcd]'}`}
+                            >
+                                {domain}
+                            </button>
+                        );
+                    })
+                  ) : (
+                    <div className="text-xs text-slate-400">No domains available</div>
+                  )}
               </div>
           </div>
       </div>
@@ -182,7 +190,7 @@ const Search: React.FC = () => {
                 <div className="flex items-center justify-between mb-8">
                     <div>
                         <h2 className="text-2xl font-semibold tracking-tight text-slate-900">
-                           {query ? `Search: "${query}"` : filters.assignees[0] ? `${filters.assignees[0]} Portfolio View` : 'Marketplace Hub'}
+                           {query ? `Search: "${query}"` : filters.assignees[0] ? `${filters.assignees[0]} Portfolio View` : 'PatIndex Hub'}
                         </h2>
                         <div className="mt-1 text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
                             Found {filteredPatents.length} patent{filteredPatents.length === 1 ? '' : 's'}
@@ -283,7 +291,7 @@ const Search: React.FC = () => {
                             }} 
                         />
                     </div>
-                ) : filteredPatents.length > 0 ? (
+                ) : !loading && filteredPatents.length > 0 ? (
                     <>
                     <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm md:flex-row md:items-center md:justify-between">
                         <div className="text-sm font-medium text-slate-600">
@@ -299,7 +307,7 @@ const Search: React.FC = () => {
                                 <PatentCard 
                                     patent={patent} 
                                     layout={view === 'list' ? 'list' : 'grid'}
-                                    onClick={(id) => goToPatentPage(id)}
+                                    href={`/patent/${patent.publicationNumber}`}
                                     isFavorite={favorites.includes(patent.id)}
                                     onToggleFavorite={() => toggleFavorite(patent.id)}
                                 />

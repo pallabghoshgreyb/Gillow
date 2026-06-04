@@ -102,7 +102,6 @@ export const usePatentFilters = () => {
     if (next.minValuation > 0) params.set('minV', next.minValuation.toString());
     if (next.maxValuation < 50000000) params.set('maxV', next.maxValuation.toString());
     if (next.minClaims > 0) params.set('minC', next.minClaims.toString());
-    // Fix: next.minCit should be next.minCitations and next.minFam should be next.minFamilySize
     if (next.minCitations > 0) params.set('minCit', next.minCitations.toString());
     if (next.minFamilySize > 0) params.set('minFam', next.minFamilySize.toString());
     if (next.startYear !== MIN_FILING_YEAR) params.set('startY', next.startYear);

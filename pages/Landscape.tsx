@@ -27,7 +27,7 @@ const Landscape: React.FC = () => {
       <div className="pointer-events-none absolute left-3 right-3 top-3 z-20 flex flex-col gap-2 md:left-4 md:right-4 md:top-4 md:flex-row md:justify-between md:items-start">
         <div className="pointer-events-auto max-w-md rounded-2xl border border-slate-200 bg-white/88 px-4 py-3 shadow-lg backdrop-blur-md">
           <nav className="mb-1.5 flex items-center gap-2 text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
-            <span>Marketplace</span>
+            <span>PatIndex</span>
             <ChevronRight size={12} />
             <span className="text-slate-900">Landscape Explorer</span>
           </nav>
