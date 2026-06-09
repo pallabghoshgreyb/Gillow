@@ -196,6 +196,53 @@ export interface ChartDataPoint {
   citations?: number;
 }
 
+export interface DomainStat {
+  key: string;
+  label: string;
+  value: string;
+  helper?: string;
+}
+
+export interface DomainTechnologyArea {
+  slug: string;
+  name: string;
+  patentCount: number;
+  share: number;
+  growth: number;
+  topAssignee: string;
+}
+
+export interface DomainCompany {
+  name: string;
+  patentCount: number;
+  share: number;
+  latestFilingYear: number | null;
+  patents: string[];
+}
+
+export interface DomainInventor {
+  name: string;
+  patentCount: number;
+  patents: string[];
+}
+
+export interface DomainTrend {
+  year: number;
+  count: number;
+}
+
+export interface DomainDetail {
+  slug: string;
+  name: string;
+  description: string;
+  stats: DomainStat[];
+  technologies: DomainTechnologyArea[];
+  companies: DomainCompany[];
+  inventors: DomainInventor[];
+  trends: DomainTrend[];
+  patents: Patent[];
+}
+
 export interface MapPoint {
   country: string;
   code: string;

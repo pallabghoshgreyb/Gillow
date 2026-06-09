@@ -1,6 +1,7 @@
 import { TechNode, Patent, TechLevel, ChartDataPoint } from '../types';
 import { MAP_WIDTH, MAP_HEIGHT, DOMAIN_COLORS, PLACEHOLDER_IMAGES } from '../constants';
 import { PATENTS, getPatentById } from '../data/patents';
+import { getDomainDetailBySlug, getDomainDetails } from '../data/domainDetails';
 
 const FAV_KEY = 'GILLOW_FAVORITES';
 const SERVER_URL_KEY = 'GILLOW_SERVER_URL';
@@ -138,6 +139,14 @@ export const api = {
     getTechnology: async (id: string): Promise<TechNode | undefined> => {
         const techs = await api.getTechnologies();
         return techs.find(t => t.id === id);
+    },
+
+    getDomains: async () => {
+        return getDomainDetails();
+    },
+
+    getDomain: async (slug: string) => {
+        return getDomainDetailBySlug(slug);
     },
 
     getPatents: async (techId?: string): Promise<Patent[]> => {

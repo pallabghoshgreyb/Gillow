@@ -5,6 +5,7 @@ import Home from './pages/Home';
 import Search from './pages/Search';
 import Landscape from './pages/Landscape';
 import TechDetail from './pages/TechDetail';
+import DomainDetail from './pages/DomainDetail';
 import PatentDetail from './pages/PatentDetailRedesign';
 import Saved from './pages/Saved';
 import NotFound from './pages/NotFound';
@@ -21,6 +22,7 @@ const AppShell: React.FC = () => {
           <Route path="/browse" element={<Search />} />
           <Route path="/search" element={<Search />} />
           <Route path="/landscape" element={<Landscape />} />
+          <Route path="/domains/:domainSlug" element={<DomainDetail />} />
           <Route path="/technology/:techId" element={<TechDetail />} />
           <Route path="/patent/:patentId" element={<PatentDetail />} />
           <Route path="/saved" element={<Saved />} />
