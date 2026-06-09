@@ -4,7 +4,6 @@ import { AnimatePresence, motion } from 'framer-motion';
 import {
   ArrowLeft,
   ArrowUpRight,
-  CalendarDays,
   Check,
   ChevronDown,
   Clock3,
@@ -32,12 +31,17 @@ import ExaminationDetailsSection from '../components/ExaminationDetailsSection';
 import ContinuitySection from '../components/ContinuitySection';
 import GlobalPatentFamilySection from '../components/GlobalPatentFamilySection';
 import GovernmentStandardsSection from '../components/GovernmentStandardsSection';
+import CitationIntelligenceSection from '../components/CitationIntelligenceSection';
+import { MarketPanel } from '../components/MarketPanel';
+import { LicensingPanel } from '../components/LicensingPanel';
 import QuickJumpNavigation, { type QuickJumpItem } from '../components/QuickJumpNavigation';
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 const CARD = 'rounded-3xl border border-slate-200 bg-white shadow-[0_2px_16px_rgba(15,23,42,0.03)]';
 const INTERACTIVE = `${CARD} transition duration-300 hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-[0_10px_28px_rgba(15,23,42,0.06)]`;
 const FOCUS = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2';
+const CONTINUITY_NOT_LINKED_MESSAGE =
+  'Detailed page will coming soon, This family member is not linked yet';
 
 const QUICK_JUMP_ITEMS: QuickJumpItem[] = [
   { id: 'overview', label: 'Overview' },
@@ -45,11 +49,13 @@ const QUICK_JUMP_ITEMS: QuickJumpItem[] = [
   { id: 'claims', label: 'Claims' },
   { id: 'classification', label: 'Classification' },
   { id: 'strength', label: 'IP Strength' },
+  { id: 'citations', label: 'Citations' },
   { id: 'prosecution', label: 'Prosecution' },
   { id: 'ownership', label: 'Ownership' },
   { id: 'fees', label: 'Fee Status' },
   { id: 'risk', label: 'Risk' },
   { id: 'market', label: 'Market' },
+  { id: 'licensing', label: 'Licensing' },
   { id: 'technology', label: 'Technology' },
   { id: 'geography', label: 'Global Map' },
   { id: 'valuation-breakdown', label: 'Valuation' },
@@ -98,6 +104,8 @@ type ContinuityApp = {
   tone: ContinuityTone;
   trackCodes: string[];
   miniTimeline: ContinuityMiniStep[];
+  isLinked: boolean;
+  detailText: string;
 };
 type Lifecycle = {
   title: string;
@@ -134,12 +142,46 @@ const hasText = (value?: string | null) => Boolean(value && value.trim() && valu
 const hasItems = (items?: string[] | null) => Array.isArray(items) && items.some(hasText);
 const uniq = (items: string[]) => Array.from(new Set(items.filter(hasText).map((item) => item.trim())));
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+const valuationMetricValues = (metrics: Patent['valuationMetrics']) => Object.values(metrics) as number[];
+const hasCitationData = (patent: Patent) =>
+  isKnownNumber(patent.backwardCitationsCount) ||
+  isKnownNumber(patent.forwardCitationsCount) ||
+  hasItems(patent.backwardCitations) ||
+  hasItems(patent.forwardCitations);
+const hasMarketData = (patent: Patent) =>
+  hasText(patent.marketSector) ||
+  isKnownNumber(patent.totalAddressableMarket) ||
+  isKnownNumber(patent.marketGrowthRate) ||
+  hasItems(patent.keyCompetitors);
+const hasLicensingData = (patent: Patent) =>
+  hasText(patent.licensingStatus) ||
+  (Array.isArray(patent.previousDeals) && patent.previousDeals.length > 0);
+const formatPatentScore = (value: number) =>
+  value.toLocaleString('en-US', { maximumFractionDigits: 2 });
 
 const formatDate = (value?: string, fallback = '') => {
   if (!hasText(value)) return fallback;
   const parsed = new Date(value as string);
   if (Number.isNaN(parsed.getTime())) return value as string;
   return parsed.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+};
+
+const formatRemainingLife = (expirationDate?: string) => {
+  if (!hasText(expirationDate)) return '';
+  const expiresAt = new Date(expirationDate as string);
+  if (Number.isNaN(expiresAt.getTime())) return '';
+
+  const today = new Date();
+  const remainingMs = expiresAt.getTime() - today.getTime();
+  if (remainingMs <= 0) return 'Expired';
+
+  const remainingYears = remainingMs / (365.25 * 24 * 60 * 60 * 1000);
+  if (remainingYears >= 1) {
+    return `${remainingYears.toFixed(1)} years remaining`;
+  }
+
+  const remainingMonths = Math.max(1, Math.round(remainingYears * 12));
+  return `${remainingMonths} month${remainingMonths === 1 ? '' : 's'} remaining`;
 };
 
 const normalizeUpper = (value: string) => value.trim().toUpperCase();
@@ -280,19 +322,73 @@ const timelineCurrentStepId = (patent: Patent, tone: Tone) => {
 };
 
 const buildContinuityApps = (patent: Patent, catalog: Patent[]) => {
+  const currentPublication = normalizeUpper(patent.publicationNumber);
+  const catalogByPublication = new Map(
+    catalog.map((item) => [normalizeUpper(item.publicationNumber), item]),
+  );
+
+  const buildApp = (
+    relation: string,
+    publicationNumber: string,
+    index: number,
+  ): ContinuityApp => {
+    const normalizedPublication = normalizeUpper(publicationNumber);
+    const matchedPatent = catalogByPublication.get(normalizedPublication);
+    const status = continuityStatusOf(normalizedPublication, matchedPatent);
+    const fallbackTrackCodes = uniqUpper(patent.trackOneCodes).slice(index, index + 2);
+    const trackCodes =
+      matchedPatent && matchedPatent.trackOneCodes.length > 0
+        ? uniqUpper(matchedPatent.trackOneCodes)
+        : matchedPatent && fallbackTrackCodes.length > 0
+          ? fallbackTrackCodes
+          : [];
+
+    return {
+      relation,
+      publicationNumber: normalizedPublication,
+      filingDate: matchedPatent
+        ? formatDate(matchedPatent.filingDate)
+        : '',
+      statusLabel: status.label,
+      tone: status.tone,
+      trackCodes,
+      miniTimeline: buildMiniTimeline(status.tone, matchedPatent),
+      isLinked: Boolean(matchedPatent),
+      detailText: matchedPatent
+        ? `Filed ${formatDate(matchedPatent.filingDate, 'date unavailable')}`
+        : CONTINUITY_NOT_LINKED_MESSAGE,
+    };
+  };
+
+  const explicitEntries = [
+    ...((patent.continuityPatentNumbers?.cip || []).map((publicationNumber) => ({
+      relation: 'CIP',
+      publicationNumber,
+    }))),
+    ...((patent.continuityPatentNumbers?.con || []).map((publicationNumber) => ({
+      relation: 'CON',
+      publicationNumber,
+    }))),
+    ...((patent.continuityPatentNumbers?.div || []).map((publicationNumber) => ({
+      relation: 'DIV',
+      publicationNumber,
+    }))),
+  ].filter(({ publicationNumber }) => normalizeUpper(publicationNumber) !== currentPublication);
+
+  if (explicitEntries.length > 0) {
+    return explicitEntries.map(({ relation, publicationNumber }, index) =>
+      buildApp(relation, publicationNumber, index),
+    );
+  }
+
   const relationTokens = patent.cipConDiv
     .filter(hasText)
     .map((value) => normalizeUpper(value));
-  const currentPublication = normalizeUpper(patent.publicationNumber);
   const candidateMembers = uniqUpper(patent.inpadocFamilyMembers)
     .filter((member) => member !== currentPublication)
     .sort((left, right) => {
-      const leftPatent = catalog.find(
-        (item) => normalizeUpper(item.publicationNumber) === left,
-      );
-      const rightPatent = catalog.find(
-        (item) => normalizeUpper(item.publicationNumber) === right,
-      );
+      const leftPatent = catalogByPublication.get(left);
+      const rightPatent = catalogByPublication.get(right);
       const leftPriority = left.startsWith(normalizeUpper(patent.jurisdiction || ''))
         ? 0
         : 1;
@@ -310,29 +406,7 @@ const buildContinuityApps = (patent: Patent, catalog: Patent[]) => {
     .map((relation, index) => {
       const publicationNumber = candidateMembers[index];
       if (!publicationNumber) return null;
-      const matchedPatent = catalog.find(
-        (item) => normalizeUpper(item.publicationNumber) === publicationNumber,
-      );
-      const status = continuityStatusOf(publicationNumber, matchedPatent);
-      const fallbackTrackCodes = uniqUpper(patent.trackOneCodes).slice(index, index + 2);
-      const trackCodes =
-        matchedPatent && matchedPatent.trackOneCodes.length > 0
-          ? uniqUpper(matchedPatent.trackOneCodes)
-          : fallbackTrackCodes.length > 0
-            ? fallbackTrackCodes
-            : uniqUpper(patent.trackOneCodes).slice(0, 2);
-
-      return {
-        relation,
-        publicationNumber,
-        filingDate: matchedPatent
-          ? formatDate(matchedPatent.filingDate)
-          : formatDate(patent.filingDate),
-        statusLabel: status.label,
-        tone: status.tone,
-        trackCodes,
-        miniTimeline: buildMiniTimeline(status.tone, matchedPatent),
-      } satisfies ContinuityApp;
+      return buildApp(relation, publicationNumber, index);
     })
     .filter((app): app is ContinuityApp => Boolean(app));
 };
@@ -585,10 +659,12 @@ const PatentDetailRedesign: React.FC = () => {
       patent.totalClaims > 0 ||
       patent.independentClaimsCount > 0 ||
       patent.dependentClaimsCount > 0;
-    const hasClassificationSection = view.classifications.length > 0;
+    const hasClassificationSection = hasText(patent.primaryCpc) || view.classifications.length > 0;
     const hasStrengthSection =
       view.strength !== null ||
-      Object.values(patent.valuationMetrics).some((value) => isKnownNumber(value));
+      isKnownNumber(patent.totalPatentScore) ||
+      valuationMetricValues(patent.valuationMetrics).some((value) => isKnownNumber(value));
+    const hasCitationSection = hasCitationData(patent);
     const hasProsecutionSection =
       hasText(patent.firstActionDate) ||
       hasText(patent.allowanceDate) ||
@@ -598,7 +674,8 @@ const PatentDetailRedesign: React.FC = () => {
     const hasOwnershipSection =
       hasItems(patent.currentAssignees) ||
       hasItems(patent.originalAssignees) ||
-      hasItems(patent.inventors);
+      hasItems(patent.inventors) ||
+      hasItems(patent.applicants);
     const hasFeeSection =
       hasText(patent.maintenanceFees.year3_5Text) ||
       hasText(patent.maintenanceFees.year7_5Text) ||
@@ -612,15 +689,21 @@ const PatentDetailRedesign: React.FC = () => {
       isKnownNumber(patent.infringementRiskScore) ||
       patent.ftoStatus !== 'Unknown' ||
       hasItems(patent.iprPgr) ||
-      patent.flags.litigation;
+      patent.flags.litigation ||
+      patent.flags.ptab ||
+      patent.flags.opposition;
+    const hasMarketSection = hasMarketData(patent);
+    const hasLicensingSection = hasLicensingData(patent);
     const hasTechnologySection =
       hasText(patent.domain) ||
       hasText(patent.subdomain) ||
-      isKnownNumber(patent.technologyReadinessLevel);
+      isKnownNumber(patent.technologyReadinessLevel) ||
+      hasText(patent.trlDescription) ||
+      hasItems(patent.commercialApplications);
     const hasGeographySection =
       hasItems(patent.countries) ||
       hasItems(patent.inpadocFamilyMembers);
-    const hasValuationBreakdownSection = Object.values(patent.valuationMetrics).some((value) =>
+    const hasValuationBreakdownSection = valuationMetricValues(patent.valuationMetrics).some((value) =>
       isKnownNumber(value),
     );
     const hasExaminationSection =
@@ -641,10 +724,13 @@ const PatentDetailRedesign: React.FC = () => {
       ...(hasClaimsSection ? ['claims'] : []),
       ...(hasClassificationSection ? ['classification'] : []),
       ...(hasStrengthSection ? ['strength'] : []),
+      ...(hasCitationSection ? ['citations'] : []),
       ...(hasProsecutionSection ? ['prosecution'] : []),
       ...(hasOwnershipSection ? ['ownership'] : []),
       ...(hasFeeSection ? ['fees'] : []),
       ...(hasRiskSection ? ['risk'] : []),
+      ...(hasMarketSection ? ['market'] : []),
+      ...(hasLicensingSection ? ['licensing'] : []),
       ...(hasTechnologySection ? ['technology'] : []),
       ...(hasGeographySection ? ['geography'] : []),
       ...(hasValuationBreakdownSection ? ['valuation-breakdown'] : []),
@@ -811,10 +897,12 @@ const PatentDetailRedesign: React.FC = () => {
     patent.totalClaims > 0 ||
     patent.independentClaimsCount > 0 ||
     patent.dependentClaimsCount > 0;
-  const hasClassificationSection = view.classifications.length > 0;
+  const hasClassificationSection = hasText(patent.primaryCpc) || view.classifications.length > 0;
   const hasStrengthSection =
     view.strength !== null ||
-    Object.values(patent.valuationMetrics).some((value) => isKnownNumber(value));
+    isKnownNumber(patent.totalPatentScore) ||
+    valuationMetricValues(patent.valuationMetrics).some((value) => isKnownNumber(value));
+  const hasCitationSection = hasCitationData(patent);
   const hasProsecutionSection =
     hasText(patent.firstActionDate) ||
     hasText(patent.allowanceDate) ||
@@ -824,7 +912,8 @@ const PatentDetailRedesign: React.FC = () => {
   const hasOwnershipSection =
     hasItems(patent.currentAssignees) ||
     hasItems(patent.originalAssignees) ||
-    hasItems(patent.inventors);
+    hasItems(patent.inventors) ||
+    hasItems(patent.applicants);
   const hasFeeSection =
     hasText(patent.maintenanceFees.year3_5Text) ||
     hasText(patent.maintenanceFees.year7_5Text) ||
@@ -838,15 +927,21 @@ const PatentDetailRedesign: React.FC = () => {
     isKnownNumber(patent.infringementRiskScore) ||
     patent.ftoStatus !== 'Unknown' ||
     hasItems(patent.iprPgr) ||
-    patent.flags.litigation;
+    patent.flags.litigation ||
+    patent.flags.ptab ||
+    patent.flags.opposition;
+  const hasMarketSection = hasMarketData(patent);
+  const hasLicensingSection = hasLicensingData(patent);
   const hasTechnologySection =
     hasText(patent.domain) ||
     hasText(patent.subdomain) ||
-    isKnownNumber(patent.technologyReadinessLevel);
+    isKnownNumber(patent.technologyReadinessLevel) ||
+    hasText(patent.trlDescription) ||
+    hasItems(patent.commercialApplications);
   const hasGeographySection =
     hasItems(patent.countries) ||
     hasItems(patent.inpadocFamilyMembers);
-  const hasValuationBreakdownSection = Object.values(patent.valuationMetrics).some((value) =>
+  const hasValuationBreakdownSection = valuationMetricValues(patent.valuationMetrics).some((value) =>
     isKnownNumber(value),
   );
   const hasExaminationSection =
@@ -860,6 +955,7 @@ const PatentDetailRedesign: React.FC = () => {
     patent.flags.governmentInterest ||
     patent.flags.sep ||
     hasItems(patent.fit);
+  const remainingLifeLabel = formatRemainingLife(patent.estimatedExpirationDate);
 
   return (
     <div className="min-h-screen bg-white text-slate-900">
@@ -877,10 +973,10 @@ const PatentDetailRedesign: React.FC = () => {
                     <FileText size={14} className="text-teal-600" />
                     {view.number}
                   </span>
-                  {hasText(patent.filingDate) && (
+                  {remainingLifeLabel && (
                     <span className="inline-flex items-center gap-2 text-slate-500">
-                      <CalendarDays size={14} className="text-slate-400" />
-                      Filed {formatDate(patent.filingDate)}
+                      <Clock3 size={14} className="text-slate-400" />
+                      {remainingLifeLabel}
                     </span>
                   )}
                   <span className={cn('inline-flex items-center gap-2 rounded-full border px-3 py-1.5 font-medium', statusClasses(view.status.tone))}>
@@ -967,13 +1063,25 @@ const PatentDetailRedesign: React.FC = () => {
                 <div className="space-y-5">
                   <SectionIntro eyebrow="Technology classification" title="IPC and CPC coding" description="Classification tags that situate the patent in search, diligence, and comparables." />
                   <div className={cn('p-6 sm:p-8 bg-slate-50/60', CARD)}>
-                    <div className="flex flex-wrap gap-3">
-                      {view.classifications.map((tag) => (
-                        <motion.span key={tag} whileHover={{ y: -2 }} className="inline-flex items-center rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-teal-700 shadow-[0_2px_12px_rgba(15,23,42,0.03)]">
-                          {tag}
-                        </motion.span>
-                      ))}
-                    </div>
+                    {hasText(patent.primaryCpc) && (
+                      <div className={view.classifications.length > 0 ? 'mb-5' : ''}>
+                        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                          Primary CPC
+                        </p>
+                        <p className="mt-2 inline-flex rounded-full border border-teal-200 bg-white px-4 py-2 font-mono text-sm font-semibold text-teal-700 shadow-[0_2px_12px_rgba(15,23,42,0.03)]">
+                          {patent.primaryCpc}
+                        </p>
+                      </div>
+                    )}
+                    {view.classifications.length > 0 && (
+                      <div className="flex flex-wrap gap-3">
+                        {view.classifications.map((tag) => (
+                          <motion.span key={tag} whileHover={{ y: -2 }} className="inline-flex items-center rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-teal-700 shadow-[0_2px_12px_rgba(15,23,42,0.03)]">
+                            {tag}
+                          </motion.span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               </RevealBlock>
@@ -1004,6 +1112,14 @@ const PatentDetailRedesign: React.FC = () => {
                     {view.strengthNote && (
                       <p className="mt-5 text-base leading-7 text-slate-600">{view.strengthNote}</p>
                     )}
+                    {isKnownNumber(patent.totalPatentScore) && (
+                      <p className="mt-4 text-sm leading-6 text-slate-500">
+                        Imported total patent score:{' '}
+                        <span className="font-semibold tabular-nums text-slate-900">
+                          {formatPatentScore(patent.totalPatentScore)}
+                        </span>
+                      </p>
+                    )}
                     {view.strengthHighlights.length > 0 && (
                       <div className="mt-5 flex flex-wrap gap-2">
                         {view.strengthHighlights.map((item) => (
@@ -1013,6 +1129,12 @@ const PatentDetailRedesign: React.FC = () => {
                     )}
                   </motion.div>
                 </div>
+              </RevealBlock>
+            )}
+
+            {hasCitationSection && (
+              <RevealBlock id="citations" delay={0.3}>
+                <CitationIntelligenceSection patent={patent} />
               </RevealBlock>
             )}
 
@@ -1048,6 +1170,7 @@ const PatentDetailRedesign: React.FC = () => {
                   currentAssignees={patent.currentAssignees}
                   originalAssignees={patent.originalAssignees}
                   inventors={patent.inventors}
+                  applicants={patent.applicants}
                 />
               </RevealBlock>
             )}
@@ -1061,6 +1184,18 @@ const PatentDetailRedesign: React.FC = () => {
             {hasRiskSection && (
               <RevealBlock id="risk" delay={0.36}>
                 <RiskAssessmentSection patent={patent} />
+              </RevealBlock>
+            )}
+
+            {hasMarketSection && (
+              <RevealBlock id="market" delay={0.38}>
+                <MarketPanel patent={patent} showRegions={false} />
+              </RevealBlock>
+            )}
+
+            {hasLicensingSection && (
+              <RevealBlock id="licensing" delay={0.39}>
+                <LicensingPanel patent={patent} />
               </RevealBlock>
             )}
 
@@ -1187,8 +1322,7 @@ const continuityStatusClasses = (tone: ContinuityTone) => {
   return 'bg-slate-400';
 };
 
-const CONTINUITY_TOOLTIP =
-  'Detailed patent page coming soon. This family member is not linked yet.';
+const CONTINUITY_TOOLTIP = CONTINUITY_NOT_LINKED_MESSAGE;
 
 const TrackOneBadge: React.FC<{ code: string }> = ({ code }) => {
   const colors: Record<string, string> = {
@@ -1206,6 +1340,117 @@ const TrackOneBadge: React.FC<{ code: string }> = ({ code }) => {
     >
       {code}
     </span>
+  );
+};
+
+const groupContinuityApps = (apps: ContinuityApp[]) => {
+  const relationOrder = ['CIP', 'CON', 'DIV'];
+  const knownGroups = relationOrder
+    .map((relation) => ({
+      relation,
+      apps: apps.filter((app) => app.relation.startsWith(relation)),
+    }))
+    .filter((group) => group.apps.length > 0);
+  const groupedRelations = new Set(knownGroups.flatMap((group) => group.apps));
+  const otherApps = apps.filter((app) => !groupedRelations.has(app));
+
+  return otherApps.length > 0
+    ? [...knownGroups, { relation: 'OTHER', apps: otherApps }]
+    : knownGroups;
+};
+
+const ContinuityApplicationCard: React.FC<{
+  app: ContinuityApp;
+  mobile?: boolean;
+}> = ({
+  app,
+  mobile = false,
+}) => {
+  const cardClassName = cn(
+    'group relative block text-left transition',
+    mobile
+      ? 'min-w-[260px] snap-start rounded-2xl border border-slate-200 bg-slate-50/70 p-4 hover:border-slate-300'
+      : 'w-full rounded-2xl border border-slate-200 bg-slate-50/70 p-4 hover:-translate-y-0.5 hover:bg-white hover:shadow-[0_10px_28px_rgba(15,23,42,0.06)]',
+    app.isLinked
+      ? 'cursor-pointer hover:border-teal-300'
+      : 'cursor-help hover:border-slate-300',
+    FOCUS,
+  );
+
+  const content = (
+    <>
+      {!mobile && <span className="absolute left-[-20px] top-6 h-px w-5 bg-slate-200" />}
+      {!app.isLinked && (
+        <span className="pointer-events-none absolute right-4 top-[-0.65rem] max-w-[18rem] rounded-full border border-slate-200 bg-slate-900 px-3 py-1 text-[11px] font-medium text-white opacity-0 shadow-lg transition duration-200 group-hover:opacity-100 group-focus-visible:opacity-100">
+          {CONTINUITY_TOOLTIP}
+        </span>
+      )}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className={cn('inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold font-mono', relationClasses(app.relation))}>
+              {app.relation}
+            </span>
+            <span className="font-mono text-sm font-semibold text-slate-900">
+              {app.publicationNumber}
+            </span>
+          </div>
+          <p className="mt-2 text-sm text-slate-500">{app.detailText}</p>
+        </div>
+        <span className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-600">
+          {app.statusLabel}
+          {app.isLinked && <ArrowUpRight size={14} className="text-teal-600" />}
+        </span>
+      </div>
+
+      <div className="mt-4 flex items-center gap-3">
+        {app.miniTimeline.map((step, index) => (
+          <React.Fragment key={`${app.publicationNumber}-${step.label}`}>
+            <span
+              className={cn(
+                'inline-flex h-3 w-3 rounded-full',
+                step.state === 'done'
+                  ? continuityStatusClasses(app.tone)
+                  : step.state === 'current'
+                    ? continuityStatusClasses(app.tone)
+                    : 'bg-slate-200',
+              )}
+            />
+            <span className="text-xs font-medium text-slate-500">{step.label}</span>
+            {index < app.miniTimeline.length - 1 ? (
+              <span className="h-px flex-1 bg-slate-200" />
+            ) : null}
+          </React.Fragment>
+        ))}
+      </div>
+
+      {app.trackCodes.length > 0 ? (
+        <div className="mt-4 flex flex-wrap gap-2">
+          {app.trackCodes.map((code) => (
+            <TrackOneBadge key={`${app.publicationNumber}-${code}`} code={code} />
+          ))}
+        </div>
+      ) : null}
+    </>
+  );
+
+  if (app.isLinked) {
+    return (
+      <Link to={`/patent/${app.publicationNumber}`} className={cardClassName} title={`Open ${app.publicationNumber}`}>
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <div
+      title={CONTINUITY_TOOLTIP}
+      aria-label={`${app.publicationNumber}. ${CONTINUITY_TOOLTIP}`}
+      tabIndex={0}
+      className={cardClassName}
+    >
+      {content}
+    </div>
   );
 };
 
@@ -1236,6 +1481,7 @@ const PatentTimeline = ({
   const visibleContinuityApps = continuityExpanded
     ? continuityApps
     : continuityApps.slice(0, 3);
+  const visibleContinuityGroups = groupContinuityApps(visibleContinuityApps);
 
   return (
     <>
@@ -1358,63 +1604,21 @@ const PatentTimeline = ({
               ) : null}
             </div>
 
-            <div className="relative mt-5 space-y-4 pl-7">
+            <div className="relative mt-5 space-y-5 pl-7">
               <div className="absolute bottom-0 left-3 top-2 w-px bg-slate-200" />
-              {visibleContinuityApps.map((app) => (
-                <div
-                  key={`${app.relation}-${app.publicationNumber}`}
-                  title={CONTINUITY_TOOLTIP}
-                  aria-label={`${app.publicationNumber}. ${CONTINUITY_TOOLTIP}`}
-                  tabIndex={0}
-                  className={cn('group relative block w-full cursor-help rounded-2xl border border-slate-200 bg-slate-50/70 p-4 text-left transition hover:-translate-y-0.5 hover:border-slate-300 hover:bg-white hover:shadow-[0_10px_28px_rgba(15,23,42,0.06)]', FOCUS)}
-                >
-                  <span className="absolute left-[-20px] top-6 h-px w-5 bg-slate-200" />
-                  <span className="pointer-events-none absolute right-4 top-[-0.65rem] rounded-full border border-slate-200 bg-slate-900 px-3 py-1 text-[11px] font-medium text-white opacity-0 shadow-lg transition duration-200 group-hover:opacity-100 group-focus-visible:opacity-100">
-                    Detail page coming soon
-                  </span>
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className={cn('inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold font-mono', relationClasses(app.relation))}>
-                          {app.relation}
-                        </span>
-                        <span className="font-mono text-sm font-semibold text-slate-900">
-                          {app.publicationNumber}
-                        </span>
-                      </div>
-                      <p className="mt-2 text-sm text-slate-500">Filed {app.filingDate}</p>
-                    </div>
-                    <span className="text-sm font-medium text-slate-600">{app.statusLabel}</span>
-                  </div>
-
-                  <div className="mt-4 flex items-center gap-3">
-                    {app.miniTimeline.map((step, index) => (
-                      <React.Fragment key={`${app.publicationNumber}-${step.label}`}>
-                        <span
-                          className={cn(
-                            'inline-flex h-3 w-3 rounded-full',
-                            step.state === 'done'
-                              ? continuityStatusClasses(app.tone)
-                              : step.state === 'current'
-                                ? continuityStatusClasses(app.tone)
-                                : 'bg-slate-200',
-                          )}
-                        />
-                        <span className="text-xs font-medium text-slate-500">{step.label}</span>
-                        {index < app.miniTimeline.length - 1 ? (
-                          <span className="h-px flex-1 bg-slate-200" />
-                        ) : null}
-                      </React.Fragment>
+              {visibleContinuityGroups.map((group) => (
+                <div key={group.relation} className="space-y-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+                    {group.relation}
+                  </p>
+                  <div className="space-y-4">
+                    {group.apps.map((app) => (
+                      <ContinuityApplicationCard
+                        key={`${app.relation}-${app.publicationNumber}`}
+                        app={app}
+                      />
                     ))}
                   </div>
-
-                  {app.trackCodes.length > 0 ? (
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      {app.trackCodes.map((code) => (
-                        <TrackOneBadge key={`${app.publicationNumber}-${code}`} code={code} />
-                      ))}
-                    </div>
-                  ) : null}
                 </div>
               ))}
             </div>
@@ -1506,36 +1710,21 @@ const PatentTimeline = ({
               ) : null}
             </div>
 
-            <div className="-mx-5 mt-4 flex snap-x gap-3 overflow-x-auto px-5 pb-1">
-              {visibleContinuityApps.map((app) => (
-                <div
-                  key={`mobile-${app.relation}-${app.publicationNumber}`}
-                  title={CONTINUITY_TOOLTIP}
-                  aria-label={`${app.publicationNumber}. ${CONTINUITY_TOOLTIP}`}
-                  tabIndex={0}
-                  className={cn('group min-w-[260px] snap-start cursor-help rounded-2xl border border-slate-200 bg-slate-50/70 p-4 text-left transition hover:border-slate-300', FOCUS)}
-                >
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className={cn('inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold font-mono', relationClasses(app.relation))}>
-                      {app.relation}
-                    </span>
-                    <span className="font-mono text-sm font-semibold text-slate-900">
-                      {app.publicationNumber}
-                    </span>
-                  </div>
-                  <p className="mt-2 text-sm text-slate-500">Filed {app.filingDate}</p>
-                  <div className="mt-3 flex items-center gap-2">
-                    <span className={cn('h-2.5 w-2.5 rounded-full', continuityStatusClasses(app.tone))} />
-                    <span className="text-sm font-medium text-slate-700">{app.statusLabel}</span>
-                  </div>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {app.trackCodes.map((code) => (
-                      <TrackOneBadge key={`mobile-${app.publicationNumber}-${code}`} code={code} />
+            <div className="mt-4 space-y-4">
+              {visibleContinuityGroups.map((group) => (
+                <div key={`mobile-${group.relation}`} className="space-y-2">
+                  <p className="px-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+                    {group.relation}
+                  </p>
+                  <div className="-mx-5 flex snap-x gap-3 overflow-x-auto px-5 pb-1">
+                    {group.apps.map((app) => (
+                      <ContinuityApplicationCard
+                        key={`mobile-${app.relation}-${app.publicationNumber}`}
+                        app={app}
+                        mobile
+                      />
                     ))}
                   </div>
-                  <p className="mt-4 text-xs font-medium text-slate-400">
-                    Detail page coming soon
-                  </p>
                 </div>
               ))}
             </div>

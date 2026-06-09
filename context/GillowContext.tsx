@@ -28,15 +28,7 @@ const toTimestamp = (value?: string): number => {
 
 const normalizeMaintenanceSignal = (value?: string) => {
   const normalized = String(value || '').trim().toLowerCase();
-  if (!normalized || normalized === '-') return '';
-  if (normalized.includes('not due')) return '';
-  if (normalized.includes('unpaid') || normalized.includes('overdue') || normalized.includes('late')) {
-    return String(value).trim();
-  }
-  if (normalized === 'due' || normalized.includes('due')) {
-    return String(value).trim();
-  }
-  return '';
+  return normalized === 'paid' ? '' : 'Not Paid';
 };
 
 const getMaintenanceAlerts = (patent: Patent) =>

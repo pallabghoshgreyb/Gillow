@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Heart, Building2, Users, Globe, Zap, ShieldCheck, AlertTriangle, Fingerprint, Tag, Scale, Rocket, ShieldAlert } from 'lucide-react';
 import { Patent } from '../types';
 import { formatCompactCurrency, isKnownNumber } from '../utils/patentDisplay';
@@ -15,6 +15,7 @@ interface PatentCardProps {
 }
 
 const PatentCard: React.FC<PatentCardProps> = ({ patent, isFavorite, onToggleFavorite, onClick, href, layout = 'grid' }) => {
+  const navigate = useNavigate();
   const isList = layout === 'list';
   const cardClassName = `group bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-2xl hover:-translate-y-1.5 transition-all duration-300 cursor-pointer flex ${isList ? 'flex-row h-72' : 'flex-col h-full'}`;
   const cardContent = (
@@ -131,16 +132,24 @@ const PatentCard: React.FC<PatentCardProps> = ({ patent, isFavorite, onToggleFav
     </>
   );
 
+  const handleCardClick = () => {
+    if (href) {
+      navigate(href);
+      return;
+    }
+    onClick?.(patent.publicationNumber);
+  };
+
   if (href) {
     return (
-      <Link to={href} className={cardClassName}>
+      <Link to={href} className={cardClassName} onClick={handleCardClick}>
         {cardContent}
       </Link>
     );
   }
 
   return (
-    <div className={cardClassName} onClick={() => onClick?.(patent.publicationNumber)}>
+    <div className={cardClassName} onClick={handleCardClick}>
       {cardContent}
     </div>
   );

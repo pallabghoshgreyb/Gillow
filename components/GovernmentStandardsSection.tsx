@@ -25,12 +25,12 @@ const fitIndicator = (fitValues: string[]): IndicatorTone => ({
   label: fitValues.join(', '),
 });
 
-const StatusRow = ({
-  label,
-  indicator,
-}: {
+const StatusRow: React.FC<{
   label: React.ReactNode;
   indicator: IndicatorTone;
+}> = ({
+  label,
+  indicator,
 }) => (
   <div className="space-y-2">
     <p className="text-sm font-medium leading-6 text-slate-900">{label}</p>

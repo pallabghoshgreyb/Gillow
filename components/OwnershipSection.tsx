@@ -9,18 +9,21 @@ type OwnershipSectionProps = {
   currentAssignees?: string[] | string | null;
   originalAssignees?: string[] | string | null;
   inventors?: string[] | string | null;
+  applicants?: string[] | string | null;
 };
+
+const hasText = (value?: string | null) => Boolean(value && value.trim() && value.trim() !== '-');
 
 const parseList = (value?: string[] | string | null) => {
   if (Array.isArray(value)) {
-    return value.map((item) => item.trim()).filter(Boolean);
+    return value.map((item) => item.trim()).filter(hasText);
   }
 
   if (typeof value === 'string') {
     return value
       .split('|')
       .map((item) => item.trim())
-      .filter(Boolean);
+      .filter(hasText);
   }
 
   return [];
@@ -99,6 +102,7 @@ const OwnershipSection: React.FC<OwnershipSectionProps> = ({
   currentAssignees,
   originalAssignees,
   inventors,
+  applicants,
 }) => {
   const [showAllInventors, setShowAllInventors] = useState(false);
   const [copiedField, setCopiedField] = useState('');
@@ -106,6 +110,13 @@ const OwnershipSection: React.FC<OwnershipSectionProps> = ({
   const currentList = useMemo(() => parseList(currentAssignees), [currentAssignees]);
   const originalList = useMemo(() => parseList(originalAssignees), [originalAssignees]);
   const inventorList = useMemo(() => parseList(inventors), [inventors]);
+  const applicantList = useMemo(() => parseList(applicants), [applicants]);
+  const visibleApplicants = useMemo(() => {
+    const knownParties = new Set(
+      [...currentList, ...originalList].map((name) => name.trim().toLowerCase()),
+    );
+    return applicantList.filter((name) => !knownParties.has(name.trim().toLowerCase()));
+  }, [applicantList, currentList, originalList]);
 
   useEffect(() => {
     if (!copiedField) return;
@@ -113,7 +124,12 @@ const OwnershipSection: React.FC<OwnershipSectionProps> = ({
     return () => window.clearTimeout(timer);
   }, [copiedField]);
 
-  if (currentList.length === 0 && originalList.length === 0 && inventorList.length === 0) {
+  if (
+    currentList.length === 0 &&
+    originalList.length === 0 &&
+    inventorList.length === 0 &&
+    visibleApplicants.length === 0
+  ) {
     return null;
   }
 
@@ -169,6 +185,32 @@ const OwnershipSection: React.FC<OwnershipSectionProps> = ({
                 value={primaryOriginal}
                 copiedKey="original"
                 isCopied={copiedField === 'original'}
+                onCopied={setCopiedField}
+              />
+            </div>
+          </div>
+        )}
+
+        {visibleApplicants.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+              Applicants
+            </p>
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-sm leading-6 text-slate-600">{visibleApplicants[0]}</p>
+                {visibleApplicants.length > 1 && (
+                  <p className="mt-1 text-sm text-slate-400">
+                    +{visibleApplicants.length - 1} additional applicant
+                    {visibleApplicants.length > 2 ? 's' : ''}
+                  </p>
+                )}
+              </div>
+              <CopyButton
+                label="Copy applicant"
+                value={visibleApplicants.join(' | ')}
+                copiedKey="applicants"
+                isCopied={copiedField === 'applicants'}
                 onCopied={setCopiedField}
               />
             </div>

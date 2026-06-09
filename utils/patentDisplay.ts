@@ -1,4 +1,8 @@
-export const hasText = (value?: string | null): boolean => Boolean(value && value.trim());
+export const hasText = (value?: string | null): boolean => {
+  if (!value) return false;
+  const normalized = value.trim();
+  return Boolean(normalized && normalized !== '-' && normalized !== '—' && normalized !== 'â€”');
+};
 
 export const hasItems = (items?: string[] | null): boolean =>
   Array.isArray(items) && items.some((item) => hasText(item));

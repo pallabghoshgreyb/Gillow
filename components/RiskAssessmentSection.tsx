@@ -78,7 +78,13 @@ const RiskAssessmentSection: React.FC<RiskAssessmentSectionProps> = ({ patent })
       tone,
       ftoBadge,
       iprValue,
-      showSignals: Boolean(ftoBadge || iprValue || patent.flags.litigation),
+      showSignals: Boolean(
+        ftoBadge ||
+        iprValue ||
+        patent.flags.litigation ||
+        patent.flags.ptab ||
+        patent.flags.opposition,
+      ),
     };
   }, [patent]);
 
@@ -147,6 +153,24 @@ const RiskAssessmentSection: React.FC<RiskAssessmentSectionProps> = ({ patent })
                 <p className="text-sm font-medium text-slate-900">Litigation</p>
                 <span className="inline-flex rounded-full border border-red-200 bg-red-50 px-3 py-1 text-sm font-medium text-red-700">
                   History present
+                </span>
+              </div>
+            )}
+
+            {patent.flags.ptab && (
+              <div className="flex items-center justify-between gap-4">
+                <p className="text-sm font-medium text-slate-900">PTAB</p>
+                <span className="inline-flex rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-sm font-medium text-amber-700">
+                  Review present
+                </span>
+              </div>
+            )}
+
+            {patent.flags.opposition && (
+              <div className="flex items-center justify-between gap-4">
+                <p className="text-sm font-medium text-slate-900">Opposition</p>
+                <span className="inline-flex rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-sm font-medium text-amber-700">
+                  Proceeding present
                 </span>
               </div>
             )}

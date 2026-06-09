@@ -38,11 +38,19 @@ const TechnologyProfileSection: React.FC<TechnologyProfileSectionProps> = ({ pat
       domain: hasText(patent.domain) ? patent.domain : '',
       subdomain: hasText(patent.subdomain) ? patent.subdomain : '',
       level,
+      description: hasText(patent.trlDescription) ? patent.trlDescription : '',
+      applications: patent.commercialApplications.filter(hasText),
       stage: getTrlStage(level),
     };
   }, [patent]);
 
-  if (!profile.domain && !profile.subdomain && profile.level === null) {
+  if (
+    !profile.domain &&
+    !profile.subdomain &&
+    profile.level === null &&
+    !profile.description &&
+    profile.applications.length === 0
+  ) {
     return null;
   }
 
@@ -110,6 +118,33 @@ const TechnologyProfileSection: React.FC<TechnologyProfileSectionProps> = ({ pat
             </div>
 
             <p className={`mt-3 text-sm font-medium ${profile.stage.text}`}>{profile.stage.label}</p>
+            {profile.description && (
+              <p className="mt-2 text-sm leading-6 text-slate-600">{profile.description}</p>
+            )}
+          </div>
+        )}
+
+        {profile.applications.length > 0 && (
+          <div
+            className={
+              profile.domain || profile.subdomain || profile.level
+                ? 'border-t border-slate-100 pt-6'
+                : ''
+            }
+          >
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+              Commercial Applications
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {profile.applications.map((application) => (
+                <span
+                  key={application}
+                  className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-600"
+                >
+                  {application}
+                </span>
+              ))}
+            </div>
           </div>
         )}
       </div>

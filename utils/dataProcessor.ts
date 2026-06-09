@@ -13,6 +13,17 @@ export const TRL_DESCRIPTIONS: Record<number, string> = {
   9: "Actual system proven in operational environment"
 };
 
+const VALUATION_SECTION_MAXIMUMS = {
+  strategicValue: 10,
+  marketValue: 20,
+  technologyValue: 25,
+  economicValue: 20,
+  legalValue: 25,
+} as const;
+
+const TOTAL_VALUATION_SECTION_MAXIMUM = Object.values(VALUATION_SECTION_MAXIMUMS)
+  .reduce((sum, value) => sum + value, 0);
+
 export const calculateClaimMetrics = (patent: Patent) => {
   const totalClaims = patent.independentClaimsCount + patent.dependentClaimsCount;
   
@@ -24,6 +35,85 @@ export const calculateClaimMetrics = (patent: Patent) => {
   
   return { totalClaims, claimBreadthScore };
 };
+
+// ============================================================================
+// MAINTENANCE FEE CALCULATION HELPERS
+// ============================================================================
+
+/**
+ * Normalize entity type to a standard format (Large, Small, Micro).
+ * @param entityType Raw entity type string from input
+ * @returns Normalized entity type or null if invalid
+ */
+export const normalizeEntityType = (entityType: any): 'Large' | 'Small' | 'Micro' | null => {
+  if (!entityType) return null;
+  const normalized = String(entityType).trim().toLowerCase();
+  if (normalized === 'large' || normalized === 'large entity') return 'Large';
+  if (normalized === 'small' || normalized === 'small entity') return 'Small';
+  if (normalized === 'micro' || normalized === 'micro entity') return 'Micro';
+  return null;
+};
+
+/**
+ * Check if a maintenance fee status indicates the fee is paid.
+ * @param value Status value from input ("Paid" or "Not Paid")
+ * @returns True only when the normalized value is exactly "paid"
+ */
+export const isPaid = (value: any): boolean => {
+  const normalized = String(value).trim().toLowerCase();
+  return normalized === 'paid';
+};
+
+/**
+ * Get the maintenance fee amount for a given entity type and stage.
+ * @param entityType Normalized entity type (Large, Small, Micro)
+ * @param stage Stage key: '3.5' | '7.5' | '11.5'
+ * @returns Fee amount in USD or 0 if invalid
+ */
+export const getFeeAmount = (
+  entityType: 'Large' | 'Small' | 'Micro' | null,
+  stage: '3.5' | '7.5' | '11.5',
+): number => {
+  const feeStructure: Record<string, Record<string, number>> = {
+    Large: { '3.5': 2150, '7.5': 4040, '11.5': 8280 },
+    Small: { '3.5': 860, '7.5': 1616, '11.5': 3312 },
+    Micro: { '3.5': 430, '7.5': 808, '11.5': 1656 },
+  };
+  if (!entityType || !feeStructure[entityType]) return 0;
+  return feeStructure[entityType][stage] || 0;
+};
+
+/**
+ * Calculate total pending maintenance fees for a patent record.
+ * @param record Patent record with entity type and three maintenance fee status columns
+ * @returns Calculated total pending fee amount (0 if all paid; null if invalid entity type)
+ */
+export const calculateTotalPendingFee = (record: any): number | null => {
+  const entityType = normalizeEntityType(record['Entity Type']);
+  if (!entityType) {
+    return null; // Invalid or missing entity type
+  }
+
+  const stages: Array<'3.5' | '7.5' | '11.5'> = ['3.5', '7.5', '11.5'];
+  let totalFee = 0;
+
+  stages.forEach((stage) => {
+    const columnName = stage === '3.5' ? '3.5 years' : stage === '7.5' ? '7.5 Years' : '11.5 Years';
+    const statusValue = record[columnName];
+    const paid = isPaid(statusValue);
+
+    if (!paid) {
+      const feeAmount = getFeeAmount(entityType, stage);
+      totalFee += feeAmount;
+    }
+  });
+
+  return totalFee;
+};
+
+// ============================================================================
+// END MAINTENANCE FEE CALCULATION
+// ============================================================================
 
 export const parsePatentRow = (row: any): Patent => {
   const familyCountryFromPrefix: Record<string, string> = {
@@ -64,7 +154,13 @@ export const parsePatentRow = (row: any): Patent => {
   const isEmptyLike = (val: any): boolean => {
     if (val === undefined || val === null) return true;
     const normalized = String(val).trim();
-    return normalized === '' || normalized === '-' || normalized === '—' || normalized === 'nan' || normalized === 'FALSE' || normalized === 'None';
+    const normalizedLower = normalized.toLowerCase();
+    return normalized === ''
+      || normalized === '-'
+      || normalized === '—'
+      || normalizedLower === 'nan'
+      || normalizedLower === 'false'
+      || normalizedLower === 'none';
   };
 
   const hasRealValue = (val: any): boolean => {
@@ -78,15 +174,18 @@ export const parsePatentRow = (row: any): Patent => {
 
   const splitPipe = (val: any): string[] => {
     if (isEmptyLike(val)) return [];
-    return String(val).split('|').map(s => s.trim()).filter(s => s);
+    return String(val).split('|').map(s => s.trim()).filter(s => !isEmptyLike(s));
   };
+
+  const splitPatentNumbers = (val: any): string[] =>
+    Array.from(new Set(splitPipe(val).map((value) => value.trim().toUpperCase()).filter((value) => !isEmptyLike(value))));
 
   const splitFlexible = (val: any): string[] => {
     if (isEmptyLike(val)) return [];
     return String(val)
       .split(/[|,;]+/)
       .map((s) => s.trim())
-      .filter((s) => s && s !== '-' && s !== '—');
+      .filter((s) => !isEmptyLike(s));
   };
 
   const splitComma = (val: any): string[] => {
@@ -99,12 +198,29 @@ export const parsePatentRow = (row: any): Patent => {
     return String(val)
       .split('|')
       .map((s) => s.trim())
-      .filter((s) => s && s !== '0');
+      .filter((s) => !isEmptyLike(s) && s !== '0');
   };
 
   const cleanNumeric = (val: any): number => {
     if (isEmptyLike(val)) return 0;
     return parseInt(String(val).replace(/[$,]/g, '')) || 0;
+  };
+
+  const cleanValuationScore = (val: any): number => {
+    if (isEmptyLike(val)) return 0;
+    const parsed = Number.parseFloat(String(val).replace(/[$,%\s]/g, ''));
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
+
+  const normalizeValuationSectionScore = (val: any, maximum: number): number => {
+    if (!hasRealValue(val) || maximum <= 0) return 0;
+    const rawScore = Math.min(maximum, Math.max(0, cleanValuationScore(val)));
+    return Math.round((rawScore / maximum) * 100);
+  };
+
+  const boundedValuationSectionScore = (val: any, maximum: number): number => {
+    if (!hasRealValue(val) || maximum <= 0) return 0;
+    return Math.min(maximum, Math.max(0, cleanValuationScore(val)));
   };
 
   const normalizeText = (val: any): string => (isEmptyLike(val) ? '' : String(val).trim());
@@ -133,6 +249,14 @@ export const parsePatentRow = (row: any): Patent => {
   const formatDateValue = (val: any): string => {
     if (isEmptyLike(val)) return '';
     const raw = String(val).trim();
+    if (/^\d{13}$/.test(raw)) {
+      const converted = new Date(Number(raw));
+      return Number.isNaN(converted.getTime()) ? raw : converted.toISOString().split('T')[0];
+    }
+    if (/^\d{10}$/.test(raw)) {
+      const converted = new Date(Number(raw) * 1000);
+      return Number.isNaN(converted.getTime()) ? raw : converted.toISOString().split('T')[0];
+    }
     if (/^\d{5}$/.test(raw)) {
       const serial = parseInt(raw, 10);
       const excelEpoch = new Date(Date.UTC(1899, 11, 30));
@@ -155,14 +279,6 @@ export const parsePatentRow = (row: any): Patent => {
           .filter((value): value is string => Boolean(value)),
       ),
     );
-
-  const deriveMarketSector = (explicitValue: any, regions: string[]): string => {
-    const explicit = normalizeText(explicitValue);
-    if (explicit) return explicit;
-    if (regions.length === 1) return `${regions[0]} coverage`;
-    if (regions.length > 1) return 'Multi-region coverage';
-    return '';
-  };
 
   const derivePatentFamilyStrategy = (
     explicitValue: any,
@@ -187,21 +303,25 @@ export const parsePatentRow = (row: any): Patent => {
   const pubNum = normalizeText(row['Publication Number']);
   const currentAssignees = splitPipe(row['Current Assignees']);
   const originalAssignees = splitPipe(row['Original Assignees']);
+  const primaryCpc = normalizeText(row['CPCs (2)']);
   const forwardCitations = splitCitationList(firstPresentValue(
     row['Forward Citations'],
     row['Forward Citing Patents'],
+    row['Forward Citing Patents or Forward Citations'],
   ));
   const backwardCitations = splitCitationList(firstPresentValue(
     row['Backward Citations'],
     row['Backward Cited Patents'],
+    row['Backward Cited Patents or Backward Citations'],
   ));
 
   // Licensing Data
-  const licensingStatus = String(row['Licensing Status'] || '') as LicensingStatus;
-  const rawDeals = row['Previous Deals JSON'];
+  const licensingStatus = normalizeText(row['Licensing Status']) as LicensingStatus;
+  const rawDeals = normalizeText(row['Previous Deals JSON']);
   let previousDeals: PreviousDeal[] = [];
   try {
-    previousDeals = rawDeals ? JSON.parse(rawDeals) : [];
+    const parsedDeals = rawDeals ? JSON.parse(rawDeals) : [];
+    previousDeals = Array.isArray(parsedDeals) ? parsedDeals : [];
   } catch (e) {
     previousDeals = [];
   }
@@ -218,7 +338,12 @@ export const parsePatentRow = (row: any): Patent => {
   const marketGrowthRate = Number.isFinite(parsedMarketGrowthRate) ? parsedMarketGrowthRate : 0;
   const keyCompetitors = splitComma(row['Key Competitors']);
   const explicitMarketRegion = splitComma(
-    firstPresentValue(row['Market Region'], row['Geographical Distribution'], row['Geo Graphical Distribution']),
+    firstPresentValue(
+      row['Market Region'],
+      row['Geographical Distribution'],
+      row['Geo Graphical Distribution'],
+      row['Market Region or Geographical Distribution or Geo Graphical Distribution'],
+    ),
   );
 
   // Risk Assessment
@@ -229,15 +354,22 @@ export const parsePatentRow = (row: any): Patent => {
 
   // Portfolio Context
   const relatedPatents = splitPipe(row['Related Patents']);
-  const rawPatentFamilyStrategy = firstPresentValue(
-    row['Patent Family Strategy'],
-    row['Geographical Distribution'],
-    row['Geo Graphical Distribution'],
-  );
+  const rawPatentFamilyStrategy = row['Patent Family Strategy'];
   const portfolioSegment = String(row['Portfolio Segment'] || '');
   const trackOneCodes = splitFlexible(row['Track-One Codes']);
   const nonPublicationCodes = splitFlexible(row['Non-Publication Codes']);
+  const continuityPatentNumbers = {
+    cip: splitPatentNumbers(row['CIP Patent Numbers']),
+    con: splitPatentNumbers(row['CON Patent Numbers']),
+    div: splitPatentNumbers(row['DIV Patent Numbers']),
+  };
+  const explicitContinuityRelations = [
+    ...continuityPatentNumbers.cip.map(() => 'CIP'),
+    ...continuityPatentNumbers.con.map(() => 'CON'),
+    ...continuityPatentNumbers.div.map(() => 'DIV'),
+  ];
   const cipConDiv = splitFlexible(row['CIP/CON/DIV']);
+  const continuitySignals = cipConDiv.length > 0 ? cipConDiv : explicitContinuityRelations;
   const iprPgr = splitFlexible(row['IPR/PGR']);
   const fit = splitFlexible(row['FIT']);
   const largestFamilies = splitFlexible(row['Largest Families']);
@@ -261,23 +393,61 @@ export const parsePatentRow = (row: any): Patent => {
     .map((member) => String(member).trim().toUpperCase().slice(0, 2))
     .map((prefix) => familyCountryFromPrefix[prefix])
     .filter((country): country is string => Boolean(country));
-  const explicitCountries = splitPipe(row['Country'] || row['Country Code']).map(normalizeCountryValue);
+  const explicitCountries = splitPipe(firstPresentValue(
+    row['Country'],
+    row['Country Code'],
+    row['Country Code or Country'],
+  )).map(normalizeCountryValue);
   const countries = familyJurisdictions.length > 0 ? familyJurisdictions : explicitCountries;
   const derivedRegions = regionsFromCountries(countries);
   const marketRegion = explicitMarketRegion.length > 0 ? explicitMarketRegion : derivedRegions;
-  const resolvedMarketSector = deriveMarketSector(row['Market Sector'], marketRegion);
-  const patentFamilyStrategy = derivePatentFamilyStrategy(rawPatentFamilyStrategy, cipConDiv, countries);
+  const patentFamilyStrategy = derivePatentFamilyStrategy(rawPatentFamilyStrategy, continuitySignals, countries);
 
   const declaredValuation = cleanNumeric(firstPresentValue(
     row['Patent Valuation'],
     row['Patsnap Value'],
     row['Asking Price USD'],
   ));
-  const strategicValue = cleanNumeric(row['Strategic value']);
-  const marketValue = cleanNumeric(row['Market value']);
-  const technologyValue = cleanNumeric(row['Technology value']);
-  const economicValue = cleanNumeric(row['Economic value']);
-  const legalValue = cleanNumeric(row['Legal value']);
+  const rawStrategicValue = boundedValuationSectionScore(
+    row['Strategic value'],
+    VALUATION_SECTION_MAXIMUMS.strategicValue,
+  );
+  const rawMarketValue = boundedValuationSectionScore(
+    row['Market value'],
+    VALUATION_SECTION_MAXIMUMS.marketValue,
+  );
+  const rawTechnologyValue = boundedValuationSectionScore(
+    row['Technology value'],
+    VALUATION_SECTION_MAXIMUMS.technologyValue,
+  );
+  const rawEconomicValue = boundedValuationSectionScore(
+    row['Economic value'],
+    VALUATION_SECTION_MAXIMUMS.economicValue,
+  );
+  const rawLegalValue = boundedValuationSectionScore(
+    row['Legal value'],
+    VALUATION_SECTION_MAXIMUMS.legalValue,
+  );
+  const strategicValue = normalizeValuationSectionScore(
+    row['Strategic value'],
+    VALUATION_SECTION_MAXIMUMS.strategicValue,
+  );
+  const marketValue = normalizeValuationSectionScore(
+    row['Market value'],
+    VALUATION_SECTION_MAXIMUMS.marketValue,
+  );
+  const technologyValue = normalizeValuationSectionScore(
+    row['Technology value'],
+    VALUATION_SECTION_MAXIMUMS.technologyValue,
+  );
+  const economicValue = normalizeValuationSectionScore(
+    row['Economic value'],
+    VALUATION_SECTION_MAXIMUMS.economicValue,
+  );
+  const legalValue = normalizeValuationSectionScore(
+    row['Legal value'],
+    VALUATION_SECTION_MAXIMUMS.legalValue,
+  );
   const valuationEstimate = declaredValuation;
   const askingPriceValue = firstPresentValue(
     row['Asking Price USD'],
@@ -288,33 +458,35 @@ export const parsePatentRow = (row: any): Patent => {
   const backwardCitationsCount = cleanNumeric(firstPresentValue(
     row['Count of Backward Citation'],
     row['Backward Citations Count'],
+    row['Count of Backward Citation or Backward Citations Count'],
   )) || backwardCitations.length;
   const forwardCitationsCount = cleanNumeric(firstPresentValue(
     row['Count of Forward Citation'],
     row['Forward Citations Count'],
+    row['Count of Forward Citation or Forward Citations Count'],
   )) || forwardCitations.length;
   const independentClaimsCount = cleanNumeric(row['Independent Claims Count']);
   const dependentClaimsCount = cleanNumeric(row['Dependent Claims Count']);
-  const explicitQualityInputs = [
-    strategicValue,
-    marketValue,
-    technologyValue,
-    economicValue,
-    legalValue,
-  ].filter((value) => value > 0);
-  const qualityScore = explicitQualityInputs.length > 0
-    ? Math.round(explicitQualityInputs.reduce((sum, value) => sum + value, 0) / explicitQualityInputs.length)
-    : 0;
+  const totalPatentScore = cleanValuationScore(row['Total Patent Score']);
+  const qualityScore = Math.round(
+    ((rawStrategicValue + rawMarketValue + rawTechnologyValue + rawEconomicValue + rawLegalValue) /
+      TOTAL_VALUATION_SECTION_MAXIMUM) * 100,
+  );
+  const totalPendingFee = calculateTotalPendingFee(row) ?? 0;
 
   return {
     id: pubNum,
     publicationNumber: pubNum,
-    applicationNumber: normalizeText(row['Application Number']),
+    applicationNumber: normalizeText(firstPresentValue(row['Application Number.1'], row['Application Number'])),
     patentType: String(row['Patent Type'] || 'Utility'),
     title: normalizeText(row['Title']),
     entityType: normalizeText(row['Entity Type']),
     gau: normalizeText(row['GAU']),
-    gauDefinition: normalizeText(row['GAU - Definiations'] || row['GAU Definitions']),
+    gauDefinition: normalizeText(firstPresentValue(
+      row['GAU - Definiations'],
+      row['GAU Definitions'],
+      row['GAU - Definiations or GAU Definitions'],
+    )),
     filingDate: formatDateValue(row['Filing Date']),
     priorityDate: formatDateValue(row['Priority Date']),
     publicationDate: formatDateValue(row['Publication Date']),
@@ -323,11 +495,11 @@ export const parsePatentRow = (row: any): Patent => {
       year3_5: cleanNumeric(row['3.5 years']),
       year7_5: cleanNumeric(row['7.5 Years']),
       year11_5: cleanNumeric(row['11.5 Years']),
-      totalPending: cleanNumeric(row['Total Pending Fee']),
+      totalPending: totalPendingFee,
       year3_5Text: normalizeMaintenanceText(row['3.5 years']),
       year7_5Text: normalizeMaintenanceText(row['7.5 Years']),
       year11_5Text: normalizeMaintenanceText(row['11.5 Years']),
-      totalPendingText: normalizeMaintenanceText(row['Total Pending Fee']),
+      totalPendingText: '',
     },
     originalAssignees,
     currentAssignees,
@@ -336,6 +508,7 @@ export const parsePatentRow = (row: any): Patent => {
     domain: normalizeText(row['Domain']),
     subdomain: normalizeText(row['Subdomain']),
     cpcs: splitPipe(row['CPCs']),
+    primaryCpc,
     ipcs: splitPipe(row['IPCs']),
     abstract: normalizeAbstract(row['Abstract']),
     legalStatus: normalizeText(row['Legal Status']),
@@ -345,10 +518,10 @@ export const parsePatentRow = (row: any): Patent => {
     backwardCitationsCount,
     forwardCitationsCount,
     flags: {
-      sep: ['yes', 'true', '1'].includes(String(row['SEP Flag'] || row['SEP'] || '').trim().toLowerCase()),
-      opposition: ['true', 'yes', '1'].includes(String(firstPresentValue(row['Oppositions Flag'], row['Opposition Flag']) || '').trim().toLowerCase()),
-      ptab: ['true', 'yes', '1'].includes(String(firstPresentValue(row['PTAB Flag'], row['PTAB']) || '').trim().toLowerCase()),
-      litigation: ['yes', 'true', '1'].includes(String(row['Litigation Flag'] || row['Litigation'] || '').trim().toLowerCase()),
+      sep: ['yes', 'true', '1'].includes(String(firstPresentValue(row['SEP Flag'], row['SEP'], row['SEP or SEP Flag']) || '').trim().toLowerCase()),
+      opposition: ['true', 'yes', '1'].includes(String(firstPresentValue(row['Oppositions Flag'], row['Opposition Flag'], row['Opposition Flag or Oppositions Flag']) || '').trim().toLowerCase()),
+      ptab: ['true', 'yes', '1'].includes(String(firstPresentValue(row['PTAB Flag'], row['PTAB'], row['PTAB Flag or PTAB']) || '').trim().toLowerCase()),
+      litigation: ['yes', 'true', '1'].includes(String(firstPresentValue(row['Litigation Flag'], row['Litigation'], row['Litigation or Litigation Flag']) || '').trim().toLowerCase()),
       governmentInterest: ['yes', 'true', 'government interest'].includes(String(row['Govt. Interest'] || '').trim().toLowerCase())
     },
     countries,
@@ -358,6 +531,7 @@ export const parsePatentRow = (row: any): Patent => {
     askingPrice,
     valuationEstimate,
     qualityScore,
+    totalPatentScore,
     jurisdiction: pubNum.substring(0, 2),
     licensingStatus,
     previousDeals,
@@ -374,7 +548,7 @@ export const parsePatentRow = (row: any): Patent => {
     technologyReadinessLevel,
     trlDescription,
     commercialApplications,
-    marketSector: resolvedMarketSector,
+    marketSector,
     totalAddressableMarket,
     marketGrowthRate,
     keyCompetitors,
@@ -393,7 +567,8 @@ export const parsePatentRow = (row: any): Patent => {
     prosecutionDuration,
     trackOneCodes,
     nonPublicationCodes,
-    cipConDiv,
+    cipConDiv: continuitySignals,
+    continuityPatentNumbers,
     iprPgr,
     fit,
     largestFamilies,
@@ -417,14 +592,10 @@ export const calculateMaintenanceStatus = (patent: Patent) => {
   const filingDate = new Date(patent.filingDate);
   const isValidDate = !isNaN(filingDate.getTime());
   const today = new Date();
-  const normalizeStatus = (value: string): 'paid' | 'pending' | 'overdue' => {
+  const normalizeStatus = (value: string, dueDate: Date): 'paid' | 'pending' | 'overdue' => {
     const normalized = value.trim().toLowerCase();
-    if (!normalized) return 'pending';
-    if (normalized.includes('paid')) return 'paid';
-    if (normalized.includes('not due')) return 'pending';
-    if (normalized.includes('due soon')) return 'pending';
-    if (normalized.includes('unpaid') || normalized.includes('overdue') || normalized.includes('late')) return 'overdue';
-    return 'pending';
+    if (normalized === 'paid') return 'paid';
+    return today > dueDate ? 'overdue' : 'pending';
   };
   
   const getSafeDate = (offsetYears: number) => {
@@ -444,13 +615,13 @@ export const calculateMaintenanceStatus = (patent: Patent) => {
   ].some((value) => value.trim());
 
   let status3_5: 'paid' | 'pending' | 'overdue' = textStatuses
-    ? normalizeStatus(maintenanceFees.year3_5Text)
+    ? normalizeStatus(maintenanceFees.year3_5Text, due3_5)
     : 'pending';
   let status7_5: 'paid' | 'pending' | 'overdue' = textStatuses
-    ? normalizeStatus(maintenanceFees.year7_5Text)
+    ? normalizeStatus(maintenanceFees.year7_5Text, due7_5)
     : 'pending';
   let status11_5: 'paid' | 'pending' | 'overdue' = textStatuses
-    ? normalizeStatus(maintenanceFees.year11_5Text)
+    ? normalizeStatus(maintenanceFees.year11_5Text, due11_5)
     : 'pending';
   
   if (!textStatuses) {
@@ -477,3 +648,30 @@ export const calculateMaintenanceStatus = (patent: Patent) => {
     totalPaid: (maintenanceFees.year3_5 + maintenanceFees.year7_5 + maintenanceFees.year11_5) - maintenanceFees.totalPending
   };
 };
+
+// ============================================================================
+// TEST EXAMPLES FOR MAINTENANCE FEE CALCULATION
+// ============================================================================
+// These examples demonstrate the auto-calculation for all entity types.
+//
+// Example 1: Small Entity - All fees not paid
+// Input:
+//   { "Entity Type": "Small", "3.5 years": "Not Paid", "7.5 Years": "Not Paid", "11.5 Years": "Not Paid" }
+// Expected Total Pending Fee: 860 + 1616 + 3312 = 5788
+//
+// Example 2: Large Entity - First fee paid, rest not paid
+// Input:
+//   { "Entity Type": "Large", "3.5 years": "Paid", "7.5 Years": "Not Paid", "11.5 Years": "Not Paid" }
+// Expected Total Pending Fee: 0 + 4040 + 8280 = 12320
+//
+// Example 3: Micro Entity - Only 7.5 year fee paid
+// Input:
+//   { "Entity Type": "Micro", "3.5 years": "Not Paid", "7.5 Years": "Paid", "11.5 Years": "Not Paid" }
+// Expected Total Pending Fee: 430 + 0 + 1656 = 2086
+//
+// Example 4: Invalid Entity Type
+// Input:
+//   { "Entity Type": "", "3.5 years": "Not Paid", "7.5 Years": "Not Paid", "11.5 Years": "Not Paid" }
+// Expected Total Pending Fee: null (and a warning should be logged)
+//
+// ============================================================================

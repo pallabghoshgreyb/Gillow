@@ -79,6 +79,7 @@ export interface Patent {
   domain: string;
   subdomain: string;
   cpcs: string[];
+  primaryCpc: string;
   ipcs: string[];
   
   // CONTENT
@@ -107,6 +108,7 @@ export interface Patent {
   askingPrice?: number;
   valuationEstimate: number;
   qualityScore: number;
+  totalPatentScore: number;
   jurisdiction: string; 
   licensingStatus: LicensingStatus;
   previousDeals: PreviousDeal[];
@@ -157,6 +159,11 @@ export interface Patent {
   trackOneCodes: string[];
   nonPublicationCodes: string[];
   cipConDiv: string[];
+  continuityPatentNumbers: {
+    cip: string[];
+    con: string[];
+    div: string[];
+  };
   iprPgr: string[];
   fit: string[];
   largestFamilies: string[];

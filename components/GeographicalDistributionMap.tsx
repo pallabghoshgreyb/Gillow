@@ -92,7 +92,7 @@ const GeographicalDistributionMap: React.FC<GeographicalDistributionMapProps> = 
   });
   const mapRef = useRef<HTMLDivElement | null>(null);
   const legendItems = Array.from(
-    new Map(
+    new Map<string, { status: JurisdictionStatus; label: string }>(
       groups.map((group) => [
         `${group.status}:${group.statusLabel}`,
         { status: group.status, label: group.statusLabel },

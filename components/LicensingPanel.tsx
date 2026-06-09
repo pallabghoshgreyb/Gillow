@@ -2,7 +2,7 @@
 import React from 'react';
 import { Patent } from '../types';
 import { Lock, Unlock, CheckCircle, Info, Handshake, DollarSign, History } from 'lucide-react';
-import { hasText, isKnownNumber } from '../utils/patentDisplay';
+import { formatCompactCurrency, hasText, isKnownNumber } from '../utils/patentDisplay';
 
 interface LicensingPanelProps {
   patent: Patent;
@@ -56,9 +56,8 @@ export const LicensingPanel: React.FC<LicensingPanelProps> = ({ patent }) => {
         {hasAskingPrice && (
           <div className="text-center md:text-right mt-6 md:mt-0">
             <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Listing Price</div>
-            <div className="text-4xl font-black text-slate-900 flex items-center justify-center md:justify-end gap-1">
-              <span className="text-slate-300 text-2xl">$</span>
-              {patent.askingPrice.toLocaleString()}
+            <div className="text-4xl font-black text-slate-900">
+              {formatCompactCurrency(patent.askingPrice)}
             </div>
           </div>
         )}
@@ -81,10 +80,10 @@ export const LicensingPanel: React.FC<LicensingPanelProps> = ({ patent }) => {
                         <div className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{deal.date} • {deal.type}</div>
                     </div>
                 </div>
-                {deal.value && (
+                {isKnownNumber(deal.value) && (
                   <div className="flex items-center gap-1 text-emerald-600 font-black text-sm">
                     <DollarSign size={14} />
-                    {(deal.value / 1000000).toFixed(1)}M
+                    {formatCompactCurrency(deal.value)}
                   </div>
                 )}
               </div>

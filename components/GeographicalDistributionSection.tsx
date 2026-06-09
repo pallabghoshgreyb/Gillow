@@ -192,8 +192,8 @@ const buildGroups = (patent: Patent): CountryGroup[] => {
         ? 'granted'
         : sortedMembers.some((member) => member.status === 'pending')
           ? 'pending'
-          : sortedMembers.some((member) => member.status === 'recorded')
-            ? 'recorded'
+          : sortedMembers.some((member) => member.status === 'abandoned')
+            ? 'abandoned'
           : 'expired';
 
       return {
@@ -234,6 +234,7 @@ const GeographicalDistributionSection: React.FC<GeographicalDistributionSectionP
   );
   const jurisdictionCount = groups.length;
   const totalMembers = tableRows.length;
+  const largestFamilyLabel = patent.largestFamilies.find(hasText) || '';
 
   if (groups.length === 0) {
     return null;
@@ -258,6 +259,11 @@ const GeographicalDistributionSection: React.FC<GeographicalDistributionSectionP
             Patent family coverage across {jurisdictionCount} jurisdiction
             {jurisdictionCount === 1 ? '' : 's'}
           </p>
+          {largestFamilyLabel && (
+            <p className="mt-1 text-sm text-slate-500">
+              Largest family size: {largestFamilyLabel}
+            </p>
+          )}
         </div>
 
         <button

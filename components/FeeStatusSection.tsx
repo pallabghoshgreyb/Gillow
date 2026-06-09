@@ -75,27 +75,11 @@ const normalizeStatusText = (value?: string | null) =>
 const mapDisplayStatus = (rawStatus: string) => {
   const normalized = rawStatus.trim().toLowerCase();
 
-  if (!normalized) {
-    return { statusLabel: 'Not disclosed', tone: 'neutral' as const };
+  if (normalized === 'paid') {
+    return { statusLabel: 'Paid', tone: 'good' as const };
   }
 
-  if (normalized.includes('paid')) {
-    return { statusLabel: rawStatus, tone: 'good' as const };
-  }
-
-  if (normalized.includes('not due')) {
-    return { statusLabel: rawStatus, tone: 'good' as const };
-  }
-
-  if (normalized.includes('unpaid') || normalized.includes('overdue') || normalized.includes('late')) {
-    return { statusLabel: rawStatus, tone: 'critical' as const };
-  }
-
-  if (normalized === 'due' || normalized.includes('due')) {
-    return { statusLabel: rawStatus, tone: 'warning' as const };
-  }
-
-  return { statusLabel: rawStatus, tone: 'neutral' as const };
+  return { statusLabel: 'Not Paid', tone: 'critical' as const };
 };
 
 const toneClasses = (tone: FeeRow['tone']) => {
@@ -167,7 +151,7 @@ const FeeStatusSection: React.FC<FeeStatusSectionProps> = ({ patent }) => {
     ];
 
     const rows: FeeRow[] = baseRows
-      .filter((row) => row.rawStatus || isKnownNumber(row.amount))
+      .filter((row) => row.rawStatus || isKnownNumber(row.amount) || patent.maintenanceFees.totalPending > 0)
       .map((row) => {
         const display = mapDisplayStatus(row.rawStatus);
         return {

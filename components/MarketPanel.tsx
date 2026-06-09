@@ -6,9 +6,10 @@ import { hasItems, hasText, isKnownNumber } from '../utils/patentDisplay';
 
 interface MarketPanelProps {
   patent: Patent;
+  showRegions?: boolean;
 }
 
-export const MarketPanel: React.FC<MarketPanelProps> = ({ patent }) => {
+export const MarketPanel: React.FC<MarketPanelProps> = ({ patent, showRegions = true }) => {
   const formatUSD = (val: number) => {
     if (val >= 1000000000) return `$${(val / 1000000000).toFixed(1)}B`;
     if (val >= 1000000) return `$${(val / 1000000).toFixed(1)}M`;
@@ -18,10 +19,10 @@ export const MarketPanel: React.FC<MarketPanelProps> = ({ patent }) => {
   const hasTam = isKnownNumber(patent.totalAddressableMarket);
   const valuationToTamRatio = hasTam ? (patent.valuationEstimate / patent.totalAddressableMarket) * 100 : null;
   const competitors = patent.keyCompetitors.filter(Boolean);
-  const regions = patent.marketRegion.filter(Boolean);
+  const regions = showRegions ? patent.marketRegion.filter(Boolean) : [];
   const hasMarketStats = hasText(patent.marketSector) || hasTam || isKnownNumber(patent.marketGrowthRate) || valuationToTamRatio !== null;
   const hasCompetitors = hasItems(patent.keyCompetitors);
-  const hasRegions = hasItems(patent.marketRegion);
+  const hasRegions = showRegions && hasItems(patent.marketRegion);
 
   if (!hasMarketStats && !hasCompetitors && !hasRegions) return null;
 

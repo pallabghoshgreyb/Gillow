@@ -25,7 +25,7 @@ import { ProceduralSignalsPanel } from '../components/ProceduralSignalsPanel';
 import { useGillow } from '../context/GillowContext';
 import { exportPatentToCsv } from '../utils/exportUtils';
 import { shareContent } from '../utils/shareUtils';
-import { hasItems, hasText, isKnownNumber } from '../utils/patentDisplay';
+import { formatCompactCurrency, hasItems, hasText, isKnownNumber } from '../utils/patentDisplay';
 
 const PatentDetail: React.FC = () => {
   const { patentId } = useParams();
@@ -543,8 +543,7 @@ const PatentDetail: React.FC = () => {
                         </div>
                         <div className="flex items-baseline gap-2">
                             <span className="text-6xl font-black text-slate-900 leading-none">
-                                $
-                                {(patent.valuationEstimate / 1000000).toFixed(1)}M
+                                {formatCompactCurrency(patent.valuationEstimate)}
                             </span>
                         </div>
                     </div>
