@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PatIndex | Patent PatIndex</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['var(--font-sans)'],
+              serif: ['var(--font-sans)'],
+              mono: ['var(--font-sans)'],
+            },
+            colors: {
+              blue: {
+                50: '#eefcfd',
+                100: '#d4f7fa',
+                200: '#aceff4',
+                300: '#73e2ea',
+                400: '#37d0db',
+                500: '#00bdcd',
+                600: '#00bdcd',
+                700: '#00a6b6',
+                800: '#008492',
+                900: '#0d5861',
+              },
+              slate: {
+                50: '#f8fafc',
+                100: '#f1f5f9',
+                200: '#e2e8f0',
+                800: '#1e293b',
+                900: '#0f172a',
+              },
+              primary: {
+                500: '#00bdcd',
+                600: '#00a6b6',
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      :root {
+        --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      }
+      html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        min-height: 100%;
+        overflow-x: hidden;
+        background-color: #ffffff;
+        color: #0f172a;
+        font-family: var(--font-sans);
+      }
+      body {
+        zoom: 0.67;
+        transform-origin: top center;
+      }
+      button,
+      input,
+      textarea,
+      select {
+        font: inherit;
+      }
+      #root {
+        width: 100%;
+        min-height: 100vh;
+      }
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #f1f5f9; 
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #cbd5e1; 
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8; 
+      }
+      /* Leaflet Container Overrides */
+      .leaflet-container {
+        background-color: #f0f4f8 !important;
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.2.4",
+    "react/": "https://esm.sh/react@^19.2.4/",
+    "react-dom": "https://esm.sh/react-dom@^19.2.4",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
+    "react-router-dom": "https://esm.sh/react-router-dom@^7.13.0",
+    "lucide-react": "https://esm.sh/lucide-react@^0.563.0",
+    "framer-motion": "https://esm.sh/framer-motion@^11.18.2?external=react,react-dom",
+    "recharts": "https://esm.sh/recharts@^3.7.0",
+    "d3": "https://esm.sh/d3@^7.9.0",
+    "leaflet": "https://esm.sh/leaflet@1.9.4",
+    "react-leaflet": "https://esm.sh/react-leaflet@4.2.1?external=react,react-dom,leaflet"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body>
+    <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>

@@ -1,0 +1,117 @@
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Search, X } from 'lucide-react';
+import { PATENTS } from '../data/patents';
+
+interface SearchAutocompleteProps {
+  onSearch: (query: string) => void;
+  placeholder?: string;
+  className?: string;
+}
+
+const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({ onSearch, placeholder, className }) => {
+  const [query, setQuery] = useState('');
+  const [isFocused, setIsFocused] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const suggestions = useMemo(() => {
+    const subdomains = PATENTS
+      .map((patent) => patent.subdomain)
+      .filter(Boolean) as string[];
+    const assignees = PATENTS.flatMap((patent) => patent.currentAssignees).filter(Boolean);
+    return Array.from(new Set([...subdomains, ...assignees])).sort();
+  }, []);
+  const filteredSuggestions = useMemo(() => {
+    const trimmedQuery = query.trim().toLowerCase();
+    if (!trimmedQuery) return suggestions.slice(0, 8);
+    return suggestions.filter((suggestion) => suggestion.toLowerCase().includes(trimmedQuery)).slice(0, 8);
+  }, [query, suggestions]);
+
+  const handleSearch = (q: string) => {
+    const trimmed = q.trim();
+    setQuery(trimmed);
+    if (trimmed) {
+      onSearch(trimmed);
+    }
+    setIsFocused(false);
+  };
+
+  useEffect(() => {
+    const handlePointerDown = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (containerRef.current && !containerRef.current.contains(target)) {
+        setIsFocused(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    return () => document.removeEventListener('mousedown', handlePointerDown);
+  }, []);
+
+  return (
+    <div ref={containerRef} className={`relative ${className}`}>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleSearch(query);
+        }}
+        className="relative"
+      >
+        <div className={`relative flex items-center transition-all duration-300 ${isFocused ? 'scale-[1.02]' : ''}`}>
+          <Search className={`absolute left-5 transition-colors duration-300 ${isFocused ? 'text-[#00bdcd]' : 'text-slate-400'}`} size={22} />
+          <input 
+            type="text"
+            value={query}
+            autoComplete="off"
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setTimeout(() => setIsFocused(false), 200)}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={placeholder || "Search patents by ID, title, or tech..."}
+            className="h-16 w-full rounded-full border-2 border-slate-100 bg-white pl-14 pr-16 text-base font-medium text-slate-800 shadow-xl shadow-slate-200/50 outline-none transition-all placeholder:text-slate-400 focus:border-[#00bdcd]"
+          />
+          {query && (
+            <button
+              type="button"
+              onClick={() => {
+                setQuery('');
+                setIsFocused(false);
+              }}
+              className="absolute right-14 text-slate-300 hover:text-slate-500"
+            >
+              <X size={18} />
+            </button>
+          )}
+          <button 
+            type="submit"
+            className="absolute right-2 top-2 h-12 w-12 bg-[#00bdcd] text-white rounded-full flex items-center justify-center hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200 active:scale-95"
+          >
+            <Search size={24} />
+          </button>
+        </div>
+      </form>
+
+      {isFocused && filteredSuggestions.length > 0 && (
+        <div className="absolute left-0 right-0 top-full z-50 mt-3 rounded-3xl border border-slate-200 bg-white p-3 shadow-2xl">
+          <div className="px-3 pb-2 text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
+            Suggested Subdomains & Assignees
+          </div>
+          <div className="space-y-1">
+            {filteredSuggestions.map((suggestion) => (
+              <button
+                key={suggestion}
+                onMouseDown={(event) => {
+                  event.preventDefault();
+                  handleSearch(suggestion);
+                }}
+                className="flex w-full items-center justify-between rounded-2xl px-3 py-3 text-left text-sm font-medium text-slate-600 transition-colors hover:bg-blue-50 hover:text-blue-700"
+              >
+                <span>{suggestion}</span>
+                <span className="text-xs font-medium uppercase tracking-[0.14em] text-slate-300">Search</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default SearchAutocomplete;

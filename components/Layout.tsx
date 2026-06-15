@@ -1,0 +1,561 @@
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { 
+  Search as SearchIcon, Heart, User, Building2, 
+  Menu, Info, Bell, X, Trash2, Clock, 
+  ChevronRight, SlidersHorizontal, Map as MapIcon
+} from 'lucide-react';
+import { useGillow } from '../context/GillowContext';
+import AdvancedSearchModal, { type AdvancedSearchFormData } from './AdvancedSearchModal';
+import ServerConfigModal from './ServerConfigModal';
+import { PATENTS } from '../data/patents';
+
+interface LayoutProps {
+  children: React.ReactNode;
+}
+
+interface InfoDialogState {
+  title: string;
+  description: string;
+  actionLabel?: string;
+  actionType?: 'home' | 'browse' | 'landscape' | 'server-config' | 'sample-patent';
+}
+
+const Layout: React.FC<LayoutProps> = ({ children }) => {
+  const { notifications, markRead, searchHistory, clearSearchHistory, favorites } = useGillow();
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showSearchHistory, setShowSearchHistory] = useState(false);
+  const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
+  const [isServerConfigOpen, setIsServerConfigOpen] = useState(false);
+  const [searchValue, setSearchValue] = useState('');
+  const [newsletterEmail, setNewsletterEmail] = useState('');
+  const [newsletterStatus, setNewsletterStatus] = useState('');
+  const [infoDialog, setInfoDialog] = useState<InfoDialogState | null>(null);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+  const notificationsRef = useRef<HTMLDivElement>(null);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const isLandscapePage = location.pathname === '/landscape';
+  const searchSuggestions = useMemo(() => {
+    const publicationNumbers = PATENTS.map((patent) => patent.publicationNumber).filter(Boolean) as string[];
+    return Array.from(new Set(publicationNumbers)).sort();
+  }, []);
+  const filteredSuggestions = useMemo(() => {
+    const trimmedQuery = searchValue.trim().toLowerCase();
+    if (!trimmedQuery) return searchSuggestions.slice(0, 8);
+    return searchSuggestions.filter((suggestion) => suggestion.toLowerCase().includes(trimmedQuery)).slice(0, 8);
+  }, [searchSuggestions, searchValue]);
+  const patentSearchHistory = useMemo(() => {
+    return searchHistory.filter((entry) => {
+      const trimmedEntry = entry.trim().toLowerCase();
+      return Boolean(trimmedEntry && searchSuggestions.some((suggestion) => suggestion.toLowerCase().includes(trimmedEntry)));
+    });
+  }, [searchHistory, searchSuggestions]);
+  const advancedSearchInitialValues = useMemo<AdvancedSearchFormData>(() => {
+    const params = new URLSearchParams(location.search);
+    const searchIn = params.getAll('in');
+
+    return {
+      booleanMode: params.get('mode') === 'or' ? 'OR' : 'AND',
+      searchIn: searchIn.length > 0 ? (searchIn as AdvancedSearchFormData['searchIn']) : ['title', 'abstract', 'inventor', 'assignee', 'domain', 'subdomain'],
+      minValuation: Math.floor((Number(params.get('minV')) || 0) / 1000000),
+      minCitations: Number(params.get('minCit')) || 0,
+      minClaims: Number(params.get('minC')) || 0,
+      excludeExpired: params.get('alive') === '1',
+      jurisdiction: params.get('jur') || 'All',
+    };
+  }, [location.search]);
+  const formatNotificationAge = (timestamp: number) => {
+    const delta = Math.max(0, Date.now() - timestamp);
+    const minute = 60 * 1000;
+    const hour = 60 * minute;
+    const day = 24 * hour;
+
+    if (delta < minute) return 'Just now';
+    if (delta < hour) return `${Math.floor(delta / minute)}m ago`;
+    if (delta < day) return `${Math.floor(delta / hour)}h ago`;
+    if (delta < 7 * day) return `${Math.floor(delta / day)}d ago`;
+    return new Date(timestamp).toLocaleDateString();
+  };
+
+  useEffect(() => {
+    setShowNotifications(false);
+    setShowSearchHistory(false);
+    const activeElement = document.activeElement as HTMLElement | null;
+    activeElement?.blur?.();
+  }, [location.pathname, location.search]);
+
+  useEffect(() => {
+    const handlePointerDown = (event: MouseEvent) => {
+      const target = event.target as Node;
+
+      if (searchContainerRef.current && !searchContainerRef.current.contains(target)) {
+        setShowSearchHistory(false);
+      }
+
+      if (notificationsRef.current && !notificationsRef.current.contains(target)) {
+        setShowNotifications(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    return () => document.removeEventListener('mousedown', handlePointerDown);
+  }, []);
+
+  useEffect(() => {
+    if (!newsletterStatus) return;
+    const timer = window.setTimeout(() => setNewsletterStatus(''), 3000);
+    return () => window.clearTimeout(timer);
+  }, [newsletterStatus]);
+
+  const patentNumberSearchPath = (query: string) => `/search?q=${encodeURIComponent(query)}&pn=1`;
+
+  const findExactPatent = (query: string) => {
+    const normalized = query.trim().toLowerCase();
+    return PATENTS.find((patent) => patent.publicationNumber.toLowerCase() === normalized);
+  };
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchValue.trim()) {
+      const query = searchValue.trim();
+      const patent = findExactPatent(query);
+      if (patent) {
+        navigate(`/patent/${patent.id}`);
+      } else {
+        navigate(patentNumberSearchPath(query));
+      }
+      setShowSearchHistory(false);
+      setSearchValue('');
+    }
+  };
+
+  const handleSuggestionSelect = (value: string) => {
+    setSearchValue(value);
+    const patent = findExactPatent(value);
+    if (patent) {
+      navigate(`/patent/${patent.id}`);
+    } else {
+      navigate(patentNumberSearchPath(value));
+    }
+    setShowSearchHistory(false);
+    setSearchValue('');
+  };
+
+  const unreadCount = notifications.filter(n => !n.read).length;
+
+  const runInfoAction = (actionType?: InfoDialogState['actionType']) => {
+    setInfoDialog(null);
+
+    if (actionType === 'home') {
+      navigate('/');
+      return;
+    }
+
+    if (actionType === 'browse') {
+      navigate('/browse');
+      return;
+    }
+
+    if (actionType === 'landscape') {
+      navigate('/landscape');
+      return;
+    }
+
+    if (actionType === 'server-config') {
+      setIsServerConfigOpen(true);
+      return;
+    }
+
+    if (actionType === 'sample-patent' && PATENTS[0]) {
+      navigate(`/patent/${PATENTS[0].publicationNumber}`);
+    }
+  };
+
+  const handleNewsletterSubscribe = (event: React.FormEvent) => {
+    event.preventDefault();
+    const trimmedEmail = newsletterEmail.trim();
+
+    if (!trimmedEmail) {
+      setNewsletterStatus('Enter an email address first.');
+      return;
+    }
+
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailPattern.test(trimmedEmail)) {
+      setNewsletterStatus('Use a valid email address.');
+      return;
+    }
+
+    setNewsletterStatus(`Subscribed ${trimmedEmail}`);
+    setNewsletterEmail('');
+  };
+
+  const openShareWindow = (platform: 'linkedin' | 'x') => {
+    const pageUrl = encodeURIComponent(window.location.href);
+    const pageText = encodeURIComponent('Explore this patent intelligence view on PatIndex');
+    const targetUrl =
+      platform === 'linkedin'
+        ? `https://www.linkedin.com/sharing/share-offsite/?url=${pageUrl}`
+        : `https://twitter.com/intent/tweet?url=${pageUrl}&text=${pageText}`;
+
+    window.open(targetUrl, '_blank', 'noopener,noreferrer');
+  };
+
+  return (
+    <div className={`flex w-full bg-white text-slate-900 font-sans ${isLandscapePage ? 'h-screen overflow-hidden flex-col' : 'min-h-screen flex-col'}`}>
+      {/* Top Navigation */}
+      <header className="h-20 bg-white/95 backdrop-blur-md border-b border-slate-100 flex-shrink-0 z-50 sticky top-0 shadow-sm">
+        <div className="max-w-[1400px] mx-auto px-6 h-full flex items-center justify-between gap-6">
+            
+            <div className="flex items-center gap-10">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowNotifications(false);
+                    setShowSearchHistory(false);
+                    navigate('/');
+                  }}
+                  className="flex items-center gap-2 group flex-shrink-0"
+                >
+                    <div className="w-10 h-10 rounded-xl overflow-hidden bg-white flex items-center justify-center shadow-lg shadow-blue-200 group-hover:rotate-6 transition-all">
+                        <img src="/logo.gif" alt="Gillow logo" className="w-full h-full object-contain" />
+                    </div>
+                    <span className="sr-only">PatIndex</span>
+                </button>
+
+                <nav className="hidden xl:flex items-center space-x-8">
+                    <NavLink to="/browse" className={({isActive}) => `text-sm font-medium transition-colors hover:text-[#00bdcd] ${isActive ? 'text-[#00bdcd]' : 'text-slate-500'}`}>PatIndex</NavLink>
+                    <NavLink to="/landscape" className={({isActive}) => `text-sm font-medium transition-colors hover:text-[#00bdcd] ${isActive ? 'text-[#00bdcd]' : 'text-slate-500'}`}>Landscape</NavLink>
+                </nav>
+            </div>
+
+            {/* Search Input Area */}
+            <div ref={searchContainerRef} className="flex-1 max-w-xl relative group hidden md:block">
+                <form onSubmit={handleSearchSubmit}>
+                    <div className="flex items-center border-2 border-slate-50 rounded-2xl px-5 py-2.5 bg-slate-50/50 hover:bg-white hover:border-slate-200 transition-all cursor-pointer focus-within:ring-4 focus-within:ring-blue-100 focus-within:border-blue-400 focus-within:bg-white shadow-inner">
+                        <SearchIcon size={18} className="text-slate-400 mr-3" />
+                        <input 
+                            type="text" 
+                            value={searchValue}
+                            onChange={(e) => setSearchValue(e.target.value)}
+                            onFocus={() => setShowSearchHistory(true)}
+                            onBlur={() => setTimeout(() => setShowSearchHistory(false), 200)}
+                            className="w-full border-none bg-transparent text-sm font-medium text-slate-700 outline-none placeholder:font-medium placeholder:text-slate-400"
+                            placeholder="Search by patent number…" 
+                        />
+                        <button 
+                          type="button"
+                          onClick={() => setIsAdvancedOpen(true)}
+                          className="ml-2 p-1.5 hover:bg-blue-50 text-slate-400 hover:text-blue-600 rounded-lg transition-all"
+                          title="Advanced Search"
+                        >
+                          <SlidersHorizontal size={16} />
+                        </button>
+                    </div>
+                </form>
+
+                {showSearchHistory && (filteredSuggestions.length > 0 || patentSearchHistory.length > 0) && (
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 rounded-2xl shadow-2xl p-4 animate-in fade-in slide-in-from-top-2 z-[70]">
+                        {filteredSuggestions.length > 0 && (
+                          <>
+                            <div className="flex items-center justify-between mb-3 px-2">
+                                <span className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.16em] text-slate-400"><SearchIcon size={12}/> Suggested Matches</span>
+                            </div>
+                            <div className="space-y-1 mb-3">
+                              {filteredSuggestions.map((suggestion) => (
+                                <button 
+                                    key={suggestion}
+                                    onMouseDown={(event) => {
+                                      event.preventDefault();
+                                      void handleSuggestionSelect(suggestion);
+                                    }}
+                                    className="group flex w-full items-center justify-between rounded-xl px-4 py-3 text-left text-sm font-medium text-slate-600 hover:bg-blue-50 hover:text-blue-600"
+                                >
+                                    <div className="flex items-center gap-3">
+                                      <SearchIcon size={14} className="opacity-30" />
+                                      {suggestion}
+                                    </div>
+                                    <ChevronRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                                </button>
+                              ))}
+                            </div>
+                          </>
+                        )}
+
+                        {patentSearchHistory.length > 0 && (
+                          <>
+                            <div className="flex items-center justify-between mb-4 px-2">
+                                <span className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.16em] text-slate-400"><Clock size={12}/> Recent History</span>
+                                <button onMouseDown={(event) => event.preventDefault()} onClick={clearSearchHistory} className="text-xs font-medium uppercase tracking-[0.16em] text-red-500 hover:underline">Clear all</button>
+                            </div>
+                            <div className="space-y-1">
+                              {patentSearchHistory.map((h, i) => (
+                                  <button 
+                                      key={i} 
+                                      onMouseDown={(event) => event.preventDefault()}
+                                      onClick={() => {
+                                        setShowSearchHistory(false);
+                                        navigate(patentNumberSearchPath(h));
+                                      }}
+                                      className="group flex w-full items-center justify-between rounded-xl px-4 py-3 text-left text-sm font-medium text-slate-600 hover:bg-blue-50 hover:text-blue-600"
+                                  >
+                                      <div className="flex items-center gap-3">
+                                        <SearchIcon size={14} className="opacity-30" />
+                                        {h}
+                                      </div>
+                                      <ChevronRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                                  </button>
+                              ))}
+                            </div>
+                          </>
+                        )}
+                    </div>
+                )}
+            </div>
+
+            <div className="flex items-center gap-3">
+                <div ref={notificationsRef} className="relative">
+                    <button 
+                        onClick={() => setShowNotifications(!showNotifications)}
+                        className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all relative ${showNotifications ? 'bg-blue-50 text-blue-600' : 'text-slate-500 hover:text-blue-600 hover:bg-slate-50 border border-transparent'}`}
+                    >
+                        <Bell size={20} />
+                        {unreadCount > 0 && (
+                            <span className="absolute top-0 right-0 flex h-4 w-4 translate-x-1/4 -translate-y-1/4 items-center justify-center rounded-full border-2 border-white bg-red-500 text-[9px] font-semibold text-white">
+                                {unreadCount}
+                            </span>
+                        )}
+                    </button>
+                    
+                    {showNotifications && (
+                        <div className="absolute top-full right-0 mt-4 w-80 bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2">
+                            <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                                <span className="text-xs font-medium uppercase tracking-[0.16em] text-slate-400">Notifications</span>
+                                <button onClick={() => setShowNotifications(false)}><X size={16} className="text-slate-400" /></button>
+                            </div>
+                            <div className="max-h-96 overflow-y-auto">
+                                {notifications.length > 0 ? (
+                                    notifications.map(n => (
+                                        <div key={n.id} onClick={() => markRead(n.id)} className={`p-4 border-b border-slate-50 hover:bg-slate-50 cursor-pointer transition-colors ${!n.read ? 'bg-blue-50/50' : ''}`}>
+                                            <div className="flex gap-3">
+                                                <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${n.type === 'alert' ? 'bg-blue-500' : n.type === 'saved' ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+                                                <div className="text-sm font-medium text-slate-700 leading-snug">{n.text}</div>
+                                            </div>
+                                            <div className="mt-2 ml-5 text-[11px] font-medium uppercase tracking-[0.14em] text-slate-400">{formatNotificationAge(n.timestamp)}</div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="p-10 text-center text-slate-300 italic text-sm">No new alerts</div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                <NavLink to="/saved" className={({isActive}) => `w-10 h-10 flex items-center justify-center rounded-xl transition-all relative ${isActive ? 'bg-red-50 text-red-600' : 'text-slate-500 hover:text-red-600 hover:bg-slate-50'}`}>
+                    <Heart size={20} fill={favorites.length > 0 && window.location.hash.includes('saved') ? 'currentColor' : 'none'} />
+                    {favorites.length > 0 && (
+                        <span className="absolute top-0 right-0 flex h-4 w-4 translate-x-1/4 -translate-y-1/4 items-center justify-center rounded-full border-2 border-white bg-[#00bdcd] text-[9px] font-semibold text-white">
+                            {favorites.length}
+                        </span>
+                    )}
+                </NavLink>
+
+                <div className="h-8 w-px bg-slate-100 mx-2"></div>
+
+                <button
+                  onClick={() => setInfoDialog({
+                    title: 'Sign In',
+                    description: 'Authentication is not configured in this local environment yet. You can still explore PatIndex, landscape, exports, and patent detail workflows with the imported dataset.',
+                    actionLabel: 'Open PatIndex',
+                    actionType: 'browse',
+                  })}
+                  className="flex h-10 items-center gap-3 rounded-xl bg-slate-900 px-6 text-sm font-semibold text-white shadow-lg shadow-slate-200 transition-all hover:bg-slate-800 active:scale-95"
+                >
+                    <User size={16} />
+                    <span className="hidden lg:inline">Sign In</span>
+                </button>
+            </div>
+        </div>
+      </header>
+
+      <main
+        key={`${location.pathname}${location.search}`}
+        className={`flex flex-col min-w-0 ${isLandscapePage ? 'flex-1 min-h-0 overflow-hidden' : 'flex-1'}`}
+      >
+        {children}
+      </main>
+
+      {!isLandscapePage && (
+      <footer className="bg-white text-slate-900 py-32 px-6 border-t border-slate-100">
+          <div className="max-w-[1400px] mx-auto">
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-16 md:gap-8 mb-24">
+                  <div className="md:col-span-5">
+                      <div className="flex items-center gap-2 mb-10">
+                          <div className="w-10 h-10 rounded-xl overflow-hidden bg-white flex items-center justify-center shadow-xl shadow-blue-200">
+                              <img src="/logo.gif" alt="Gillow logo" className="w-full h-full object-contain" />
+                          </div>
+                          <span className="sr-only">PatIndex</span>
+                      </div>
+                      <p className="text-slate-400 max-w-sm mb-12 text-lg font-medium leading-relaxed">
+                          Reimagining intellectual property management for the modern era. Navigate, value, and acquire patents with global transparency.
+                      </p>
+                      <div className="flex gap-4">
+                          <SocialIcon icon="LinkedIn" label="Share on LinkedIn" onClick={() => openShareWindow('linkedin')} />
+                          <SocialIcon icon="X" label="Share on X" onClick={() => openShareWindow('x')} />
+                          <SocialIcon
+                            icon="Youtube"
+                            label="Open product tour info"
+                            onClick={() => setInfoDialog({
+                              title: 'Video Tours',
+                              description: 'Recorded product walkthroughs are not published yet, but the live Landscape and PatIndex pages are ready to explore.',
+                              actionLabel: 'Open Landscape',
+                              actionType: 'landscape',
+                            })}
+                          />
+                      </div>
+                  </div>
+
+                  <div className="md:col-span-2">
+                      <h4 className="mb-10 text-sm font-medium uppercase tracking-[0.16em] text-slate-400">Platform</h4>
+                      <ul className="space-y-6 text-sm font-medium text-slate-600">
+                          <li><button onClick={() => navigate('/browse')} className="hover:text-[#00bdcd] transition-colors">PatIndex</button></li>
+                          <li><button onClick={() => navigate('/landscape')} className="hover:text-[#00bdcd] transition-colors">Landscape</button></li>
+                          <li><button onClick={() => setInfoDialog({ title: 'AI Valuation', description: 'Valuation insights are available inside each patent detail page, including pricing, quality score, and risk context.', actionLabel: 'Open Sample Patent', actionType: 'sample-patent' })} className="hover:text-[#00bdcd] transition-colors">AI Valuation</button></li>
+                          <li><button onClick={() => setIsServerConfigOpen(true)} className="hover:text-[#00bdcd] transition-colors">API Docs</button></li>
+                      </ul>
+                  </div>
+
+                  <div className="md:col-span-2">
+                      <h4 className="mb-10 text-sm font-medium uppercase tracking-[0.16em] text-slate-400">Company</h4>
+                      <ul className="space-y-6 text-sm font-medium text-slate-600">
+                          <li><button onClick={() => setInfoDialog({ title: 'Our Mission', description: 'PatIndex helps teams explore patent landscapes, evaluate portfolio strength, and move from discovery to transaction faster.', actionLabel: 'Go Home', actionType: 'home' })} className="hover:text-[#00bdcd] transition-colors">Our Mission</button></li>
+                          <li><button onClick={() => setInfoDialog({ title: 'Security', description: 'This workspace runs locally with browser-stored preferences. Backend connectivity is optional and can be configured from the server connection panel.', actionLabel: 'Open Server Config', actionType: 'server-config' })} className="hover:text-[#00bdcd] transition-colors">Security</button></li>
+                          <li><button onClick={() => setInfoDialog({ title: 'Privacy', description: 'Search history, favorites, and saved searches are stored in your browser on this device unless you connect an external backend.', actionLabel: 'Open PatIndex', actionType: 'browse' })} className="hover:text-[#00bdcd] transition-colors">Privacy</button></li>
+                          <li><button onClick={() => { window.location.href = 'mailto:support@gillow.ai?subject=PatIndex%20Support'; }} className="hover:text-[#00bdcd] transition-colors">Support</button></li>
+                      </ul>
+                  </div>
+
+                  <div className="md:col-span-3">
+                      <h4 className="mb-10 text-sm font-medium uppercase tracking-[0.16em] text-slate-400">Newsletter</h4>
+                      <p className="text-sm text-slate-500 mb-6 font-medium">Get the latest on high-value portfolio listings.</p>
+                      <form onSubmit={handleNewsletterSubscribe} className="flex flex-col gap-3">
+                        <input
+                          value={newsletterEmail}
+                          onChange={(event) => setNewsletterEmail(event.target.value)}
+                          className="px-5 py-3 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:border-blue-400"
+                          placeholder="your@email.com"
+                        />
+                        <button type="submit" className="rounded-xl bg-slate-900 py-3 text-sm font-semibold text-white transition-all hover:bg-slate-800">Subscribe</button>
+                        {newsletterStatus && (
+                          <p className="text-xs font-medium text-blue-600">{newsletterStatus}</p>
+                        )}
+                      </form>
+                  </div>
+              </div>
+
+              <div className="flex flex-col items-center justify-between gap-6 border-t border-slate-100 pt-12 md:flex-row">
+                  <div className="text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
+                      © 2025 PatIndex • Built for Global IP Excellence
+                  </div>
+                  <div className="flex gap-8 text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
+                    <button onClick={() => setInfoDialog({ title: 'Terms of Use', description: 'This interface is intended for patent review and portfolio evaluation. Confirm legal and commercial conclusions against official records before making decisions.' })} className="hover:text-slate-900">Terms of Use</button>
+                    <button onClick={() => setInfoDialog({ title: 'Compliance', description: 'Compliance workflows depend on your connected backend and data source policies. Use the server configuration panel to point the app at your approved systems.', actionLabel: 'Open Server Config', actionType: 'server-config' })} className="hover:text-slate-900">Compliance</button>
+                    <button onClick={() => setIsServerConfigOpen(true)} className="hover:text-slate-900">Patent Search API</button>
+                  </div>
+              </div>
+          </div>
+      </footer>
+      )}
+
+      {infoDialog && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/40 px-6">
+          <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-[0.16em] text-blue-600">PatIndex</p>
+                <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">{infoDialog.title}</h3>
+              </div>
+              <button onClick={() => setInfoDialog(null)} className="rounded-xl border border-slate-200 p-2 text-slate-400 hover:bg-slate-50 hover:text-slate-700">
+                <X size={16} />
+              </button>
+            </div>
+            <p className="mt-4 text-sm font-medium leading-relaxed text-slate-600">{infoDialog.description}</p>
+            <div className="mt-6 flex items-center justify-end gap-3">
+              <button onClick={() => setInfoDialog(null)} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-500 hover:bg-slate-50">
+                Close
+              </button>
+              {infoDialog.actionLabel && (
+                <button onClick={() => runInfoAction(infoDialog.actionType)} className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">
+                  {infoDialog.actionLabel}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <AdvancedSearchModal 
+        isOpen={isAdvancedOpen} 
+        onClose={() => setIsAdvancedOpen(false)} 
+        initialValues={advancedSearchInitialValues}
+        onSearch={(filters) => {
+          const params = new URLSearchParams();
+          const effectiveQuery = searchValue.trim() || new URLSearchParams(location.search).get('q')?.trim() || '';
+
+          if (effectiveQuery) {
+            params.set('q', effectiveQuery);
+          }
+
+          if (filters.booleanMode === 'OR') {
+            params.set('mode', 'or');
+          }
+
+          filters.searchIn.forEach((field) => params.append('in', field));
+
+          if (filters.minValuation > 0) {
+            params.set('minV', String(filters.minValuation * 1000000));
+          }
+
+          if (filters.minCitations > 0) {
+            params.set('minCit', String(filters.minCitations));
+          }
+
+          if (filters.minClaims > 0) {
+            params.set('minC', String(filters.minClaims));
+          }
+
+          if (filters.excludeExpired) {
+            params.set('alive', '1');
+          }
+
+          if (filters.jurisdiction !== 'All') {
+            params.set('jur', filters.jurisdiction);
+          }
+
+          navigate(`/search${params.toString() ? `?${params.toString()}` : ''}`);
+        }}
+      />
+
+      <ServerConfigModal 
+        isOpen={isServerConfigOpen} 
+        onClose={() => setIsServerConfigOpen(false)} 
+      />
+    </div>
+  );
+};
+
+const SocialIcon = ({ icon, label, onClick }: { icon: string; label: string; onClick: () => void }) => (
+  <button
+    onClick={onClick}
+    aria-label={label}
+    title={label}
+    className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 hover:bg-[#00bdcd] hover:text-white hover:-translate-y-1 transition-all"
+  >
+    <span className="text-[10px] font-semibold uppercase tracking-[0.14em]">{icon[0]}</span>
+  </button>
+);
+
+export default Layout;
+
