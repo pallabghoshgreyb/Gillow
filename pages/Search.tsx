@@ -93,13 +93,6 @@ const Search: React.FC = () => {
       <div className="flex-shrink-0 bg-white border-b border-slate-100 z-40 shadow-sm relative">
           <div className="max-w-[1400px] mx-auto px-6 py-4 flex flex-col gap-4">
               <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                  <div className="w-full md:w-[500px]">
-                    <div className="rounded-3xl border border-slate-200 bg-slate-50 px-5 py-5 text-sm text-slate-600 shadow-sm">
-                      <div className="font-semibold text-slate-900 mb-2">Search is under construction</div>
-                      <div>Our patent search experience is being rebuilt. Use filters or explore landscapes while we finish this feature.</div>
-                    </div>
-                  </div>
-
                   <div className="flex items-center gap-4 w-full md:w-auto">
                       <div className="flex items-center bg-slate-100 rounded-xl p-1.5 border border-slate-200">
                           <button 

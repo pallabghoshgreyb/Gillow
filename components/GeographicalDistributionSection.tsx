@@ -304,7 +304,7 @@ const GeographicalDistributionSection: React.FC<GeographicalDistributionSectionP
             <p className="text-sm text-slate-500">{totalMembers} total family members</p>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-4">
             {groups.map((group) => {
               const meta = statusMeta(group.status);
               const isSelected = selectedCode === group.code;

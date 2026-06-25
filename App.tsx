@@ -3,10 +3,10 @@ import { HashRouter as Router, Routes, Route, Navigate, useLocation } from 'reac
 import Layout from './components/Layout';
 import Home from './pages/Home';
 import Search from './pages/Search';
-import Landscape from './pages/Landscape';
 import TechDetail from './pages/TechDetail';
 import DomainDetail from './pages/DomainDetail';
 import PatentDetail from './pages/PatentDetailRedesign';
+import LandscapePreview from './pages/LandscapePreview';
 import Saved from './pages/Saved';
 import NotFound from './pages/NotFound';
 import { GillowProvider } from './context/GillowContext';
@@ -43,7 +43,8 @@ const AppShell: React.FC = () => {
             <Route path="/" element={<Home />} />
             <Route path="/browse" element={<Search />} />
             <Route path="/search" element={<Search />} />
-            <Route path="/landscape" element={<Landscape />} />
+            <Route path="/landscape-preview" element={<LandscapePreview />} />
+            {/* <Route path="/landscape" element={<Landscape />} /> */}
             <Route path="/domains/:domainSlug" element={<DomainDetail />} />
             <Route path="/technology/:techId" element={<TechDetail />} />
             <Route path="/patent/:patentId" element={<PatentDetail />} />

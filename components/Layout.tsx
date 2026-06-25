@@ -36,6 +36,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const isLandscapePage = location.pathname === '/landscape';
+  const isHomePage = location.pathname === '/';
   const searchSuggestions = useMemo(() => {
     const publicationNumbers = PATENTS.map((patent) => patent.publicationNumber).filter(Boolean) as string[];
     return Array.from(new Set(publicationNumbers)).sort();
@@ -158,7 +159,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     }
 
     if (actionType === 'landscape') {
-      navigate('/landscape');
+      navigate('/landscape-preview');
       return;
     }
 
@@ -204,7 +205,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   return (
     <div className={`flex w-full bg-white text-slate-900 font-sans ${isLandscapePage ? 'h-screen overflow-hidden flex-col' : 'min-h-screen flex-col'}`}>
-      {/* Top Navigation */}
       <header className="h-20 bg-white/95 backdrop-blur-md border-b border-slate-100 flex-shrink-0 z-50 sticky top-0 shadow-sm">
         <div className="max-w-[1400px] mx-auto px-6 h-full flex items-center justify-between gap-6">
             
@@ -226,11 +226,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
                 <nav className="hidden xl:flex items-center space-x-8">
                     <NavLink to="/browse" className={({isActive}) => `text-sm font-medium transition-colors hover:text-[#00bdcd] ${isActive ? 'text-[#00bdcd]' : 'text-slate-500'}`}>PatIndex</NavLink>
-                    <NavLink to="/landscape" className={({isActive}) => `text-sm font-medium transition-colors hover:text-[#00bdcd] ${isActive ? 'text-[#00bdcd]' : 'text-slate-500'}`}>Landscape</NavLink>
+                    {/* <NavLink to="/landscape" className={({isActive}) => `text-sm font-medium transition-colors hover:text-[#00bdcd] ${isActive ? 'text-[#00bdcd]' : 'text-slate-500'}`}>Landscape</NavLink> */}
                 </nav>
             </div>
 
             {/* Search Input Area */}
+            {!isHomePage && (
             <div ref={searchContainerRef} className="flex-1 max-w-xl relative group hidden md:block">
                 <form onSubmit={handleSearchSubmit}>
                     <div className="flex items-center border-2 border-slate-50 rounded-2xl px-5 py-2.5 bg-slate-50/50 hover:bg-white hover:border-slate-200 transition-all cursor-pointer focus-within:ring-4 focus-within:ring-blue-100 focus-within:border-blue-400 focus-within:bg-white shadow-inner">
@@ -313,6 +314,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     </div>
                 )}
             </div>
+            )}
 
             <div className="flex items-center gap-3">
                 <div ref={notificationsRef} className="relative">
@@ -382,12 +384,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       <main
         key={`${location.pathname}${location.search}`}
-        className={`flex flex-col min-w-0 ${isLandscapePage ? 'flex-1 min-h-0 overflow-hidden' : 'flex-1'}`}
+        className={`relative flex flex-col min-w-0 ${isLandscapePage ? 'flex-1 min-h-0 overflow-hidden' : 'flex-1'}`}
       >
         {children}
       </main>
 
-      {!isLandscapePage && (
       <footer className="bg-white text-slate-900 py-32 px-6 border-t border-slate-100">
           <div className="max-w-[1400px] mx-auto">
               <div className="grid grid-cols-1 md:grid-cols-12 gap-16 md:gap-8 mb-24">
@@ -409,9 +410,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                             label="Open product tour info"
                             onClick={() => setInfoDialog({
                               title: 'Video Tours',
-                              description: 'Recorded product walkthroughs are not published yet, but the live Landscape and PatIndex pages are ready to explore.',
-                              actionLabel: 'Open Landscape',
-                              actionType: 'landscape',
+                              description: 'Recorded product walkthroughs are not published yet, but the live PatIndex pages are ready to explore.',
+                              actionLabel: 'Open PatIndex',
+                              actionType: 'browse',
                             })}
                           />
                       </div>
@@ -421,7 +422,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                       <h4 className="mb-10 text-sm font-medium uppercase tracking-[0.16em] text-slate-400">Platform</h4>
                       <ul className="space-y-6 text-sm font-medium text-slate-600">
                           <li><button onClick={() => navigate('/browse')} className="hover:text-[#00bdcd] transition-colors">PatIndex</button></li>
-                          <li><button onClick={() => navigate('/landscape')} className="hover:text-[#00bdcd] transition-colors">Landscape</button></li>
+                          {/* <li><button onClick={() => navigate('/landscape')} className="hover:text-[#00bdcd] transition-colors">Landscape</button></li> */}
                           <li><button onClick={() => setInfoDialog({ title: 'AI Valuation', description: 'Valuation insights are available inside each patent detail page, including pricing, quality score, and risk context.', actionLabel: 'Open Sample Patent', actionType: 'sample-patent' })} className="hover:text-[#00bdcd] transition-colors">AI Valuation</button></li>
                           <li><button onClick={() => setIsServerConfigOpen(true)} className="hover:text-[#00bdcd] transition-colors">API Docs</button></li>
                       </ul>
@@ -467,7 +468,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               </div>
           </div>
       </footer>
-      )}
 
       {infoDialog && (
         <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/40 px-6">

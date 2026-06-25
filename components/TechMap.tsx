@@ -50,7 +50,7 @@ const TechMap: React.FC<TechMapProps> = ({ nodes, onSelectNode, selectedNodeId, 
       top: height >= 700 ? 28 : 20,
       right: 72,
       bottom: 68,
-      left: isDesktop ? 280 : 24,
+      left: isDesktop ? 140 : 24,
     };
     const usableWidth = Math.max(width - padding.left - padding.right, 320);
     const usableHeight = Math.max(height - padding.top - padding.bottom, 240);
@@ -131,12 +131,12 @@ const TechMap: React.FC<TechMapProps> = ({ nodes, onSelectNode, selectedNodeId, 
     svg
       .attr("viewBox", `0 0 ${wrapperWidth} ${wrapperHeight}`)
       .attr("preserveAspectRatio", "xMidYMid meet")
-      .style("background-color", "#f8fafc");
+      .style("background-color", "transparent");
 
     svg.append("rect")
       .attr("width", wrapperWidth)
       .attr("height", wrapperHeight)
-      .attr("fill", "#f8fafc");
+      .attr("fill", "url(#map-bg)");
 
     const g = svg.append("g");
 
@@ -189,6 +189,10 @@ const TechMap: React.FC<TechMapProps> = ({ nodes, onSelectNode, selectedNodeId, 
 
     // --- DEFS ---
     const defs = svg.append("defs");
+    const bgGradient = defs.append("linearGradient").attr("id", "map-bg").attr("x1", "0%").attr("y1", "0%").attr("x2", "100%").attr("y2", "100%");
+    bgGradient.append("stop").attr("offset", "0%").attr("stop-color", "#fbfbf8");
+    bgGradient.append("stop").attr("offset", "100%").attr("stop-color", "#f3f6f8");
+
     const dropShadow = defs.append("filter").attr("id", "3d-shadow")
       .attr("x", "-20%").attr("y", "-20%").attr("width", "140%").attr("height", "140%");
     dropShadow.append("feDropShadow")
@@ -209,16 +213,16 @@ const TechMap: React.FC<TechMapProps> = ({ nodes, onSelectNode, selectedNodeId, 
     g.append("rect")
       .attr("width", MAP_WIDTH)
       .attr("height", MAP_HEIGHT)
-      .attr("fill", "#f8fafc");
+      .attr("fill", "url(#map-bg)");
 
     const gridSize = 150;
     for (let x = 0; x <= MAP_WIDTH; x += gridSize) {
       g.append("line").attr("x1", x).attr("y1", 0).attr("x2", x).attr("y2", MAP_HEIGHT)
-        .attr("stroke", "#e2e8f0").attr("stroke-width", 1).attr("opacity", 0.3);
+        .attr("stroke", "rgba(15,23,42,0.05)").attr("stroke-width", 1).attr("opacity", 0.5);
     }
     for (let y = 0; y <= MAP_HEIGHT; y += gridSize) {
       g.append("line").attr("x1", 0).attr("y1", y).attr("x2", MAP_WIDTH).attr("y2", y)
-        .attr("stroke", "#e2e8f0").attr("stroke-width", 1).attr("opacity", 0.3);
+        .attr("stroke", "rgba(15,23,42,0.05)").attr("stroke-width", 1).attr("opacity", 0.5);
     }
 
     // --- TOPOGRAPHIC HEATMAP ---
@@ -281,8 +285,8 @@ const TechMap: React.FC<TechMapProps> = ({ nodes, onSelectNode, selectedNodeId, 
             .attr("width", isDomain ? 165 : 140)
             .attr("height", isDomain ? 72 : 56)
             .attr("rx", 8)
-            .attr("fill", "white")
-            .attr("stroke", node.id === selectedNodeId ? node.color : "#e2e8f0")
+            .attr("fill", "rgba(255,255,255,0.96)")
+            .attr("stroke", node.id === selectedNodeId ? node.color : "rgba(148,163,184,0.45)")
             .attr("stroke-width", node.id === selectedNodeId ? 2.5 : 1)
             .style("filter", "url(#3d-shadow)");
 
@@ -332,12 +336,12 @@ const TechMap: React.FC<TechMapProps> = ({ nodes, onSelectNode, selectedNodeId, 
   }, [nodes, selectedNodeId, onSelectNode, scatterPoints, viewportSize, nodeBounds]);
 
   return (
-    <div ref={wrapperRef} className="w-full h-full min-h-0 relative overflow-hidden bg-[#f8fafc]">
+    <div ref={wrapperRef} className="absolute inset-0 h-full w-full overflow-hidden bg-transparent">
       {showLegend && (
-        <div className="absolute left-4 top-4 z-10 space-y-4 md:left-8 md:top-8">
-          <div className="w-[calc(100vw-2rem)] max-w-64 bg-white/95 p-4 backdrop-blur-xl rounded-3xl border border-slate-200 shadow-xl md:p-5">
-            <h3 className="mb-4 flex items-center gap-2 text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
-              <Layers size={14} className="text-blue-600"/> Technical Discovery
+        <div className="absolute left-4 top-6 z-10 space-y-3 md:left-6 md:top-8">
+          <div className="w-[calc(100vw-2rem)] max-w-72 rounded-3xl border border-slate-200 bg-white/90 p-4 text-slate-900 shadow-xl backdrop-blur-xl md:p-5">
+            <h3 className="mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+              <Layers size={14} className="text-[#00bdcd]"/> Technical Discovery
             </h3>
             <div className="space-y-2">
               {nodes.filter(n => n.level === TechLevel.DOMAIN).map(n => (
@@ -347,18 +351,18 @@ const TechMap: React.FC<TechMapProps> = ({ nodes, onSelectNode, selectedNodeId, 
                 </div>
               ))}
             </div>
-            <div className="mt-4 border-t border-slate-100 pt-4 text-xs font-medium uppercase tracking-[0.14em] leading-relaxed text-slate-400">
+            <div className="mt-4 border-t border-slate-200 pt-4 text-xs font-semibold uppercase tracking-[0.14em] leading-relaxed text-slate-400">
               Zoom out for high-level technical Domains. Zoom in to uncover specialized technical Subdomains.
             </div>
           </div>
         </div>
       )}
 
-      <div className="absolute bottom-4 right-4 z-10 flex flex-col gap-3 md:bottom-8 md:right-8">
-        <button onClick={() => select(svgRef.current!).transition().call(zoomRef.current.scaleBy, 1.5)} className="w-12 h-12 flex items-center justify-center bg-white border border-slate-200 rounded-2xl text-slate-400 hover:text-blue-600 shadow-xl active:scale-95 transition-all">
+      <div className="absolute bottom-6 right-4 z-10 flex flex-col gap-3 md:bottom-8 md:right-8">
+        <button onClick={() => select(svgRef.current!).transition().call(zoomRef.current.scaleBy, 1.5)} className="w-12 h-12 flex items-center justify-center rounded-2xl border border-slate-200 bg-white/90 text-slate-500 shadow-xl backdrop-blur-xl transition-all hover:text-[#00bdcd] active:scale-95">
           <ZoomIn size={24} />
         </button>
-        <button onClick={() => select(svgRef.current!).transition().call(zoomRef.current.scaleBy, 0.7)} className="w-12 h-12 flex items-center justify-center bg-white border border-slate-200 rounded-2xl text-slate-400 hover:text-blue-600 shadow-xl active:scale-95 transition-all">
+        <button onClick={() => select(svgRef.current!).transition().call(zoomRef.current.scaleBy, 0.7)} className="w-12 h-12 flex items-center justify-center rounded-2xl border border-slate-200 bg-white/90 text-slate-500 shadow-xl backdrop-blur-xl transition-all hover:text-[#00bdcd] active:scale-95">
           <ZoomOut size={24} />
         </button>
         <button onClick={() => {
@@ -367,12 +371,12 @@ const TechMap: React.FC<TechMapProps> = ({ nodes, onSelectNode, selectedNodeId, 
             zoomRef.current.transform,
             getOverviewTransform(wrapperRef.current.clientWidth, wrapperRef.current.clientHeight)
           );
-        }} className="w-12 h-12 flex items-center justify-center bg-white border border-slate-200 rounded-2xl text-slate-400 hover:text-blue-600 shadow-xl active:scale-95 transition-all">
+        }} className="w-12 h-12 flex items-center justify-center rounded-2xl border border-slate-200 bg-white/90 text-slate-500 shadow-xl backdrop-blur-xl transition-all hover:text-[#00bdcd] active:scale-95">
           <Compass size={24} />
         </button>
       </div>
 
-      <svg ref={svgRef} className="w-full h-full cursor-grab active:cursor-grabbing"></svg>
+      <svg ref={svgRef} className="absolute inset-0 h-full w-full cursor-grab active:cursor-grabbing"></svg>
     </div>
   );
 };

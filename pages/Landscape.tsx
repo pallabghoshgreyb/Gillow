@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import TechMap from '../components/TechMap';
 import SidePanel from '../components/SidePanel';
 import { TechNode } from '../types';
@@ -22,9 +22,9 @@ const Landscape: React.FC = () => {
   }, []);
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden">
+    <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-[#f7f7f4]">
       {/* Landscape Header */}
-      <div className="pointer-events-none absolute left-3 right-3 top-3 z-20 flex flex-col gap-2 md:left-4 md:right-4 md:top-4 md:flex-row md:justify-between md:items-start">
+      <div className="pointer-events-none absolute left-3 right-3 top-6 z-30 flex flex-col gap-2 md:left-4 md:right-4 md:top-8 md:flex-row md:justify-between md:items-start">
         <div className="pointer-events-auto max-w-md rounded-2xl border border-slate-200 bg-white/88 px-4 py-3 shadow-lg backdrop-blur-md">
           <nav className="mb-1.5 flex items-center gap-2 text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
             <span>PatIndex</span>
@@ -56,9 +56,15 @@ const Landscape: React.FC = () => {
       </div>
 
       {/* Main Map */}
-      <div className="flex-1 min-h-0">
+      <div
+        className="relative z-0 flex min-h-[720px] flex-1 overflow-hidden pt-10 pb-10 md:pt-12 md:pb-12"
+        style={{ minHeight: 'calc(100vh - 84px)' }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-200 via-slate-300 to-slate-200 opacity-85" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.28),transparent_40%),radial-gradient(circle_at_bottom_right,rgba(0,189,205,0.16),transparent_32%)]" />
+        <div className="relative z-10 h-full w-full min-h-[inherit]">
         {loading ? (
-          <div className="w-full h-full rounded-[2rem] flex flex-col items-center justify-center bg-slate-50">
+          <div className="flex h-full w-full items-center justify-center bg-slate-50">
             <div className="w-12 h-12 border-4 border-slate-200 border-t-blue-600 rounded-full animate-spin mb-4" />
             <span className="text-xs font-medium uppercase tracking-[0.16em] text-slate-400">Mapping Technical Clusters...</span>
           </div>
@@ -70,10 +76,11 @@ const Landscape: React.FC = () => {
             showLegend={showLayerGuide}
           />
         )}
+        </div>
       </div>
 
       {showLayerGuide && !loading && (
-        <div className="pointer-events-none absolute right-4 top-20 z-20 hidden max-w-xs rounded-2xl border border-blue-100 bg-white/90 px-4 py-3 shadow-lg backdrop-blur-md lg:block">
+        <div className="pointer-events-none absolute right-4 top-24 z-30 hidden max-w-xs rounded-2xl border border-blue-100 bg-white/90 px-4 py-3 shadow-lg backdrop-blur-md lg:block">
           <p className="text-xs font-medium uppercase tracking-[0.16em] text-blue-600">Layering Guide</p>
           <p className="mt-1 text-xs font-medium leading-relaxed text-slate-600">
             Domain peaks stay visible from the overview. Zoom deeper to reveal subdomain clusters and click any label to center that zone.
@@ -87,15 +94,15 @@ const Landscape: React.FC = () => {
         onClose={() => setSelectedNode(null)} 
       />
 
-      {/* Macro Info Overlay */}
       {!selectedNode && (
-        <div className="absolute bottom-6 left-1/2 z-10 hidden -translate-x-1/2 items-center gap-4 rounded-full border border-slate-200 bg-white/80 px-6 py-3 shadow-2xl backdrop-blur-sm animate-in slide-in-from-bottom-4 duration-1000 lg:flex">
+        <div className="pointer-events-none absolute bottom-8 left-1/2 z-30 hidden -translate-x-1/2 items-center gap-3 rounded-full border border-slate-200 bg-white/85 px-5 py-3 shadow-2xl backdrop-blur-sm lg:flex">
           <Info size={16} className="text-blue-600" />
           <p className="text-xs font-medium uppercase tracking-[0.16em] text-slate-600">
             Select a cluster peak to analyze portfolio depth and assignee dominance
           </p>
         </div>
       )}
+
     </div>
   );
 };
