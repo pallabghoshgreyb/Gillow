@@ -12,6 +12,7 @@ import PatentMap from '../components/PatentMap';
 import SaveSearchModal from '../components/SaveSearchModal';
 import { useGillow } from '../context/GillowContext';
 import { PATENTS } from '../data/patents';
+import { trackEvent } from '../utils/analytics';
 
 const Search: React.FC = () => {
   const navigate = useNavigate();
@@ -46,11 +47,13 @@ const Search: React.FC = () => {
   }, [query, filters, view, pageSize]);
 
   const onSaveSearch = (name: string) => {
+    trackEvent('CTA Clicked', { label: 'Save Search', search_name: name });
     setShowSavedToast(true);
     setTimeout(() => setShowSavedToast(false), 3000);
   };
 
   const goToPatentPage = (publicationNumber: string) => {
+    trackEvent('Patent Card Clicked', { publication_number: publicationNumber, source: 'search-map' });
     setSidebarOpen(false);
     setIsSaveModalOpen(false);
     setShowSavedToast(false);
@@ -96,19 +99,28 @@ const Search: React.FC = () => {
                   <div className="flex items-center gap-4 w-full md:w-auto">
                       <div className="flex items-center bg-slate-100 rounded-xl p-1.5 border border-slate-200">
                           <button 
-                            onClick={() => setView('grid')}
+                            onClick={() => {
+                              trackEvent('Navigation Clicked', { destination: 'search-grid', source: 'search-toolbar' });
+                              setView('grid');
+                            }}
                             className={`p-2 rounded-lg transition-all ${view === 'grid' ? 'bg-white shadow-md text-[#00bdcd]' : 'text-slate-500 hover:text-slate-800'}`}
                           >
                               <LayoutGrid size={18} />
                           </button>
                           <button 
-                            onClick={() => setView('list')}
+                            onClick={() => {
+                              trackEvent('Navigation Clicked', { destination: 'search-list', source: 'search-toolbar' });
+                              setView('list');
+                            }}
                             className={`p-2 rounded-lg transition-all ${view === 'list' ? 'bg-white shadow-md text-[#00bdcd]' : 'text-slate-500 hover:text-slate-800'}`}
                           >
                               <List size={18} />
                           </button>
                           <button 
-                            onClick={() => setView('map')}
+                            onClick={() => {
+                              trackEvent('Navigation Clicked', { destination: 'search-map', source: 'search-toolbar' });
+                              setView('map');
+                            }}
                             className={`p-2 rounded-lg transition-all ${view === 'map' ? 'bg-white shadow-md text-[#00bdcd]' : 'text-slate-500 hover:text-slate-800'}`}
                           >
                               <MapIcon size={18} />
@@ -205,7 +217,10 @@ const Search: React.FC = () => {
                             </div>
                         )}
                         <button 
-                            onClick={() => setIsSaveModalOpen(true)}
+                            onClick={() => {
+                              trackEvent('CTA Clicked', { label: 'Save this search', source: 'search-page' });
+                              setIsSaveModalOpen(true);
+                            }}
                             className="flex items-center justify-center gap-2 rounded-xl border border-blue-100 bg-white px-5 py-3 text-sm font-semibold text-[#00bdcd] shadow-sm transition-all hover:bg-blue-50"
                         >
                             <Save size={16} /> Save this search

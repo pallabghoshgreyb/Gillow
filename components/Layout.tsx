@@ -9,6 +9,9 @@ import { useGillow } from '../context/GillowContext';
 import AdvancedSearchModal, { type AdvancedSearchFormData } from './AdvancedSearchModal';
 import ServerConfigModal from './ServerConfigModal';
 import { PATENTS } from '../data/patents';
+import SeoManager from './SeoManager';
+import CookieConsentBanner from './CookieConsentBanner';
+import { trackEvent } from '../utils/analytics';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -120,6 +123,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     e.preventDefault();
     if (searchValue.trim()) {
       const query = searchValue.trim();
+      trackEvent('Search Completed', { query, source: 'header' });
       const patent = findExactPatent(query);
       if (patent) {
         navigate(`/patent/${patent.id}`);
@@ -133,6 +137,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const handleSuggestionSelect = (value: string) => {
     setSearchValue(value);
+    trackEvent('Search Completed', { query: value, source: 'header-suggestion' });
     const patent = findExactPatent(value);
     if (patent) {
       navigate(`/patent/${patent.id}`);
@@ -149,16 +154,19 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     setInfoDialog(null);
 
     if (actionType === 'home') {
+      trackEvent('Navigation Clicked', { destination: 'home', source: 'info-dialog' });
       navigate('/');
       return;
     }
 
     if (actionType === 'browse') {
+      trackEvent('Navigation Clicked', { destination: 'browse', source: 'info-dialog' });
       navigate('/browse');
       return;
     }
 
     if (actionType === 'landscape') {
+      trackEvent('Landscape Preview Clicked', { source: 'info-dialog' });
       navigate('/landscape-preview');
       return;
     }
@@ -169,6 +177,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     }
 
     if (actionType === 'sample-patent' && PATENTS[0]) {
+      trackEvent('Patent Card Clicked', { publication_number: PATENTS[0].publicationNumber, source: 'info-dialog' });
       navigate(`/patent/${PATENTS[0].publicationNumber}`);
     }
   };
@@ -188,6 +197,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       return;
     }
 
+    trackEvent('CTA Clicked', { label: 'Newsletter Subscribe', source: 'footer' });
     setNewsletterStatus(`Subscribed ${trimmedEmail}`);
     setNewsletterEmail('');
   };
@@ -200,11 +210,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         ? `https://www.linkedin.com/sharing/share-offsite/?url=${pageUrl}`
         : `https://twitter.com/intent/tweet?url=${pageUrl}&text=${pageText}`;
 
+    trackEvent('Outbound Link Clicked', { url: targetUrl, label: platform });
     window.open(targetUrl, '_blank', 'noopener,noreferrer');
   };
 
   return (
     <div className={`flex w-full bg-white text-slate-900 font-sans ${isLandscapePage ? 'h-screen overflow-hidden flex-col' : 'min-h-screen flex-col'}`}>
+      <SeoManager />
+      <CookieConsentBanner />
       <header className="h-20 bg-white/95 backdrop-blur-md border-b border-slate-100 flex-shrink-0 z-50 sticky top-0 shadow-sm">
         <div className="max-w-[1400px] mx-auto px-6 h-full flex items-center justify-between gap-6">
             
@@ -212,6 +225,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <button
                   type="button"
                   onClick={() => {
+                    trackEvent('Navigation Clicked', { destination: 'home', source: 'logo' });
                     setShowNotifications(false);
                     setShowSearchHistory(false);
                     navigate('/');
@@ -219,13 +233,17 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   className="flex items-center gap-2 group flex-shrink-0"
                 >
                     <div className="w-10 h-10 rounded-xl overflow-hidden bg-white flex items-center justify-center shadow-lg shadow-blue-200 group-hover:rotate-6 transition-all">
-                        <img src="/logo.gif" alt="Gillow logo" className="w-full h-full object-contain" />
+                        <img src="/logo.gif" alt="PatentIndex logo" width={40} height={40} loading="eager" decoding="async" className="w-full h-full object-contain" />
                     </div>
                     <span className="sr-only">PatIndex</span>
                 </button>
 
                 <nav className="hidden xl:flex items-center space-x-8">
-                    <NavLink to="/browse" className={({isActive}) => `text-sm font-medium transition-colors hover:text-[#00bdcd] ${isActive ? 'text-[#00bdcd]' : 'text-slate-500'}`}>PatIndex</NavLink>
+                    <NavLink
+                      to="/browse"
+                      onClick={() => trackEvent('Navigation Clicked', { destination: 'browse', source: 'top-nav' })}
+                      className={({isActive}) => `text-sm font-medium transition-colors hover:text-[#00bdcd] ${isActive ? 'text-[#00bdcd]' : 'text-slate-500'}`}
+                    >PatIndex</NavLink>
                     {/* <NavLink to="/landscape" className={({isActive}) => `text-sm font-medium transition-colors hover:text-[#00bdcd] ${isActive ? 'text-[#00bdcd]' : 'text-slate-500'}`}>Landscape</NavLink> */}
                 </nav>
             </div>
@@ -240,7 +258,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                             type="text" 
                             value={searchValue}
                             onChange={(e) => setSearchValue(e.target.value)}
-                            onFocus={() => setShowSearchHistory(true)}
+                            onFocus={() => {
+                              trackEvent('Search Started', { source: 'header' });
+                              setShowSearchHistory(true);
+                            }}
                             onBlur={() => setTimeout(() => setShowSearchHistory(false), 200)}
                             className="w-full border-none bg-transparent text-sm font-medium text-slate-700 outline-none placeholder:font-medium placeholder:text-slate-400"
                             placeholder="Search by patent number…" 
@@ -319,7 +340,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <div className="flex items-center gap-3">
                 <div ref={notificationsRef} className="relative">
                     <button 
-                        onClick={() => setShowNotifications(!showNotifications)}
+                        onClick={() => {
+                          trackEvent('Button Clicked', { label: 'notifications', source: 'header' });
+                          setShowNotifications(!showNotifications);
+                        }}
                         className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all relative ${showNotifications ? 'bg-blue-50 text-blue-600' : 'text-slate-500 hover:text-blue-600 hover:bg-slate-50 border border-transparent'}`}
                     >
                         <Bell size={20} />
@@ -355,7 +379,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     )}
                 </div>
 
-                <NavLink to="/saved" className={({isActive}) => `w-10 h-10 flex items-center justify-center rounded-xl transition-all relative ${isActive ? 'bg-red-50 text-red-600' : 'text-slate-500 hover:text-red-600 hover:bg-slate-50'}`}>
+                <NavLink
+                  to="/saved"
+                  onClick={() => trackEvent('Navigation Clicked', { destination: 'saved', source: 'header' })}
+                  className={({isActive}) => `w-10 h-10 flex items-center justify-center rounded-xl transition-all relative ${isActive ? 'bg-red-50 text-red-600' : 'text-slate-500 hover:text-red-600 hover:bg-slate-50'}`}
+                >
                     <Heart size={20} fill={favorites.length > 0 && window.location.hash.includes('saved') ? 'currentColor' : 'none'} />
                     {favorites.length > 0 && (
                         <span className="absolute top-0 right-0 flex h-4 w-4 translate-x-1/4 -translate-y-1/4 items-center justify-center rounded-full border-2 border-white bg-[#00bdcd] text-[9px] font-semibold text-white">
@@ -367,12 +395,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <div className="h-8 w-px bg-slate-100 mx-2"></div>
 
                 <button
-                  onClick={() => setInfoDialog({
-                    title: 'Sign In',
-                    description: 'Authentication is not configured in this local environment yet. You can still explore PatIndex, landscape, exports, and patent detail workflows with the imported dataset.',
-                    actionLabel: 'Open PatIndex',
-                    actionType: 'browse',
-                  })}
+                  onClick={() => {
+                    trackEvent('Button Clicked', { label: 'Sign In', source: 'header' });
+                    setInfoDialog({
+                      title: 'Sign In',
+                      description: 'Authentication is not configured in this local environment yet. You can still explore PatIndex, landscape, exports, and patent detail workflows with the imported dataset.',
+                      actionLabel: 'Open PatIndex',
+                      actionType: 'browse',
+                    });
+                  }}
                   className="flex h-10 items-center gap-3 rounded-xl bg-slate-900 px-6 text-sm font-semibold text-white shadow-lg shadow-slate-200 transition-all hover:bg-slate-800 active:scale-95"
                 >
                     <User size={16} />
@@ -395,7 +426,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   <div className="md:col-span-5">
                       <div className="flex items-center gap-2 mb-10">
                           <div className="w-10 h-10 rounded-xl overflow-hidden bg-white flex items-center justify-center shadow-xl shadow-blue-200">
-                              <img src="/logo.gif" alt="Gillow logo" className="w-full h-full object-contain" />
+                              <img src="/logo.gif" alt="PatentIndex logo" width={40} height={40} loading="eager" decoding="async" className="w-full h-full object-contain" />
                           </div>
                           <span className="sr-only">PatIndex</span>
                       </div>
@@ -408,12 +439,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                           <SocialIcon
                             icon="Youtube"
                             label="Open product tour info"
-                            onClick={() => setInfoDialog({
-                              title: 'Video Tours',
-                              description: 'Recorded product walkthroughs are not published yet, but the live PatIndex pages are ready to explore.',
-                              actionLabel: 'Open PatIndex',
-                              actionType: 'browse',
-                            })}
+                            onClick={() => {
+                              trackEvent('Footer Link Clicked', { label: 'Video Tours' });
+                              setInfoDialog({
+                                title: 'Video Tours',
+                                description: 'Recorded product walkthroughs are not published yet, but the live PatIndex pages are ready to explore.',
+                                actionLabel: 'Open PatIndex',
+                                actionType: 'browse',
+                              });
+                            }}
                           />
                       </div>
                   </div>
@@ -421,20 +455,20 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   <div className="md:col-span-2">
                       <h4 className="mb-10 text-sm font-medium uppercase tracking-[0.16em] text-slate-400">Platform</h4>
                       <ul className="space-y-6 text-sm font-medium text-slate-600">
-                          <li><button onClick={() => navigate('/browse')} className="hover:text-[#00bdcd] transition-colors">PatIndex</button></li>
+                          <li><button onClick={() => { trackEvent('Footer Link Clicked', { label: 'PatIndex' }); navigate('/browse'); }} className="hover:text-[#00bdcd] transition-colors">PatIndex</button></li>
                           {/* <li><button onClick={() => navigate('/landscape')} className="hover:text-[#00bdcd] transition-colors">Landscape</button></li> */}
-                          <li><button onClick={() => setInfoDialog({ title: 'AI Valuation', description: 'Valuation insights are available inside each patent detail page, including pricing, quality score, and risk context.', actionLabel: 'Open Sample Patent', actionType: 'sample-patent' })} className="hover:text-[#00bdcd] transition-colors">AI Valuation</button></li>
-                          <li><button onClick={() => setIsServerConfigOpen(true)} className="hover:text-[#00bdcd] transition-colors">API Docs</button></li>
+                          <li><button onClick={() => { trackEvent('Footer Link Clicked', { label: 'AI Valuation' }); setInfoDialog({ title: 'AI Valuation', description: 'Valuation insights are available inside each patent detail page, including pricing, quality score, and risk context.', actionLabel: 'Open Sample Patent', actionType: 'sample-patent' }); }} className="hover:text-[#00bdcd] transition-colors">AI Valuation</button></li>
+                          <li><button onClick={() => { trackEvent('Footer Link Clicked', { label: 'API Docs' }); setIsServerConfigOpen(true); }} className="hover:text-[#00bdcd] transition-colors">API Docs</button></li>
                       </ul>
                   </div>
 
                   <div className="md:col-span-2">
                       <h4 className="mb-10 text-sm font-medium uppercase tracking-[0.16em] text-slate-400">Company</h4>
                       <ul className="space-y-6 text-sm font-medium text-slate-600">
-                          <li><button onClick={() => setInfoDialog({ title: 'Our Mission', description: 'PatIndex helps teams explore patent landscapes, evaluate portfolio strength, and move from discovery to transaction faster.', actionLabel: 'Go Home', actionType: 'home' })} className="hover:text-[#00bdcd] transition-colors">Our Mission</button></li>
-                          <li><button onClick={() => setInfoDialog({ title: 'Security', description: 'This workspace runs locally with browser-stored preferences. Backend connectivity is optional and can be configured from the server connection panel.', actionLabel: 'Open Server Config', actionType: 'server-config' })} className="hover:text-[#00bdcd] transition-colors">Security</button></li>
-                          <li><button onClick={() => setInfoDialog({ title: 'Privacy', description: 'Search history, favorites, and saved searches are stored in your browser on this device unless you connect an external backend.', actionLabel: 'Open PatIndex', actionType: 'browse' })} className="hover:text-[#00bdcd] transition-colors">Privacy</button></li>
-                          <li><button onClick={() => { window.location.href = 'mailto:support@gillow.ai?subject=PatIndex%20Support'; }} className="hover:text-[#00bdcd] transition-colors">Support</button></li>
+                          <li><button onClick={() => { trackEvent('Footer Link Clicked', { label: 'Our Mission' }); setInfoDialog({ title: 'Our Mission', description: 'PatIndex helps teams explore patent landscapes, evaluate portfolio strength, and move from discovery to transaction faster.', actionLabel: 'Go Home', actionType: 'home' }); }} className="hover:text-[#00bdcd] transition-colors">Our Mission</button></li>
+                          <li><button onClick={() => { trackEvent('Footer Link Clicked', { label: 'Security' }); setInfoDialog({ title: 'Security', description: 'This workspace runs locally with browser-stored preferences. Backend connectivity is optional and can be configured from the server connection panel.', actionLabel: 'Open Server Config', actionType: 'server-config' }); }} className="hover:text-[#00bdcd] transition-colors">Security</button></li>
+                          <li><button onClick={() => { trackEvent('Footer Link Clicked', { label: 'Privacy' }); setInfoDialog({ title: 'Privacy', description: 'Search history, favorites, and saved searches are stored in your browser on this device unless you connect an external backend.', actionLabel: 'Open PatIndex', actionType: 'browse' }); }} className="hover:text-[#00bdcd] transition-colors">Privacy</button></li>
+                          <li><button onClick={() => { trackEvent('Outbound Link Clicked', { url: 'mailto:support@gillow.ai?subject=PatIndex%20Support', label: 'Support' }); window.location.href = 'mailto:support@gillow.ai?subject=PatIndex%20Support'; }} className="hover:text-[#00bdcd] transition-colors">Support</button></li>
                       </ul>
                   </div>
 
@@ -461,9 +495,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                       © 2025 PatIndex • Built for Global IP Excellence
                   </div>
                   <div className="flex gap-8 text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
-                    <button onClick={() => setInfoDialog({ title: 'Terms of Use', description: 'This interface is intended for patent review and portfolio evaluation. Confirm legal and commercial conclusions against official records before making decisions.' })} className="hover:text-slate-900">Terms of Use</button>
-                    <button onClick={() => setInfoDialog({ title: 'Compliance', description: 'Compliance workflows depend on your connected backend and data source policies. Use the server configuration panel to point the app at your approved systems.', actionLabel: 'Open Server Config', actionType: 'server-config' })} className="hover:text-slate-900">Compliance</button>
-                    <button onClick={() => setIsServerConfigOpen(true)} className="hover:text-slate-900">Patent Search API</button>
+                    <button onClick={() => { trackEvent('Footer Link Clicked', { label: 'Terms of Use' }); setInfoDialog({ title: 'Terms of Use', description: 'This interface is intended for patent review and portfolio evaluation. Confirm legal and commercial conclusions against official records before making decisions.' }); }} className="hover:text-slate-900">Terms of Use</button>
+                    <button onClick={() => { trackEvent('Footer Link Clicked', { label: 'Compliance' }); setInfoDialog({ title: 'Compliance', description: 'Compliance workflows depend on your connected backend and data source policies. Use the server configuration panel to point the app at your approved systems.', actionLabel: 'Open Server Config', actionType: 'server-config' }); }} className="hover:text-slate-900">Compliance</button>
+                    <button onClick={() => { trackEvent('Footer Link Clicked', { label: 'Patent Search API' }); setIsServerConfigOpen(true); }} className="hover:text-slate-900">Patent Search API</button>
                   </div>
               </div>
           </div>

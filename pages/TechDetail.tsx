@@ -4,6 +4,7 @@ import { api } from '../utils/api';
 import { Filter, Download, Building2, MapPin, Loader2, ArrowLeft } from 'lucide-react';
 import { Patent, TechLevel, TechNode } from '../types';
 import { exportTechLandscapeReport } from '../utils/exportUtils';
+import { trackEvent } from '../utils/analytics';
 
 const TechDetail: React.FC = () => {
   const { techId } = useParams();
@@ -151,8 +152,8 @@ const TechDetail: React.FC = () => {
   if (!techInfo) {
     return (
         <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center gap-4">
-             <h2 className="text-xl font-semibold text-slate-800">Technology Not Found</h2>
-             <button onClick={() => navigate('/')} className="text-blue-600 hover:underline flex items-center gap-2">
+          <h2 className="text-xl font-semibold text-slate-800">Technology Not Found</h2>
+             <button onClick={() => { trackEvent('Navigation Clicked', { destination: 'home', source: 'tech-not-found' }); navigate('/'); }} className="text-blue-600 hover:underline flex items-center gap-2">
                 <ArrowLeft size={16} /> Back to Landscape
              </button>
         </div>
@@ -178,7 +179,13 @@ const TechDetail: React.FC = () => {
             </div>
             <div className="flex gap-3">
                 <button
-                  onClick={() => exportTechLandscapeReport(techInfo, filteredPatents, `${techInfo.id}-landscape-report.csv`)}
+                  onClick={() => {
+                    trackEvent('Download Clicked', {
+                      url: `${techInfo.id}-landscape-report.csv`,
+                      label: techInfo.name,
+                    });
+                    exportTechLandscapeReport(techInfo, filteredPatents, `${techInfo.id}-landscape-report.csv`);
+                  }}
                   className="flex items-center gap-2 rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
                 >
                     <Download size={16} /> Export Report

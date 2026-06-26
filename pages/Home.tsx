@@ -7,6 +7,7 @@ import {
 import { DomainDetail, Patent } from '../types';
 import { api } from '../utils/api';
 import PatentCard from '../components/PatentCard';
+import { trackEvent } from '../utils/analytics';
 
 const LANDING_DOMAINS = [
   { name: 'Robotic Surgery', desc: 'Surgical robotics, imaging, and procedural automation.', slug: 'robotic-surgery' },
@@ -39,6 +40,7 @@ const Home: React.FC = () => {
   const [domains, setDomains] = useState<DomainDetail[]>([]);
   const [favorites, setFavorites] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchValue, setSearchValue] = useState('');
   const [availabilityNotice, setAvailabilityNotice] = useState<string | null>(null);
   const availabilityTimerRef = useRef<number | null>(null);
   const navigate = useNavigate();
@@ -62,6 +64,11 @@ const Home: React.FC = () => {
     setFavorites(api.toggleFavorite(id));
   };
 
+  const findExactPatent = (query: string) => {
+    const normalized = query.trim().toLowerCase();
+    return patents.find((patent) => patent.publicationNumber.toLowerCase() === normalized);
+  };
+
   useEffect(() => {
     return () => {
       if (availabilityTimerRef.current !== null) {
@@ -83,11 +90,28 @@ const Home: React.FC = () => {
 
   const handleDomainClick = (slug: string) => {
     if (slug === 'robotic-surgery') {
+      trackEvent('Domain Changed', { domain: slug, source: 'home' });
       navigate('/domains/robotic-surgery');
       return;
     }
 
+    trackEvent('Domain Changed', { domain: slug, source: 'home' });
     showAvailableSoon();
+  };
+
+  const handleSearchSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    const query = searchValue.trim();
+    if (!query) return;
+
+    trackEvent('Search Completed', { query, source: 'home' });
+    const patent = findExactPatent(query);
+    if (patent) {
+      navigate(`/patent/${patent.id}`);
+    } else {
+      navigate(`/search?q=${encodeURIComponent(query)}&pn=1`);
+    }
+    setSearchValue('');
   };
 
   return (
@@ -108,7 +132,10 @@ const Home: React.FC = () => {
 
               <div className="mt-8">
                 <button
-                  onClick={() => navigate('/browse')}
+                  onClick={() => {
+                    trackEvent('Navigation Clicked', { destination: 'browse', source: 'home-hero' });
+                    navigate('/browse');
+                  }}
                   className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-7 py-3.5 text-sm font-semibold text-white shadow-lg transition-all hover:bg-slate-800 active:scale-95"
                 >
                   Go to PatIndex <ArrowRight size={18} />
@@ -119,15 +146,31 @@ const Home: React.FC = () => {
             <div className="relative">
               <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-[0_20px_80px_rgba(15,23,42,0.08)]">
                 <div className="rounded-[1.6rem] border border-slate-100 bg-slate-50 p-4">
-                  <button
-                    type="button"
-                    onClick={() => navigate('/landscape-preview')}
-                    className="flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left shadow-sm transition-all hover:border-[#00bdcd] hover:bg-slate-50"
-                  >
-                    <SearchIcon size={18} className="text-slate-400" />
-                    <div className="text-sm text-slate-400">View full landscape</div>
-                    <SlidersHorizontal size={16} className="ml-auto text-slate-400" />
-                  </button>
+                  <form onSubmit={handleSearchSubmit}>
+                    <div className="flex items-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left shadow-sm transition-all hover:border-[#00bdcd] hover:bg-slate-50 focus-within:border-[#00bdcd] focus-within:bg-white">
+                      <SearchIcon size={18} className="text-slate-400" />
+                      <input
+                        type="text"
+                        value={searchValue}
+                        onChange={(event) => setSearchValue(event.target.value)}
+                        onFocus={() => trackEvent('Search Started', { source: 'home-hero' })}
+                        placeholder="Search patent number"
+                        className="ml-3 w-full border-none bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          trackEvent('Navigation Clicked', { destination: 'browse', source: 'home-hero' });
+                          navigate('/browse');
+                        }}
+                        className="ml-2 rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-blue-50 hover:text-blue-600"
+                        aria-label="Open PatIndex"
+                        title="Open PatIndex"
+                      >
+                        <SlidersHorizontal size={16} />
+                      </button>
+                    </div>
+                  </form>
 
                   <div className="mt-4 grid grid-cols-2 gap-3">
                     <MiniStat label="Live Domains" value="300+" />
@@ -135,7 +178,14 @@ const Home: React.FC = () => {
                   </div>
 
                   <div className="mt-4 grid gap-3 lg:grid-cols-[1.1fr_0.9fr]">
-                    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        trackEvent('Landscape Preview Clicked', { source: 'home-hero' });
+                        navigate('/landscape-preview');
+                      }}
+                      className="rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition-all hover:border-[#00bdcd] hover:bg-slate-50"
+                    >
                       <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Landscape Preview</div>
                       <div className="flex h-40 items-center justify-center rounded-2xl bg-gradient-to-br from-slate-200 via-slate-300 to-slate-200">
                         <div className="grid grid-cols-3 gap-3">
@@ -147,7 +197,7 @@ const Home: React.FC = () => {
                           ))}
                         </div>
                       </div>
-                    </div>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -186,7 +236,10 @@ const Home: React.FC = () => {
             </div>
             <button
               type="button"
-              onClick={() => navigate('/landscape-preview')}
+              onClick={() => {
+                trackEvent('Landscape Preview Clicked', { source: 'home-domains' });
+                navigate('/landscape-preview');
+              }}
               className="group inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-6 py-3 text-sm font-semibold text-slate-900 shadow-sm transition-all hover:border-[#00bdcd] hover:bg-slate-50 active:scale-95"
             >
               View full landscape <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
@@ -248,7 +301,10 @@ const Home: React.FC = () => {
                 <h2 className="text-4xl font-bold tracking-tight text-slate-900 md:text-5xl">Notable Patents</h2>
               </div>
               <button 
-                onClick={() => navigate('/browse')}
+                onClick={() => {
+                  trackEvent('Navigation Clicked', { destination: 'browse', source: 'featured-patents' });
+                  navigate('/browse');
+                }}
                 className="group flex items-center gap-2 rounded-xl bg-slate-900 px-8 py-3 text-sm font-semibold text-white shadow-lg transition-all hover:bg-slate-800 active:scale-95 whitespace-nowrap"
               >
                   Browse All Patents <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />

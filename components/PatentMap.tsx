@@ -70,7 +70,11 @@ const PatentMap: React.FC<PatentMapProps> = ({ patents, onSelectPatent }) => {
          <img 
             src="https://upload.wikimedia.org/wikipedia/commons/e/ec/World_map_blank_without_borders.svg" 
             className="w-[120%] h-[120%] object-cover grayscale invert"
-            alt="World Map"
+            alt="World map backdrop"
+            loading="lazy"
+            decoding="async"
+            width={1200}
+            height={600}
          />
       </div>
 

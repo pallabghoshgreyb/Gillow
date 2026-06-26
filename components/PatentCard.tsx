@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Heart, Building2, Users, Globe, Zap, ShieldCheck, AlertTriangle, Fingerprint, Tag, Scale, Rocket, ShieldAlert } from 'lucide-react';
 import { Patent } from '../types';
 import { formatCompactCurrency, isKnownNumber } from '../utils/patentDisplay';
+import { trackEvent } from '../utils/analytics';
 
 interface PatentCardProps {
   patent: Patent;
@@ -153,6 +154,11 @@ const PatentCard: React.FC<PatentCardProps> = ({ patent, isFavorite, onToggleFav
   );
 
   const handleCardClick = () => {
+    trackEvent('Patent Card Clicked', {
+      publication_number: patent.publicationNumber,
+      title: patent.title,
+      source: href ? 'link' : 'card',
+    });
     if (href) {
       navigate(href);
       return;

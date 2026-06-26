@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -26,6 +26,7 @@ import {
 } from '../data/domainDetails';
 import { BubbleChart } from '../components/BubbleChart';
 import { hasText } from '../utils/patentDisplay';
+import { trackEvent } from '../utils/analytics';
 
 type SortMode = 'score' | 'newest' | 'citations' | 'family';
 
@@ -144,6 +145,8 @@ const DomainDetail: React.FC = () => {
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [sortBy, setSortBy] = useState<SortMode>('score');
   const [visibleCount, setVisibleCount] = useState(12);
+  const patentsSectionRef = useRef<HTMLElement | null>(null);
+  const [patentsScrollToken, setPatentsScrollToken] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -181,6 +184,16 @@ const DomainDetail: React.FC = () => {
   useEffect(() => {
     setVisibleCount(12);
   }, [query, selectedCompany, selectedStatus, selectedTechnology, selectedYear, sortBy]);
+
+  useEffect(() => {
+    if (patentsScrollToken === 0) return;
+
+    const frame = window.requestAnimationFrame(() => {
+      patentsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [patentsScrollToken, visibleCount]);
 
   const filterOptions = useMemo(
     () =>
@@ -232,6 +245,10 @@ const DomainDetail: React.FC = () => {
     setSelectedYear('all');
     setSelectedStatus('all');
     setSortBy('score');
+  };
+
+  const scrollToPatentsSection = () => {
+    setPatentsScrollToken((token) => token + 1);
   };
 
   if (loading) {
@@ -351,7 +368,15 @@ const DomainDetail: React.FC = () => {
                     <button
                       key={technology.slug}
                       type="button"
-                      onClick={() => setSelectedTechnology(isActive ? 'all' : technology.name)}
+                      onClick={() => {
+                        trackEvent('Subdomain Selected', {
+                          domain: domain.name,
+                          subdomain: technology.name,
+                          source: 'domain-detail',
+                        });
+                        setSelectedTechnology(isActive ? 'all' : technology.name);
+                        scrollToPatentsSection();
+                      }}
                       aria-pressed={isActive}
                       className={`rounded-2xl border bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-[#00bdcd] ${
                         isActive ? 'border-[#00bdcd] ring-2 ring-[#00bdcd]/15' : 'border-slate-200'
@@ -398,7 +423,15 @@ const DomainDetail: React.FC = () => {
                     <button
                       key={company.name}
                       type="button"
-                      onClick={() => setSelectedCompany(company.name)}
+                      onClick={() => {
+                        trackEvent('CTA Clicked', {
+                          label: 'Key Player',
+                          value: company.name,
+                          source: 'domain-detail',
+                        });
+                        setSelectedCompany(company.name);
+                        scrollToPatentsSection();
+                      }}
                       className="flex w-full items-center justify-between gap-4 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 text-left transition hover:border-[#00bdcd] hover:bg-white"
                     >
                       <span className="flex min-w-0 items-center gap-3">
@@ -481,7 +514,7 @@ const DomainDetail: React.FC = () => {
           )}
         </section>
 
-        <section className="space-y-6" id="domain-patents">
+        <section className="space-y-6" id="domain-patents" ref={patentsSectionRef} style={{ scrollMarginTop: '96px' }}>
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.16em] text-[#00bdcd]">Related Documents</p>
@@ -560,7 +593,10 @@ const DomainDetail: React.FC = () => {
                 <div className="flex justify-center pt-2">
                   <button
                     type="button"
-                    onClick={() => setVisibleCount((count) => count + 12)}
+                    onClick={() => {
+                      trackEvent('CTA Clicked', { label: 'Load More Patents', source: 'domain-detail' });
+                      setVisibleCount((count) => count + 12);
+                    }}
                     className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-6 py-3 text-sm font-semibold text-white shadow-lg transition hover:bg-slate-800 active:scale-95"
                   >
                     Load more patents <ArrowRight size={16} />

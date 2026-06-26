@@ -16,6 +16,10 @@ const PatentGallery: React.FC<PatentGalleryProps> = ({ images }) => {
         <img 
           src={images[active]} 
           alt={`Drawing ${active + 1}`} 
+          loading="lazy"
+          decoding="async"
+          width={800}
+          height={500}
           className="w-full h-full object-contain p-8"
         />
         
@@ -46,7 +50,7 @@ const PatentGallery: React.FC<PatentGalleryProps> = ({ images }) => {
             onClick={() => setActive(i)}
             className={`flex-shrink-0 w-24 h-24 rounded-2xl overflow-hidden border-4 transition-all ${active === i ? 'border-[#00bdcd] scale-105 shadow-lg' : 'border-transparent opacity-60 hover:opacity-100'}`}
           >
-            <img src={img} alt="Thumb" className="w-full h-full object-cover" />
+            <img src={img} alt={`Patent thumbnail ${i + 1}`} loading="lazy" decoding="async" width={96} height={96} className="w-full h-full object-cover" />
           </button>
         ))}
       </div>
