@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Patent } from '../types';
 import { PATENTS } from '../data/patents';
+import { calculateMaintenanceStatus } from '../utils/dataProcessor';
 
 interface SavedSearch {
   id: string;
@@ -26,25 +27,29 @@ const toTimestamp = (value?: string): number => {
   return Number.isNaN(parsed) ? 0 : parsed;
 };
 
-const normalizeMaintenanceSignal = (value?: string) => {
-  const normalized = String(value || '').trim().toLowerCase();
-  return normalized === 'paid' ? '' : 'Not Paid';
-};
-
 const isOperationallyInactive = (patent: Patent) =>
   /\b(inactive|dead|expired|lapsed)\b/i.test(`${patent.legalStatus || ''} ${patent.simpleLegalStatus || ''}`);
 
 const getMaintenanceAlerts = (patent: Patent) =>
-  [
-    { label: '3.5 year', value: patent.maintenanceFees.year3_5Text },
-    { label: '7.5 year', value: patent.maintenanceFees.year7_5Text },
-    { label: '11.5 year', value: patent.maintenanceFees.year11_5Text },
-  ]
-    .map(({ label, value }) => {
-      const status = normalizeMaintenanceSignal(value);
-      return status ? `${label} (${status})` : '';
-    })
-    .filter(Boolean);
+  (() => {
+    const maintenance = calculateMaintenanceStatus(patent);
+    if (!maintenance.isApplicable || maintenance.overallStatus === 'Current' || maintenance.overallStatus === 'Not Applicable') {
+      return [] as string[];
+    }
+
+    const alerts: string[] = [];
+    if (maintenance.overallStatus) {
+      alerts.push(maintenance.overallStatus);
+    }
+    if (maintenance.nextEventLabel) {
+      alerts.push(
+        maintenance.nextEventDate
+          ? `${maintenance.nextEventLabel} (${maintenance.nextEventDate})`
+          : maintenance.nextEventLabel,
+      );
+    }
+    return alerts;
+  })();
 
 const createPatentNotifications = (
   patents: Patent[],

@@ -64,6 +64,8 @@ export interface Patent {
   filingDate: string;
   priorityDate: string;
   publicationDate: string;
+  grantDate?: string;
+  originalGrantDate?: string;
   estimatedExpirationDate: string;
   
   // MAINTENANCE FEES

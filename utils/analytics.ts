@@ -1,4 +1,4 @@
-import { CLARITY_ID, GA4_ID, GTM_ID, SITE_URL } from './siteConfig';
+import { CLARITY_ID, GA4_ID, SITE_URL } from './siteConfig';
 
 export type AnalyticsConsent = 'essential' | 'analytics' | 'marketing';
 
@@ -8,7 +8,6 @@ const CONSENT_KEY = 'patindex_cookie_consent';
 const SESSION_START_KEY = 'patindex_session_start';
 const INJECTED_SCRIPT_IDS = {
   ga4: 'patindex-ga4',
-  gtm: 'patindex-gtm',
   clarity: 'patindex-clarity',
 };
 
@@ -77,15 +76,6 @@ export const initializeAnalyticsScripts = () => {
       send_page_view: false,
       transport_type: 'beacon',
     });
-  }
-
-  if (GTM_ID) {
-    ensureDataLayer();
-    window.dataLayer?.push({ 'gtm.start': Date.now(), event: 'gtm.js' });
-    injectScriptOnce(
-      INJECTED_SCRIPT_IDS.gtm,
-      `https://www.googletagmanager.com/gtm.js?id=${encodeURIComponent(GTM_ID)}`,
-    );
   }
 
   if (CLARITY_ID) {

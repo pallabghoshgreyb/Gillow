@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, Filter, RefreshCcw } from 'lucide-react';
+import { ChevronDown, Filter, RefreshCcw, Search } from 'lucide-react';
 import { PATENT_TYPES } from '../constants';
 import { FilterState } from '../hooks/usePatentFilters';
 import { PATENTS } from '../data/patents';
@@ -12,6 +12,7 @@ interface FilterSidebarProps {
 
 const FilterSidebar: React.FC<FilterSidebarProps> = ({ onFilterChange, onReset, activeFilters }) => {
   const [expanded, setExpanded] = useState<string[]>(['assignee', 'tech', 'status', 'years']);
+  const [assigneeQuery, setAssigneeQuery] = useState('');
   const assignees = Array.from(new Set(PATENTS.map(patent => patent.assignee.name).filter(Boolean))).sort();
   const technologyDomains = Array.from(new Set(PATENTS.map(patent => patent.domain).filter(Boolean))).sort();
   const technologySubdomains = Array.from(new Set(PATENTS.map(patent => patent.subdomain).filter(Boolean))).sort();
@@ -38,6 +39,15 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({ onFilterChange, onReset, 
     onFilterChange({ [field]: next });
   };
 
+  const filteredAssignees = assignees.filter((assignee) =>
+    assignee.toLowerCase().includes(assigneeQuery.trim().toLowerCase())
+  );
+
+  const handleReset = () => {
+    setAssigneeQuery('');
+    onReset();
+  };
+
   return (
     <aside className="w-full bg-white flex flex-col border-r border-slate-200 h-full overflow-y-auto custom-scrollbar">
       <div className="p-6 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10">
@@ -45,7 +55,7 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({ onFilterChange, onReset, 
           <Filter size={18} className="text-[#00bdcd]" /> Filters
         </h2>
         <button 
-          onClick={onReset}
+          onClick={handleReset}
           className="p-2 text-slate-400 hover:text-[#00bdcd] hover:bg-blue-50 rounded-lg transition-all"
         >
           <RefreshCcw size={16} />
@@ -54,18 +64,35 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({ onFilterChange, onReset, 
 
       <div className="p-6 space-y-8">
         <FilterSection title="Assignee" isOpen={expanded.includes('assignee')} onToggle={() => toggleSection('assignee')}>
-          <div className="space-y-2 max-h-64 overflow-y-auto pr-1 custom-scrollbar">
-            {assignees.map((assignee) => (
-              <label key={assignee} className="flex items-center group cursor-pointer py-0.5">
-                <input
-                  type="checkbox"
-                  checked={activeFilters.assignees.includes(assignee)}
-                  onChange={() => handleMultiToggle('assignees', assignee)}
-                  className="w-4 h-4 border-slate-300 rounded text-[#00bdcd] focus:ring-[#00bdcd]"
-                />
-                <span className="ml-3 text-sm font-medium text-slate-600 group-hover:text-slate-900">{assignee}</span>
-              </label>
-            ))}
+          <div className="space-y-3">
+            <div className="relative">
+              <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="search"
+                value={assigneeQuery}
+                onChange={(e) => setAssigneeQuery(e.target.value)}
+                placeholder="Search assignees"
+                aria-label="Search assignees"
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm text-slate-700 outline-none transition focus:border-[#00bdcd] focus:bg-white focus:ring-2 focus:ring-[#00bdcd]/10"
+              />
+            </div>
+            <div className="space-y-2 max-h-64 overflow-y-auto pr-1 custom-scrollbar">
+              {filteredAssignees.length > 0 ? (
+                filteredAssignees.map((assignee) => (
+                  <label key={assignee} className="flex items-center group cursor-pointer py-0.5">
+                    <input
+                      type="checkbox"
+                      checked={activeFilters.assignees.includes(assignee)}
+                      onChange={() => handleMultiToggle('assignees', assignee)}
+                      className="w-4 h-4 border-slate-300 rounded text-[#00bdcd] focus:ring-[#00bdcd]"
+                    />
+                    <span className="ml-3 text-sm font-medium text-slate-600 group-hover:text-slate-900">{assignee}</span>
+                  </label>
+                ))
+              ) : (
+                <p className="py-2 text-sm text-slate-400">No assignees found.</p>
+              )}
+            </div>
           </div>
         </FilterSection>
 

@@ -64,6 +64,169 @@ export const isPaid = (value: any): boolean => {
   return normalized === 'paid';
 };
 
+export type MaintenanceLifecycleStatus =
+  | 'Not Applicable'
+  | 'Upcoming'
+  | 'Payment Window Open'
+  | 'Due Soon'
+  | 'Delinquent'
+  | 'Lapsed'
+  | 'Current'
+  | 'Paid';
+
+export type MaintenancePaymentStatus = 'paid' | 'pending' | 'overdue' | 'not_applicable';
+
+export interface MaintenanceStageStatus {
+  amount: number;
+  dueDate: string | null;
+  paymentWindowStartDate: string | null;
+  paymentWindowEndDate: string | null;
+  status: MaintenancePaymentStatus;
+  lifecycleStatus: MaintenanceLifecycleStatus;
+  daysUntilDue: number | null;
+  daysUntilWindowOpen: number | null;
+  daysUntilGraceEnds: number | null;
+}
+
+export interface MaintenanceStatusSummary {
+  isApplicable: boolean;
+  scheduleBasis: 'grant' | 'not_applicable';
+  anchorDate: string | null;
+  overallStatus: MaintenanceLifecycleStatus;
+  nextEventLabel: string;
+  nextEventDate: string | null;
+  daysUntilNextEvent: number | null;
+  paymentWindowOpen: boolean;
+  year_3_5: MaintenanceStageStatus;
+  year_7_5: MaintenanceStageStatus;
+  year_11_5: MaintenanceStageStatus;
+  totalPending: number;
+  totalPaid: number;
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const PAYMENT_WINDOW_MONTHS = 6;
+const PAYMENT_GRACE_MONTHS = 6;
+const DUE_SOON_DAYS = 90;
+
+const parseDateOnly = (value?: string | null): Date | null => {
+  if (!value) return null;
+  const normalized = String(value).trim();
+  if (!normalized) return null;
+
+  const parsed = /^\d{4}-\d{2}-\d{2}$/.test(normalized)
+    ? new Date(`${normalized}T00:00:00Z`)
+    : new Date(normalized);
+
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+const formatIsoDate = (date: Date | null): string | null =>
+  date ? date.toISOString().split('T')[0] : null;
+
+const addCalendarMonths = (date: Date, months: number): Date => {
+  const next = new Date(date.getTime());
+  next.setMonth(next.getMonth() + months);
+  return next;
+};
+
+const addMaintenanceDueDate = (anchor: Date, years: number): Date => {
+  const next = new Date(anchor.getTime());
+  next.setFullYear(next.getFullYear() + years);
+  next.setMonth(next.getMonth() + 6);
+  return next;
+};
+
+const diffDays = (future: Date, current: Date) =>
+  Math.ceil((future.getTime() - current.getTime()) / DAY_MS);
+
+export const isMaintenanceApplicablePatentType = (patentType: any): boolean => {
+  const normalized = String(patentType || '').trim().toLowerCase();
+  if (!normalized) return false;
+  if (normalized.includes('application')) return false;
+  if (normalized.includes('design') || normalized.includes('plant')) return false;
+  if (normalized.includes('reissue')) return true;
+  return normalized.includes('grant') || normalized.includes('issue') || normalized.includes('utility');
+};
+
+const getMaintenanceAnchorDate = (patent: Patent): Date | null => {
+  if (!isMaintenanceApplicablePatentType(patent.patentType)) return null;
+
+  const candidateDate = parseDateOnly(
+    patent.originalGrantDate || patent.grantDate || patent.publicationDate || patent.allowanceDate,
+  );
+
+  return candidateDate;
+};
+
+const classifyMaintenanceStage = (
+  amount: number,
+  dueDate: Date | null,
+  today: Date,
+  isApplicable: boolean,
+  rawStatus: string,
+): MaintenanceStageStatus => {
+  const paymentWindowStartDate = dueDate ? addCalendarMonths(dueDate, -PAYMENT_WINDOW_MONTHS) : null;
+  const paymentWindowEndDate = dueDate ? addCalendarMonths(dueDate, PAYMENT_GRACE_MONTHS) : null;
+
+  if (!isApplicable) {
+    return {
+      amount,
+      dueDate: formatIsoDate(dueDate),
+      paymentWindowStartDate: formatIsoDate(paymentWindowStartDate),
+      paymentWindowEndDate: formatIsoDate(paymentWindowEndDate),
+      status: 'not_applicable',
+      lifecycleStatus: 'Not Applicable',
+      daysUntilDue: null,
+      daysUntilWindowOpen: null,
+      daysUntilGraceEnds: null,
+    };
+  }
+
+  const paid = isPaid(rawStatus);
+  const daysUntilDue = dueDate ? diffDays(dueDate, today) : null;
+  const daysUntilWindowOpen = paymentWindowStartDate ? diffDays(paymentWindowStartDate, today) : null;
+  const daysUntilGraceEnds = paymentWindowEndDate ? diffDays(paymentWindowEndDate, today) : null;
+
+  let lifecycleStatus: MaintenanceLifecycleStatus = 'Upcoming';
+  let paymentState: MaintenancePaymentStatus = 'pending';
+
+  if (paid) {
+    lifecycleStatus = 'Paid';
+    paymentState = 'paid';
+  } else if (!dueDate) {
+    lifecycleStatus = 'Upcoming';
+    paymentState = 'pending';
+  } else if (paymentWindowStartDate && today < paymentWindowStartDate) {
+    lifecycleStatus = 'Upcoming';
+    paymentState = 'pending';
+  } else if (daysUntilDue !== null && daysUntilDue > DUE_SOON_DAYS) {
+    lifecycleStatus = 'Payment Window Open';
+    paymentState = 'pending';
+  } else if (daysUntilDue !== null && daysUntilDue >= 0) {
+    lifecycleStatus = 'Due Soon';
+    paymentState = 'pending';
+  } else if (daysUntilGraceEnds !== null && daysUntilGraceEnds >= 0) {
+    lifecycleStatus = 'Delinquent';
+    paymentState = 'overdue';
+  } else {
+    lifecycleStatus = 'Lapsed';
+    paymentState = 'overdue';
+  }
+
+  return {
+    amount,
+    dueDate: formatIsoDate(dueDate),
+    paymentWindowStartDate: formatIsoDate(paymentWindowStartDate),
+    paymentWindowEndDate: formatIsoDate(paymentWindowEndDate),
+    status: paymentState,
+    lifecycleStatus,
+    daysUntilDue,
+    daysUntilWindowOpen,
+    daysUntilGraceEnds,
+  };
+};
+
 /**
  * Get the maintenance fee amount for a given entity type and stage.
  * @param entityType Normalized entity type (Large, Small, Micro)
@@ -92,6 +255,10 @@ export const calculateTotalPendingFee = (record: any): number | null => {
   const entityType = normalizeEntityType(record['Entity Type']);
   if (!entityType) {
     return null; // Invalid or missing entity type
+  }
+
+  if (!isMaintenanceApplicablePatentType(record['Patent Type'])) {
+    return 0;
   }
 
   const stages: Array<'3.5' | '7.5' | '11.5'> = ['3.5', '7.5', '11.5'];
@@ -478,7 +645,7 @@ export const parsePatentRow = (row: any): Patent => {
     id: pubNum,
     publicationNumber: pubNum,
     applicationNumber: normalizeText(firstPresentValue(row['Application Number.1'], row['Application Number'])),
-    patentType: String(row['Patent Type'] || 'Utility'),
+    patentType: normalizeText(row['Patent Type']),
     title: normalizeText(row['Title']),
     entityType: normalizeText(row['Entity Type']),
     gau: normalizeText(row['GAU']),
@@ -490,6 +657,8 @@ export const parsePatentRow = (row: any): Patent => {
     filingDate: formatDateValue(row['Filing Date']),
     priorityDate: formatDateValue(row['Priority Date']),
     publicationDate: formatDateValue(row['Publication Date']),
+    grantDate: formatDateValue(firstPresentValue(row['Grant Date'], row['Issue Date'], row['Publication Date'])),
+    originalGrantDate: formatDateValue(firstPresentValue(row['Original Grant Date'], row['Original Issue Date'])),
     estimatedExpirationDate: formatDateValue(row['Estimated Expiration Date']),
     maintenanceFees: {
       year3_5: cleanNumeric(row['3.5 years']),
@@ -588,64 +757,136 @@ export const parsePatentRow = (row: any): Patent => {
   };
 };
 
-export const calculateMaintenanceStatus = (patent: Patent) => {
-  const filingDate = new Date(patent.filingDate);
-  const isValidDate = !isNaN(filingDate.getTime());
+export const calculateMaintenanceStatus = (patent: Patent): MaintenanceStatusSummary => {
   const today = new Date();
-  const normalizeStatus = (value: string, dueDate: Date): 'paid' | 'pending' | 'overdue' => {
-    const normalized = value.trim().toLowerCase();
-    if (normalized === 'paid') return 'paid';
-    return today > dueDate ? 'overdue' : 'pending';
-  };
-  
-  const getSafeDate = (offsetYears: number) => {
-    if (!isValidDate) return new Date();
-    return new Date(filingDate.getTime() + (offsetYears * 365.25 * 24 * 60 * 60 * 1000));
-  };
-
-  const due3_5 = getSafeDate(3.5);
-  const due7_5 = getSafeDate(7.5);
-  const due11_5 = getSafeDate(11.5);
-  
-  const { maintenanceFees } = patent;
-  const textStatuses = [
+  const maintenanceFees = patent.maintenanceFees;
+  const entityType = normalizeEntityType(patent.entityType);
+  const isApplicable = isMaintenanceApplicablePatentType(patent.patentType);
+  const anchorDate = getMaintenanceAnchorDate(patent);
+  const rawStatuses = [
     maintenanceFees.year3_5Text,
     maintenanceFees.year7_5Text,
     maintenanceFees.year11_5Text,
-  ].some((value) => value.trim());
+  ].map((value) => String(value || '').trim());
+  const hasExplicitStatuses = rawStatuses.some((value) => value.length > 0);
+  const stageAmounts = {
+    year3_5: getFeeAmount(entityType, '3.5'),
+    year7_5: getFeeAmount(entityType, '7.5'),
+    year11_5: getFeeAmount(entityType, '11.5'),
+  };
+  const totalScheduled = stageAmounts.year3_5 + stageAmounts.year7_5 + stageAmounts.year11_5;
 
-  let status3_5: 'paid' | 'pending' | 'overdue' = textStatuses
-    ? normalizeStatus(maintenanceFees.year3_5Text, due3_5)
-    : 'pending';
-  let status7_5: 'paid' | 'pending' | 'overdue' = textStatuses
-    ? normalizeStatus(maintenanceFees.year7_5Text, due7_5)
-    : 'pending';
-  let status11_5: 'paid' | 'pending' | 'overdue' = textStatuses
-    ? normalizeStatus(maintenanceFees.year11_5Text, due11_5)
-    : 'pending';
-  
-  if (!textStatuses) {
-    if (maintenanceFees.totalPending === 0) {
-      status3_5 = status7_5 = status11_5 = 'paid';
-    } else if (maintenanceFees.totalPending <= maintenanceFees.year11_5) {
-      status3_5 = status7_5 = 'paid';
-      status11_5 = today > due11_5 ? 'overdue' : 'pending';
-    } else if (maintenanceFees.totalPending <= (maintenanceFees.year7_5 + maintenanceFees.year11_5)) {
-      status3_5 = 'paid';
-      status7_5 = today > due7_5 ? 'overdue' : 'pending';
-      status11_5 = 'pending';
-    } else {
-      status3_5 = today > due3_5 ? 'overdue' : 'pending';
-      status7_5 = status11_5 = 'pending';
+  const inferPaidStates = () => {
+    if (!hasExplicitStatuses) {
+      if (maintenanceFees.totalPending === 0) {
+        return { year3_5: true, year7_5: true, year11_5: true };
+      }
+
+      if (maintenanceFees.totalPending <= maintenanceFees.year11_5) {
+        return { year3_5: true, year7_5: true, year11_5: false };
+      }
+
+      if (maintenanceFees.totalPending <= (maintenanceFees.year7_5 + maintenanceFees.year11_5)) {
+        return { year3_5: true, year7_5: false, year11_5: false };
+      }
+
+      return { year3_5: false, year7_5: false, year11_5: false };
     }
-  }
-  
+
+    return {
+      year3_5: isPaid(maintenanceFees.year3_5Text),
+      year7_5: isPaid(maintenanceFees.year7_5Text),
+      year11_5: isPaid(maintenanceFees.year11_5Text),
+    };
+  };
+
+  const paidState = inferPaidStates();
+
+  const stageWithStatus = (
+    key: keyof typeof paidState,
+    amount: number,
+    dueDate: Date | null,
+  ): MaintenanceStageStatus => {
+    const rawStatus = paidState[key] ? 'Paid' : 'Not Paid';
+    return classifyMaintenanceStage(amount, dueDate, today, isApplicable, rawStatus);
+  };
+
+  const due3_5 = anchorDate ? addMaintenanceDueDate(anchorDate, 3) : null;
+  const due7_5 = anchorDate ? addMaintenanceDueDate(anchorDate, 7) : null;
+  const due11_5 = anchorDate ? addMaintenanceDueDate(anchorDate, 11) : null;
+
+  const year_3_5 = stageWithStatus('year3_5', stageAmounts.year3_5, due3_5);
+  const year_7_5 = stageWithStatus('year7_5', stageAmounts.year7_5, due7_5);
+  const year_11_5 = stageWithStatus('year11_5', stageAmounts.year11_5, due11_5);
+
+  const orderedStages: Array<{ key: keyof MaintenanceStatusSummary; stage: MaintenanceStageStatus }> = [
+    { key: 'year_3_5', stage: year_3_5 },
+    { key: 'year_7_5', stage: year_7_5 },
+    { key: 'year_11_5', stage: year_11_5 },
+  ];
+
+  const nextUnpaidStage = orderedStages.find(({ stage }) => stage.status !== 'paid');
+
+  const getOverallStatus = (): MaintenanceLifecycleStatus => {
+    if (!isApplicable) return 'Not Applicable';
+    if (!anchorDate) return 'Upcoming';
+    if (!nextUnpaidStage) return 'Current';
+    return nextUnpaidStage.stage.lifecycleStatus;
+  };
+
+  const getNextEvent = (): { label: string; date: Date | null } => {
+    if (!isApplicable) {
+      return { label: 'Maintenance fees do not apply', date: null };
+    }
+
+    if (!anchorDate) {
+      return { label: 'Grant date unavailable', date: null };
+    }
+
+    if (!nextUnpaidStage) {
+      return { label: 'All maintenance fees paid', date: null };
+    }
+
+    const dueDate = parseDateOnly(nextUnpaidStage.stage.dueDate);
+    if (!dueDate) {
+      return { label: 'Maintenance schedule unavailable', date: null };
+    }
+
+    const windowStart = addCalendarMonths(dueDate, -PAYMENT_WINDOW_MONTHS);
+    const graceEnd = addCalendarMonths(dueDate, PAYMENT_GRACE_MONTHS);
+
+    if (today < windowStart) {
+      return { label: 'Payment window opens', date: windowStart };
+    }
+    if (today < dueDate) {
+      return { label: 'Payment due', date: dueDate };
+    }
+    if (today <= graceEnd) {
+      return { label: 'Grace period ends', date: graceEnd };
+    }
+
+    return { label: 'Lapsed on', date: graceEnd };
+  };
+
+  const nextEvent = getNextEvent();
+  const nextEventDate = formatIsoDate(nextEvent.date);
+  const daysUntilNextEvent = nextEvent.date ? diffDays(nextEvent.date, today) : null;
+  const overallStatus = getOverallStatus();
+
   return {
-    year_3_5: { amount: maintenanceFees.year3_5, dueDate: due3_5.toISOString().split('T')[0], status: status3_5 },
-    year_7_5: { amount: maintenanceFees.year7_5, dueDate: due7_5.toISOString().split('T')[0], status: status7_5 },
-    year_11_5: { amount: maintenanceFees.year11_5, dueDate: due11_5.toISOString().split('T')[0], status: status11_5 },
-    totalPending: maintenanceFees.totalPending,
-    totalPaid: (maintenanceFees.year3_5 + maintenanceFees.year7_5 + maintenanceFees.year11_5) - maintenanceFees.totalPending
+    isApplicable,
+    scheduleBasis: isApplicable ? 'grant' : 'not_applicable',
+    anchorDate: formatIsoDate(anchorDate),
+    overallStatus,
+    nextEventLabel: nextEvent.label,
+    nextEventDate,
+    daysUntilNextEvent,
+    paymentWindowOpen: overallStatus === 'Payment Window Open' || overallStatus === 'Due Soon' || overallStatus === 'Delinquent',
+    year_3_5,
+    year_7_5,
+    year_11_5,
+    totalPending: isApplicable ? maintenanceFees.totalPending : 0,
+    totalPaid: isApplicable ? totalScheduled - maintenanceFees.totalPending : 0,
   };
 };
 

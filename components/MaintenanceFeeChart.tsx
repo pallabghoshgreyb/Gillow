@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle2, AlertCircle, Clock, ChevronRight, DollarSign } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Clock, DollarSign, BadgeCheck, ShieldAlert } from 'lucide-react';
 import { Patent } from '../types';
 import { calculateMaintenanceStatus } from '../utils/dataProcessor';
 import { isKnownNumber, hasText } from '../utils/patentDisplay';
@@ -18,9 +18,17 @@ const MaintenanceFeeChart: React.FC<MaintenanceFeeChartProps> = ({ patent }) => 
   ].some((value) => isKnownNumber(value));
 
   if (!hasFeeData) return null;
-  
+
   const getStatusColor = (s: string) => {
     switch (s) {
+      case 'Current': return 'bg-emerald-500 border-emerald-600 text-white';
+      case 'Paid': return 'bg-emerald-500 border-emerald-600 text-white';
+      case 'Upcoming': return 'bg-sky-500 border-sky-600 text-white';
+      case 'Payment Window Open': return 'bg-amber-500 border-amber-600 text-white';
+      case 'Due Soon': return 'bg-orange-500 border-orange-600 text-white';
+      case 'Delinquent': return 'bg-red-500 border-red-600 text-white';
+      case 'Lapsed': return 'bg-slate-600 border-slate-700 text-white';
+      case 'Not Applicable': return 'bg-slate-200 border-slate-300 text-slate-500';
       case 'paid': return 'bg-emerald-500 border-emerald-600 text-white';
       case 'overdue': return 'bg-red-500 border-red-600 text-white';
       case 'pending': return 'bg-amber-500 border-amber-600 text-white';
@@ -30,7 +38,15 @@ const MaintenanceFeeChart: React.FC<MaintenanceFeeChartProps> = ({ patent }) => 
   
   const getStatusIcon = (s: string) => {
     switch (s) {
+      case 'Current':
+      case 'Paid':
       case 'paid': return <CheckCircle2 size={24} />;
+      case 'Upcoming': return <Clock size={24} />;
+      case 'Payment Window Open': return <Clock size={24} />;
+      case 'Due Soon': return <AlertCircle size={24} />;
+      case 'Delinquent': return <AlertCircle size={24} />;
+      case 'Lapsed': return <ShieldAlert size={24} />;
+      case 'Not Applicable': return <BadgeCheck size={24} />;
       case 'overdue': return <AlertCircle size={24} />;
       case 'pending': return <Clock size={24} />;
       default: return <div className="w-6 h-6 rounded-full border-2 border-current" />;
@@ -42,6 +58,34 @@ const MaintenanceFeeChart: React.FC<MaintenanceFeeChartProps> = ({ patent }) => 
     { key: 'year_7_5', label: '7.5 Year' },
     { key: 'year_11_5', label: '11.5 Year' }
   ];
+
+  if (!status.isApplicable) {
+    return (
+      <div className="bg-white rounded-[2rem] border border-slate-200 p-8 shadow-sm">
+        <div className="flex justify-between items-start mb-10">
+          <div>
+            <h3 className="text-xl font-black text-slate-900 mb-1">Maintenance Fee Hierarchy</h3>
+            <p className="text-sm text-slate-500 font-medium">Tracking USPTO milestone payments for lifecycle enforcement</p>
+          </div>
+          {hasText(patent.entityType) && <div className="px-4 py-2 bg-slate-100 rounded-xl text-[10px] font-black text-slate-500 uppercase tracking-widest border border-slate-200">
+            {patent.entityType}
+          </div>}
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6">
+          <div className="flex items-center gap-3 text-slate-700">
+            <BadgeCheck size={22} className="text-slate-500" />
+            <div>
+              <p className="font-black uppercase tracking-[0.18em] text-[10px] text-slate-400">Not Applicable</p>
+              <p className="mt-1 text-sm font-medium text-slate-600">
+                Maintenance fees do not apply to application filings. The schedule will activate only once the patent is granted.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="bg-white rounded-[2rem] border border-slate-200 p-8 shadow-sm">
@@ -59,13 +103,13 @@ const MaintenanceFeeChart: React.FC<MaintenanceFeeChartProps> = ({ patent }) => 
         <div className="absolute top-1/2 left-0 right-0 h-1 bg-slate-100 -translate-y-[4.5rem] hidden md:block" />
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative z-10">
-          {steps.map((step, index) => {
+          {steps.map((step) => {
             const stepStatus = (status as any)[step.key];
             return (
               <div key={step.key} className="flex flex-col items-center">
                 <div className={`
                   w-full rounded-2xl border-2 p-6 text-center transition-all duration-300 shadow-xl
-                  ${getStatusColor(stepStatus.status)}
+                  ${getStatusColor(stepStatus.lifecycleStatus || stepStatus.status)}
                 `}>
                   <div className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80 mb-2">
                     {step.label} Milestone
@@ -74,15 +118,15 @@ const MaintenanceFeeChart: React.FC<MaintenanceFeeChartProps> = ({ patent }) => 
                     ${stepStatus.amount.toLocaleString()}
                   </div>
                   <div className="flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest">
-                    {getStatusIcon(stepStatus.status)}
-                    <span>{stepStatus.status}</span>
+                    {getStatusIcon(stepStatus.lifecycleStatus || stepStatus.status)}
+                    <span>{stepStatus.lifecycleStatus || stepStatus.status}</span>
                   </div>
                 </div>
                 
                 <div className="mt-4 text-center">
                   <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Due Threshold</div>
-                  <div className={`text-sm font-bold ${stepStatus.status === 'overdue' ? 'text-red-600' : 'text-slate-800'}`}>
-                    {new Date(stepStatus.dueDate).toLocaleDateString()}
+                  <div className={`text-sm font-bold ${['Delinquent', 'Lapsed'].includes(stepStatus.lifecycleStatus) || stepStatus.status === 'overdue' ? 'text-red-600' : 'text-slate-800'}`}>
+                    {stepStatus.dueDate ? new Date(stepStatus.dueDate).toLocaleDateString() : 'Date unavailable'}
                   </div>
                 </div>
               </div>
@@ -107,6 +151,10 @@ const MaintenanceFeeChart: React.FC<MaintenanceFeeChartProps> = ({ patent }) => 
                 <span className={status.totalPending > 0 ? 'text-red-600' : 'text-emerald-600'}>
                   ${status.totalPending.toLocaleString()}
                 </span>
+              </div>
+              <div className="flex justify-between text-sm font-bold text-slate-600 pt-3 border-t border-slate-100">
+                <span>Next Event</span>
+                <span className="text-slate-800">{status.nextEventLabel}</span>
               </div>
             </div>
           </div>

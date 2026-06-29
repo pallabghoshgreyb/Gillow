@@ -60,15 +60,20 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     const searchIn = params.getAll('in');
 
     return {
+      query: searchValue.trim() || params.get('q') || '',
       booleanMode: params.get('mode') === 'or' ? 'OR' : 'AND',
-      searchIn: searchIn.length > 0 ? (searchIn as AdvancedSearchFormData['searchIn']) : ['title', 'abstract', 'inventor', 'assignee', 'domain', 'subdomain'],
+      searchIn: searchIn.length > 0 ? (searchIn as AdvancedSearchFormData['searchIn']) : ['publicationNumber', 'applicationNumber', 'title', 'abstract', 'inventor', 'assignee', 'domain', 'subdomain'],
       minValuation: Math.floor((Number(params.get('minV')) || 0) / 1000000),
       minCitations: Number(params.get('minCit')) || 0,
       minClaims: Number(params.get('minC')) || 0,
+      minFamilySize: Number(params.get('minFam')) || 0,
+      patentTypes: params.getAll('type'),
+      assigneeTypes: params.getAll('assigneeType'),
+      litigation: (params.get('lit') as AdvancedSearchFormData['litigation']) || 'all',
       excludeExpired: params.get('alive') === '1',
       jurisdiction: params.get('jur') || 'All',
     };
-  }, [location.search]);
+  }, [location.search, searchValue]);
   const formatNotificationAge = (timestamp: number) => {
     const delta = Math.max(0, Date.now() - timestamp);
     const minute = 60 * 1000;
@@ -113,6 +118,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   }, [newsletterStatus]);
 
   const patentNumberSearchPath = (query: string) => `/search?q=${encodeURIComponent(query)}&pn=1`;
+  const hardNavigate = (path: string) => {
+    window.location.assign(`${window.location.origin}${window.location.pathname}#${path}`);
+  };
 
   const findExactPatent = (query: string) => {
     const normalized = query.trim().toLowerCase();
@@ -126,9 +134,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       trackEvent('Search Completed', { query, source: 'header' });
       const patent = findExactPatent(query);
       if (patent) {
-        navigate(`/patent/${patent.id}`);
+        hardNavigate(`/patent/${patent.id}`);
       } else {
-        navigate(patentNumberSearchPath(query));
+        hardNavigate(patentNumberSearchPath(query));
       }
       setShowSearchHistory(false);
       setSearchValue('');
@@ -140,9 +148,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     trackEvent('Search Completed', { query: value, source: 'header-suggestion' });
     const patent = findExactPatent(value);
     if (patent) {
-      navigate(`/patent/${patent.id}`);
+      hardNavigate(`/patent/${patent.id}`);
     } else {
-      navigate(patentNumberSearchPath(value));
+      hardNavigate(patentNumberSearchPath(value));
     }
     setShowSearchHistory(false);
     setSearchValue('');
@@ -264,16 +272,18 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                             }}
                             onBlur={() => setTimeout(() => setShowSearchHistory(false), 200)}
                             className="w-full border-none bg-transparent text-sm font-medium text-slate-700 outline-none placeholder:font-medium placeholder:text-slate-400"
-                            placeholder="Search by patent number…" 
+                            placeholder="Search patent number only" 
                         />
+                        {/* Advanced filter temporarily hidden
                         <button 
                           type="button"
                           onClick={() => setIsAdvancedOpen(true)}
                           className="ml-2 p-1.5 hover:bg-blue-50 text-slate-400 hover:text-blue-600 rounded-lg transition-all"
-                          title="Advanced Search"
+                          title="Advanced Filter"
                         >
                           <SlidersHorizontal size={16} />
                         </button>
+                        */}
                     </div>
                 </form>
 
@@ -530,18 +540,16 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </div>
       )}
 
+      {/* Advanced filter temporarily hidden
       <AdvancedSearchModal 
         isOpen={isAdvancedOpen} 
         onClose={() => setIsAdvancedOpen(false)} 
         initialValues={advancedSearchInitialValues}
         onSearch={(filters) => {
           const params = new URLSearchParams();
-          const effectiveQuery = searchValue.trim() || new URLSearchParams(location.search).get('q')?.trim() || '';
-
-          if (effectiveQuery) {
-            params.set('q', effectiveQuery);
+          if (filters.query.trim()) {
+            params.set('q', filters.query.trim());
           }
-
           if (filters.booleanMode === 'OR') {
             params.set('mode', 'or');
           }
@@ -560,6 +568,17 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             params.set('minC', String(filters.minClaims));
           }
 
+          if (filters.minFamilySize > 0) {
+            params.set('minFam', String(filters.minFamilySize));
+          }
+
+          filters.patentTypes.forEach((type) => params.append('type', type));
+          filters.assigneeTypes.forEach((type) => params.append('assigneeType', type));
+
+          if (filters.litigation !== 'all') {
+            params.set('lit', filters.litigation);
+          }
+
           if (filters.excludeExpired) {
             params.set('alive', '1');
           }
@@ -568,9 +587,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             params.set('jur', filters.jurisdiction);
           }
 
-          navigate(`/search${params.toString() ? `?${params.toString()}` : ''}`);
+          hardNavigate(`/search${params.toString() ? `?${params.toString()}` : ''}`);
         }}
       />
+      */}
 
       <ServerConfigModal 
         isOpen={isServerConfigOpen} 

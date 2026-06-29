@@ -1,85 +1,27 @@
 import React, { useMemo } from 'react';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, BadgeCheck } from 'lucide-react';
 import { Patent } from '../types';
-import { isKnownNumber } from '../utils/patentDisplay';
+import { calculateMaintenanceStatus, type MaintenanceLifecycleStatus } from '../utils/dataProcessor';
 
 const FOCUS_RING =
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2';
 
 type FeeRow = {
   label: string;
+  amount: number;
   dueDate: Date | null;
   shortDate: string;
   exactDate: string;
   statusLabel: string;
+  lifecycleStatus: MaintenanceLifecycleStatus;
+  paymentWindowStartDate: Date | null;
+  paymentWindowEndDate: Date | null;
+  daysUntilDue: number | null;
   tone: 'good' | 'warning' | 'critical' | 'neutral';
-};
-
-type FeeBaseRow = {
-  label: string;
-  key: 'year3_5' | 'year7_5' | 'year11_5';
-  dueDate: Date | null;
-  rawStatus: string;
-  amount: number;
 };
 
 type FeeStatusSectionProps = {
   patent: Patent;
-};
-
-const formatShortDate = (date: Date | null) =>
-  date
-    ? date.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-      })
-    : 'Date unavailable';
-
-const formatExactDate = (date: Date | null) =>
-  date
-    ? date.toLocaleDateString('en-US', {
-        weekday: 'long',
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric',
-      })
-    : 'Estimated due date unavailable';
-
-const addYears = (date: Date, years: number) =>
-  new Date(date.getTime() + years * 365.25 * 24 * 60 * 60 * 1000);
-
-const getDueDates = (filingDate: string) => {
-  const filedAt = new Date(filingDate);
-  if (Number.isNaN(filedAt.getTime())) {
-    return {
-      year3_5: null,
-      year7_5: null,
-      year11_5: null,
-    };
-  }
-
-  return {
-    year3_5: addYears(filedAt, 3.5),
-    year7_5: addYears(filedAt, 7.5),
-    year11_5: addYears(filedAt, 11.5),
-  };
-};
-
-const hasMeaningfulText = (value?: string | null) =>
-  Boolean(value && value.trim() && value.trim() !== '-');
-
-const normalizeStatusText = (value?: string | null) =>
-  hasMeaningfulText(value) ? String(value).trim() : '';
-
-const mapDisplayStatus = (rawStatus: string) => {
-  const normalized = rawStatus.trim().toLowerCase();
-
-  if (normalized === 'paid') {
-    return { statusLabel: 'Paid', tone: 'good' as const };
-  }
-
-  return { statusLabel: 'Not Paid', tone: 'critical' as const };
 };
 
 const toneClasses = (tone: FeeRow['tone']) => {
@@ -116,60 +58,116 @@ const toneClasses = (tone: FeeRow['tone']) => {
 
 const formatCurrency = (value: number) => `$${value.toLocaleString('en-US')}`;
 
-const feeStatusText = (patent: Patent, key: FeeBaseRow['key']) => {
-  if (key === 'year3_5') return patent.maintenanceFees.year3_5Text;
-  if (key === 'year7_5') return patent.maintenanceFees.year7_5Text;
-  return patent.maintenanceFees.year11_5Text;
+const formatDate = (value: string | null) => {
+  if (!value) return 'Date unavailable';
+  const parsed = new Date(`${value}T00:00:00Z`);
+  if (Number.isNaN(parsed.getTime())) return 'Date unavailable';
+  return parsed.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+};
+
+const formatExactDate = (value: string | null) => {
+  if (!value) return 'Date unavailable';
+  const parsed = new Date(`${value}T00:00:00Z`);
+  if (Number.isNaN(parsed.getTime())) return 'Date unavailable';
+  return parsed.toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  });
+};
+
+const getTone = (status: MaintenanceLifecycleStatus): FeeRow['tone'] => {
+  if (status === 'Current' || status === 'Paid') return 'good';
+  if (status === 'Upcoming' || status === 'Payment Window Open') return 'warning';
+  if (status === 'Due Soon' || status === 'Delinquent' || status === 'Lapsed') return 'critical';
+  return 'neutral';
+};
+
+const getStatusLabel = (status: MaintenanceLifecycleStatus) => {
+  if (status === 'Paid') return 'Paid';
+  if (status === 'Current') return 'Current';
+  if (status === 'Upcoming') return 'Upcoming';
+  if (status === 'Payment Window Open') return 'Window Open';
+  if (status === 'Due Soon') return 'Due Soon';
+  if (status === 'Delinquent') return 'Delinquent';
+  if (status === 'Lapsed') return 'Lapsed';
+  return 'Not Applicable';
 };
 
 const FeeStatusSection: React.FC<FeeStatusSectionProps> = ({ patent }) => {
   const feeData = useMemo(() => {
-    const dueDates = getDueDates(patent.filingDate);
-
-    const baseRows: FeeBaseRow[] = [
+    const maintenance = calculateMaintenanceStatus(patent);
+    const rows: FeeRow[] = [
       {
         label: '3.5 Year',
-        dueDate: dueDates.year3_5,
-        key: 'year3_5',
-        rawStatus: normalizeStatusText(feeStatusText(patent, 'year3_5')),
-        amount: patent.maintenanceFees.year3_5,
+        amount: maintenance.year_3_5.amount,
+        dueDate: maintenance.year_3_5.dueDate ? new Date(`${maintenance.year_3_5.dueDate}T00:00:00Z`) : null,
+        shortDate: formatDate(maintenance.year_3_5.dueDate),
+        exactDate: formatExactDate(maintenance.year_3_5.dueDate),
+        statusLabel: getStatusLabel(maintenance.year_3_5.lifecycleStatus),
+        lifecycleStatus: maintenance.year_3_5.lifecycleStatus,
+        paymentWindowStartDate: maintenance.year_3_5.paymentWindowStartDate
+          ? new Date(`${maintenance.year_3_5.paymentWindowStartDate}T00:00:00Z`)
+          : null,
+        paymentWindowEndDate: maintenance.year_3_5.paymentWindowEndDate
+          ? new Date(`${maintenance.year_3_5.paymentWindowEndDate}T00:00:00Z`)
+          : null,
+        daysUntilDue: maintenance.year_3_5.daysUntilDue,
+        tone: getTone(maintenance.year_3_5.lifecycleStatus),
       },
       {
         label: '7.5 Year',
-        dueDate: dueDates.year7_5,
-        key: 'year7_5',
-        rawStatus: normalizeStatusText(feeStatusText(patent, 'year7_5')),
-        amount: patent.maintenanceFees.year7_5,
+        amount: maintenance.year_7_5.amount,
+        dueDate: maintenance.year_7_5.dueDate ? new Date(`${maintenance.year_7_5.dueDate}T00:00:00Z`) : null,
+        shortDate: formatDate(maintenance.year_7_5.dueDate),
+        exactDate: formatExactDate(maintenance.year_7_5.dueDate),
+        statusLabel: getStatusLabel(maintenance.year_7_5.lifecycleStatus),
+        lifecycleStatus: maintenance.year_7_5.lifecycleStatus,
+        paymentWindowStartDate: maintenance.year_7_5.paymentWindowStartDate
+          ? new Date(`${maintenance.year_7_5.paymentWindowStartDate}T00:00:00Z`)
+          : null,
+        paymentWindowEndDate: maintenance.year_7_5.paymentWindowEndDate
+          ? new Date(`${maintenance.year_7_5.paymentWindowEndDate}T00:00:00Z`)
+          : null,
+        daysUntilDue: maintenance.year_7_5.daysUntilDue,
+        tone: getTone(maintenance.year_7_5.lifecycleStatus),
       },
       {
         label: '11.5 Year',
-        dueDate: dueDates.year11_5,
-        key: 'year11_5',
-        rawStatus: normalizeStatusText(feeStatusText(patent, 'year11_5')),
-        amount: patent.maintenanceFees.year11_5,
+        amount: maintenance.year_11_5.amount,
+        dueDate: maintenance.year_11_5.dueDate ? new Date(`${maintenance.year_11_5.dueDate}T00:00:00Z`) : null,
+        shortDate: formatDate(maintenance.year_11_5.dueDate),
+        exactDate: formatExactDate(maintenance.year_11_5.dueDate),
+        statusLabel: getStatusLabel(maintenance.year_11_5.lifecycleStatus),
+        lifecycleStatus: maintenance.year_11_5.lifecycleStatus,
+        paymentWindowStartDate: maintenance.year_11_5.paymentWindowStartDate
+          ? new Date(`${maintenance.year_11_5.paymentWindowStartDate}T00:00:00Z`)
+          : null,
+        paymentWindowEndDate: maintenance.year_11_5.paymentWindowEndDate
+          ? new Date(`${maintenance.year_11_5.paymentWindowEndDate}T00:00:00Z`)
+          : null,
+        daysUntilDue: maintenance.year_11_5.daysUntilDue,
+        tone: getTone(maintenance.year_11_5.lifecycleStatus),
       },
     ];
 
-    const rows: FeeRow[] = baseRows
-      .filter((row) => row.rawStatus || isKnownNumber(row.amount) || patent.maintenanceFees.totalPending > 0)
-      .map((row) => {
-        const display = mapDisplayStatus(row.rawStatus);
-        return {
-          label: row.label,
-          dueDate: row.dueDate,
-          shortDate: formatShortDate(row.dueDate),
-          exactDate: formatExactDate(row.dueDate),
-          statusLabel: display.statusLabel,
-          tone: display.tone,
-        };
-      });
-
-    const alertRows = rows.filter((row) => row.tone === 'critical' || row.tone === 'warning');
-    const totalPendingDisplay = isKnownNumber(patent.maintenanceFees.totalPending)
-      ? formatCurrency(patent.maintenanceFees.totalPending)
-      : normalizeStatusText(patent.maintenanceFees.totalPendingText);
+    const alertRows = rows.filter((row) =>
+      row.lifecycleStatus === 'Due Soon' ||
+      row.lifecycleStatus === 'Payment Window Open' ||
+      row.lifecycleStatus === 'Delinquent' ||
+      row.lifecycleStatus === 'Lapsed'
+    );
+    const totalPendingDisplay = maintenance.isApplicable
+      ? formatCurrency(maintenance.totalPending)
+      : 'Not Applicable';
 
     return {
+      maintenance,
       rows,
       alertRows,
       totalPendingDisplay,
@@ -188,19 +186,64 @@ const FeeStatusSection: React.FC<FeeStatusSectionProps> = ({ patent }) => {
         </h3>
       </div>
 
-      {feeData.alertRows.length > 0 && (
+      <div className="mt-6 grid gap-3 md:grid-cols-3">
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Status</p>
+          <p className="mt-2 text-lg font-semibold text-slate-900">{feeData.maintenance.overallStatus}</p>
+          <p className="mt-1 text-sm text-slate-500">
+            {feeData.maintenance.isApplicable
+              ? `Anchored to ${feeData.maintenance.anchorDate || 'grant date unavailable'}`
+              : 'Maintenance fees do not apply to application filings.'}
+          </p>
+        </div>
+
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Next Event</p>
+          <p className="mt-2 text-lg font-semibold text-slate-900">{feeData.maintenance.nextEventLabel}</p>
+          <p className="mt-1 text-sm text-slate-500">
+            {feeData.maintenance.nextEventDate ? formatDate(feeData.maintenance.nextEventDate) : 'No upcoming maintenance action'}
+          </p>
+        </div>
+
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Days Remaining</p>
+          <p className="mt-2 text-lg font-semibold text-slate-900">
+            {feeData.maintenance.daysUntilNextEvent !== null ? `${feeData.maintenance.daysUntilNextEvent} days` : 'N/A'}
+          </p>
+          <p className="mt-1 text-sm text-slate-500">
+            {feeData.maintenance.paymentWindowOpen ? 'Payment window is open' : 'Payment window not yet open'}
+          </p>
+        </div>
+      </div>
+
+      {!feeData.maintenance.isApplicable ? (
+        <div className="mt-6 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+          Maintenance fees are not applicable for this patent type, so the schedule is intentionally hidden.
+        </div>
+      ) : feeData.alertRows.length > 0 ? (
         <div className="mt-6 flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           <AlertTriangle size={16} className="mt-0.5 shrink-0" />
           <div>
             <p className="font-semibold">Review maintenance status</p>
             <p className="mt-1 text-red-600">
-              {feeData.alertRows.map((row) => `${row.label}: ${row.statusLabel}`).join(' | ')}
+              {feeData.alertRows
+                .map((row) => `${row.label}: ${row.statusLabel}`)
+                .join(' | ')}
             </p>
+          </div>
+        </div>
+      ) : (
+        <div className="mt-6 flex items-start gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+          <BadgeCheck size={16} className="mt-0.5 shrink-0" />
+          <div>
+            <p className="font-semibold">Current maintenance status</p>
+            <p className="mt-1 text-emerald-600">All scheduled maintenance milestones are in good standing.</p>
           </div>
         </div>
       )}
 
-      <div className="mt-6 space-y-3">
+      {feeData.maintenance.isApplicable && (
+        <div className="mt-6 space-y-3">
         {feeData.rows.map((row) => {
           const styles = toneClasses(row.tone);
           return (
@@ -217,6 +260,11 @@ const FeeStatusSection: React.FC<FeeStatusSectionProps> = ({ patent }) => {
                 <div>
                   <p className="text-sm font-medium text-slate-900">{row.label}</p>
                   <p className="mt-1 text-sm text-slate-500">{row.shortDate}</p>
+                  {row.paymentWindowStartDate && row.paymentWindowEndDate && (
+                    <p className="mt-1 text-xs text-slate-400">
+                      Window: {formatDate(row.paymentWindowStartDate.toISOString().split('T')[0])} - {formatDate(row.paymentWindowEndDate.toISOString().split('T')[0])}
+                    </p>
+                  )}
                 </div>
 
                 <div className="text-right">
@@ -231,6 +279,9 @@ const FeeStatusSection: React.FC<FeeStatusSectionProps> = ({ patent }) => {
                       </span>
                     )}
                   </div>
+                  {row.daysUntilDue !== null && row.lifecycleStatus !== 'Paid' && row.lifecycleStatus !== 'Not Applicable' && (
+                    <p className="mt-1 text-xs text-slate-400">{row.daysUntilDue} days to due</p>
+                  )}
                 </div>
               </div>
 
@@ -240,15 +291,43 @@ const FeeStatusSection: React.FC<FeeStatusSectionProps> = ({ patent }) => {
             </div>
           );
         })}
-      </div>
-
-      {feeData.totalPendingDisplay && (
-        <div className="mt-6 border-t border-slate-100 pt-4">
-          <p className="text-sm font-medium text-amber-600">
-            Total Pending: {feeData.totalPendingDisplay}
-          </p>
         </div>
       )}
+
+      {feeData.maintenance.isApplicable && (
+        <div className="mt-6 border-t border-slate-100 pt-4">
+          <div className="flex flex-col gap-3">
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
+              Pending Fees
+            </p>
+            <div className="grid gap-2 md:grid-cols-3">
+              {feeData.rows.map((row) => {
+                const styles = toneClasses(row.tone);
+                return (
+                  <div
+                    key={`${row.label}-pending`}
+                    className={`rounded-lg border px-4 py-3 ${
+                      row.tone === 'critical'
+                        ? 'border-red-200 bg-red-50/60'
+                        : row.tone === 'warning'
+                          ? 'border-amber-200 bg-amber-50/60'
+                          : row.tone === 'good'
+                            ? 'border-emerald-200 bg-emerald-50/60'
+                            : 'border-slate-200 bg-slate-50/60'
+                    }`}
+                  >
+                    <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-400">{row.label}</p>
+                    <p className={`mt-2 text-sm font-semibold ${styles.text}`}>
+                      {formatCurrency(row.amount)}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
     </section>
   );
 };

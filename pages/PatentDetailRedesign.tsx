@@ -639,15 +639,15 @@ const makeView = (patent: Patent, catalog: Patent[]): View => {
     ].filter(hasText),
     dates: [
       hasText(patent.filingDate) ? { label: 'Filed', value: formatDate(patent.filingDate) } : null,
-      hasText(patent.publicationDate) ? { label: 'Published', value: formatDate(patent.publicationDate) } : null,
       status.tone === 'granted' && hasText(patent.allowanceDate || patent.publicationDate)
         ? {
-            label: 'Granted',
+            label: 'Allowance',
             value: formatDate(patent.allowanceDate || patent.publicationDate),
           }
         : hasText(status.label)
           ? { label: 'Disposition', value: status.label }
           : null,
+      hasText(patent.publicationDate) ? { label: 'Published', value: formatDate(patent.publicationDate) } : null,
       hasText(patent.estimatedExpirationDate)
         ? { label: 'Expires', value: formatDate(patent.estimatedExpirationDate) }
         : null,

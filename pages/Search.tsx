@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { 
     List, Map as MapIcon, SlidersHorizontal, 
     Save, LayoutGrid, Loader2,
@@ -16,6 +16,7 @@ import { trackEvent } from '../utils/analytics';
 
 const Search: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { filters, updateFilters, filteredPatents, loading, query, setQuery, resetFilters } = usePatentFilters();
   const { favorites, toggleFavorite, addSearchHistory } = useGillow();
   
@@ -46,6 +47,11 @@ const Search: React.FC = () => {
     setCurrentPage(1);
   }, [query, filters, view, pageSize]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  }, [location.search]);
+
   const onSaveSearch = (name: string) => {
     trackEvent('CTA Clicked', { label: 'Save Search', search_name: name });
     setShowSavedToast(true);
@@ -57,7 +63,7 @@ const Search: React.FC = () => {
     setSidebarOpen(false);
     setIsSaveModalOpen(false);
     setShowSavedToast(false);
-    navigate(`/patent/${publicationNumber}`);
+    window.location.assign(`${window.location.origin}${window.location.pathname}#/patent/${publicationNumber}`);
   };
 
   const removeFilterValue = (field: keyof typeof filters, value: string) => {
@@ -90,7 +96,7 @@ const Search: React.FC = () => {
   };
 
   return (
-    <div className="flex min-h-[calc(100vh-80px)] flex-col bg-white">
+    <div key={location.search} className="flex min-h-[calc(100vh-80px)] flex-col bg-white">
       
       {/* Search & Action Toolbar */}
       <div className="flex-shrink-0 bg-white border-b border-slate-100 z-40 shadow-sm relative">

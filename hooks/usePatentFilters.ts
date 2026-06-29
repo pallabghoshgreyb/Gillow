@@ -12,7 +12,16 @@ const AVAILABLE_FILING_YEARS = PATENTS
 
 const MIN_FILING_YEAR = AVAILABLE_FILING_YEARS[0]?.toString() || '1990';
 const MAX_FILING_YEAR = AVAILABLE_FILING_YEARS[AVAILABLE_FILING_YEARS.length - 1]?.toString() || new Date().getFullYear().toString();
-const DEFAULT_SEARCH_IN: AdvancedSearchField[] = ['title', 'abstract', 'inventor', 'assignee', 'domain', 'subdomain'];
+const DEFAULT_SEARCH_IN: AdvancedSearchField[] = [
+  'publicationNumber',
+  'applicationNumber',
+  'title',
+  'abstract',
+  'inventor',
+  'assignee',
+  'domain',
+  'subdomain',
+];
 
 const isOperationallyInactive = (patent: Patent) =>
   /\b(inactive|dead|expired|lapsed)\b/i.test(`${patent.legalStatus || ''} ${patent.simpleLegalStatus || ''}`);
@@ -22,6 +31,10 @@ const getSearchableValues = (patent: Patent, searchIn: AdvancedSearchField[]): s
     switch (field) {
       case 'title':
         return patent.title ? [patent.title] : [];
+      case 'publicationNumber':
+        return patent.publicationNumber ? [patent.publicationNumber] : [];
+      case 'applicationNumber':
+        return patent.applicationNumber ? [patent.applicationNumber] : [];
       case 'abstract':
         return patent.abstract ? [patent.abstract] : [];
       case 'inventor':

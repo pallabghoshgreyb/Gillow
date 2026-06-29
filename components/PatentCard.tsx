@@ -1,6 +1,5 @@
 
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
 import { Heart, Building2, Users, Globe, Zap, ShieldCheck, AlertTriangle, Fingerprint, Tag, Scale, Rocket, ShieldAlert } from 'lucide-react';
 import { Patent } from '../types';
 import { formatCompactCurrency, isKnownNumber } from '../utils/patentDisplay';
@@ -25,7 +24,6 @@ const isOperationallyActive = (status: string) =>
   /\b(active|alive)\b/i.test(status) && !isOperationallyInactive(status);
 
 const PatentCard: React.FC<PatentCardProps> = ({ patent, isFavorite, onToggleFavorite, onClick, href, layout = 'grid' }) => {
-  const navigate = useNavigate();
   const isList = layout === 'list';
   const operationalStatus = operationalStatusText(patent);
   const statusTone = isOperationallyInactive(operationalStatus)
@@ -159,18 +157,15 @@ const PatentCard: React.FC<PatentCardProps> = ({ patent, isFavorite, onToggleFav
       title: patent.title,
       source: href ? 'link' : 'card',
     });
-    if (href) {
-      navigate(href);
-      return;
-    }
     onClick?.(patent.publicationNumber);
   };
 
   if (href) {
+    const hardHref = `${window.location.origin}${window.location.pathname}#${href}`;
     return (
-      <Link to={href} className={cardClassName} onClick={handleCardClick}>
+      <a href={hardHref} className={cardClassName} onClick={handleCardClick}>
         {cardContent}
-      </Link>
+      </a>
     );
   }
 

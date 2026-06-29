@@ -33,24 +33,25 @@ const ScrollToTop: React.FC = () => {
 
 const AppShell: React.FC = () => {
   const location = useLocation();
+  const routeKey = `${location.pathname}${location.search}`;
 
   return (
     <>
       <ScrollToTop />
       <Layout>
-        <React.Fragment key={`${location.pathname}${location.search}`}>
+        <React.Fragment key={routeKey}>
           <Routes location={location}>
-            <Route path="/" element={<Home />} />
-            <Route path="/browse" element={<Search />} />
-            <Route path="/search" element={<Search />} />
-            <Route path="/landscape-preview" element={<LandscapePreview />} />
+            <Route path="/" element={<Home key="home" />} />
+            <Route path="/browse" element={<Search key={`${routeKey}:browse`} />} />
+            <Route path="/search" element={<Search key={`${routeKey}:search`} />} />
+            <Route path="/landscape-preview" element={<LandscapePreview key={`${routeKey}:landscape-preview`} />} />
             {/* <Route path="/landscape" element={<Landscape />} /> */}
-            <Route path="/domains/:domainSlug" element={<DomainDetail />} />
-            <Route path="/technology/:techId" element={<TechDetail />} />
-            <Route path="/patent/:patentId" element={<PatentDetail />} />
-            <Route path="/saved" element={<Saved />} />
-            <Route path="/404" element={<NotFound />} />
-            <Route path="*" element={<Navigate to="/404" replace />} />
+            <Route path="/domains/:domainSlug" element={<DomainDetail key={`${routeKey}:domain`} />} />
+            <Route path="/technology/:techId" element={<TechDetail key={`${routeKey}:technology`} />} />
+            <Route path="/patent/:patentId" element={<PatentDetail key={`${routeKey}:patent`} />} />
+            <Route path="/saved" element={<Saved key={`${routeKey}:saved`} />} />
+            <Route path="/404" element={<NotFound key={`${routeKey}:404`} />} />
+            <Route path="*" element={<Navigate key={`${routeKey}:wildcard`} to="/404" replace />} />
           </Routes>
         </React.Fragment>
       </Layout>

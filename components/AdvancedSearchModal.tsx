@@ -1,15 +1,28 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { X, Search, Calendar, Zap, FileText, Filter, Layers, Target } from 'lucide-react';
+import { X, Search, Calendar, Zap, Filter, Layers, Target } from 'lucide-react';
 import { PATENTS } from '../data/patents';
 
-export type AdvancedSearchField = 'title' | 'abstract' | 'inventor' | 'assignee' | 'domain' | 'subdomain';
+export type AdvancedSearchField =
+  | 'publicationNumber'
+  | 'applicationNumber'
+  | 'title'
+  | 'abstract'
+  | 'inventor'
+  | 'assignee'
+  | 'domain'
+  | 'subdomain';
 
 export interface AdvancedSearchFormData {
+  query: string;
   booleanMode: 'AND' | 'OR';
   searchIn: AdvancedSearchField[];
   minValuation: number;
   minCitations: number;
   minClaims: number;
+  minFamilySize: number;
+  patentTypes: string[];
+  assigneeTypes: string[];
+  litigation: 'all' | 'include' | 'exclude';
   excludeExpired: boolean;
   jurisdiction: string;
 }
@@ -22,20 +35,48 @@ interface AdvancedSearchModalProps {
 }
 
 const DEFAULT_FORM_DATA: AdvancedSearchFormData = {
+    query: '',
     booleanMode: 'AND',
-    searchIn: ['title', 'abstract', 'inventor', 'assignee', 'domain', 'subdomain'],
+    searchIn: ['publicationNumber', 'applicationNumber', 'title', 'abstract', 'inventor', 'assignee', 'domain', 'subdomain'],
     minValuation: 0,
     minCitations: 0,
     minClaims: 0,
+    minFamilySize: 0,
+    patentTypes: [],
+    assigneeTypes: [],
+    litigation: 'all',
     excludeExpired: true,
     jurisdiction: 'All'
 };
+
+const SEARCH_FIELD_OPTIONS: Array<{ field: AdvancedSearchField; label: string }> = [
+  { field: 'publicationNumber', label: 'Pub No.' },
+  { field: 'applicationNumber', label: 'App No.' },
+  { field: 'title', label: 'Title' },
+  { field: 'abstract', label: 'Abstract' },
+  { field: 'inventor', label: 'Inventor' },
+  { field: 'assignee', label: 'Assignee' },
+  { field: 'domain', label: 'Domain' },
+  { field: 'subdomain', label: 'Subdomain' },
+];
 
 const AdvancedSearchModal: React.FC<AdvancedSearchModalProps> = ({ isOpen, onClose, onSearch, initialValues }) => {
   const [formData, setFormData] = useState<AdvancedSearchFormData>(initialValues || DEFAULT_FORM_DATA);
   const jurisdictions = useMemo(() => (
     ['All', ...Array.from(new Set(PATENTS.map((patent) => patent.jurisdiction).filter(Boolean))).sort()]
   ), []);
+  const patentTypes = useMemo(
+    () => Array.from(new Set(PATENTS.map((patent) => patent.patentType).filter(Boolean))).sort(),
+    []
+  );
+  const assigneeTypes = useMemo(
+    () => Array.from(new Set(PATENTS.map((patent) => patent.assignee.type).filter(Boolean))).sort(),
+    []
+  );
+  const familySizeMax = useMemo(() => {
+    const maxFamilySize = PATENTS.reduce((max, patent) => Math.max(max, patent.familySize || 0), 0);
+    return Math.max(10, Math.min(50, maxFamilySize));
+  }, []);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -53,141 +94,244 @@ const AdvancedSearchModal: React.FC<AdvancedSearchModalProps> = ({ isOpen, onClo
     }));
   };
 
+  const handleToggleArrayValue = (key: 'patentTypes' | 'assigneeTypes', value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      [key]: prev[key].includes(value)
+        ? prev[key].filter((item) => item !== value)
+        : [...prev[key], value],
+    }));
+  };
+
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-300">
-        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200">
+      <div className="flex max-h-[min(92vh,56rem)] w-[min(96vw,72rem)] flex-col overflow-hidden rounded-3xl bg-white shadow-2xl animate-in zoom-in-95 duration-300">
+        <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/50 p-6">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-600 text-white rounded-xl flex items-center justify-center shadow-lg">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white shadow-lg">
               <Filter size={20} />
             </div>
             <div>
-              <h3 className="text-xl font-semibold tracking-tight text-slate-900">Advanced Technical Search</h3>
-              <p className="mt-0.5 text-xs font-medium uppercase tracking-[0.16em] text-slate-500">Refined IP Discovery Engine</p>
+              <h3 className="text-xl font-semibold tracking-tight text-slate-900">Advanced Filters</h3>
+              <p className="mt-0.5 text-xs font-medium uppercase tracking-[0.16em] text-slate-500">Refine patent results</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 transition-colors bg-white rounded-full shadow-sm border border-slate-100">
+          <button
+            onClick={onClose}
+            className="rounded-full border border-slate-100 bg-white p-2 text-slate-400 shadow-sm transition-colors hover:text-slate-600"
+          >
             <X size={20} />
           </button>
         </div>
-        
-        <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Boolean Logic */}
+
+        <div className="min-h-0 flex-1 overflow-y-auto p-6 sm:p-8 custom-scrollbar">
+          <div className="space-y-8">
             <div className="space-y-4">
               <label className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
-                <Target size={14} /> Search Logic
+                <Search size={14} /> Search Terms
               </label>
-              <div className="flex bg-slate-100 p-1 rounded-xl">
-                <button 
-                  onClick={() => setFormData({...formData, booleanMode: 'AND'})}
-                  className={`flex-1 rounded-lg py-2 text-sm font-medium transition-all ${formData.booleanMode === 'AND' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500'}`}
-                >
-                  ALL TERMS (AND)
-                </button>
-                <button 
-                  onClick={() => setFormData({...formData, booleanMode: 'OR'})}
-                  className={`flex-1 rounded-lg py-2 text-sm font-medium transition-all ${formData.booleanMode === 'OR' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500'}`}
-                >
-                  ANY TERM (OR)
-                </button>
+              <div className="relative">
+                <Search size={16} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  value={formData.query}
+                  onChange={(e) => setFormData({ ...formData, query: e.target.value })}
+                  placeholder="Enter patent number or keyword"
+                  className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm font-medium text-slate-700 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                />
               </div>
+              <p className="text-xs text-slate-400">
+                Use the header search bar for patent numbers only. This field supports broader search terms.
+              </p>
             </div>
 
-            {/* Scope */}
-            <div className="space-y-4">
-              <label className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
-                <Search size={14} /> Search Within
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {(['title', 'abstract', 'inventor', 'assignee', 'domain', 'subdomain'] as AdvancedSearchField[]).map(field => (
-                  <button 
-                    key={field}
-                    onClick={() => handleToggleIn(field)}
-                    className={`rounded-lg border px-3 py-1.5 text-xs font-medium uppercase tracking-[0.14em] transition-all ${formData.searchIn.includes(field) ? 'border-blue-600 bg-blue-50 text-blue-600' : 'border-slate-200 bg-white text-slate-400 hover:border-slate-300'}`}
+            <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+              <div className="space-y-4">
+                <label className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
+                  <Target size={14} /> Search Logic
+                </label>
+                <div className="flex rounded-xl bg-slate-100 p-1">
+                  <button
+                    onClick={() => setFormData({ ...formData, booleanMode: 'AND' })}
+                    className={`flex-1 rounded-lg py-2 text-sm font-medium transition-all ${formData.booleanMode === 'AND' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500'}`}
                   >
-                    {field}
+                    ALL TERMS (AND)
                   </button>
-                ))}
+                  <button
+                    onClick={() => setFormData({ ...formData, booleanMode: 'OR' })}
+                    className={`flex-1 rounded-lg py-2 text-sm font-medium transition-all ${formData.booleanMode === 'OR' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500'}`}
+                  >
+                    ANY TERM (OR)
+                  </button>
+                </div>
               </div>
-            </div>
 
-            {/* Thresholds */}
-            <div className="space-y-6 md:col-span-2 pt-4 border-t border-slate-50">
-               <label className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
-                 <Zap size={14} /> Technical Thresholds
-               </label>
-               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                 <ThresholdInput 
-                    label="Min Citations" 
-                    value={formData.minCitations} 
-                    onChange={v => setFormData({...formData, minCitations: v})} 
-                    max={500} 
-                 />
-                 <ThresholdInput 
-                    label="Min Claims" 
-                    value={formData.minClaims} 
-                    onChange={v => setFormData({...formData, minClaims: v})} 
-                    max={50} 
-                 />
-                 <ThresholdInput 
-                    label="Min Valuation ($M)" 
-                    value={formData.minValuation} 
-                    onChange={v => setFormData({...formData, minValuation: v})} 
-                    max={100} 
-                 />
-               </div>
-            </div>
+              <div className="space-y-4">
+                <label className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
+                  <Search size={14} /> Search Within
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {SEARCH_FIELD_OPTIONS.map(({ field, label }) => (
+                    <button
+                      key={field}
+                      onClick={() => handleToggleIn(field)}
+                      className={`rounded-lg border px-3 py-1.5 text-xs font-medium uppercase tracking-[0.14em] transition-all ${formData.searchIn.includes(field) ? 'border-blue-600 bg-blue-50 text-blue-600' : 'border-slate-200 bg-white text-slate-400 hover:border-slate-300'}`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-            {/* Legal Filters */}
-            <div className="md:col-span-2 space-y-4 pt-4 border-t border-slate-50">
-              <label className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
-                <Layers size={14} /> Jurisdiction
-              </label>
-              <select
-                value={formData.jurisdiction}
-                onChange={(e) => setFormData({ ...formData, jurisdiction: e.target.value })}
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none focus:border-blue-500"
-              >
-                {jurisdictions.map((jurisdiction) => (
-                  <option key={jurisdiction} value={jurisdiction}>
-                    {jurisdiction}
-                  </option>
-                ))}
-              </select>
-            </div>
+              <div className="space-y-6 border-t border-slate-50 pt-4 md:col-span-2">
+                <label className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
+                  <Zap size={14} /> Technical Thresholds
+                </label>
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
+                  <ThresholdInput
+                    label="Min Citations"
+                    value={formData.minCitations}
+                    onChange={(v) => setFormData({ ...formData, minCitations: v })}
+                    max={500}
+                  />
+                  <ThresholdInput
+                    label="Min Claims"
+                    value={formData.minClaims}
+                    onChange={(v) => setFormData({ ...formData, minClaims: v })}
+                    max={50}
+                  />
+                  <ThresholdInput
+                    label="Min Valuation ($M)"
+                    value={formData.minValuation}
+                    onChange={(v) => setFormData({ ...formData, minValuation: v })}
+                    max={100}
+                  />
+                  <ThresholdInput
+                    label="Min Family Size"
+                    value={formData.minFamilySize}
+                    onChange={(v) => setFormData({ ...formData, minFamilySize: v })}
+                    max={familySizeMax}
+                  />
+                </div>
+              </div>
 
-            <div className="md:col-span-2 space-y-4 pt-4 border-t border-slate-50">
-              <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center">
-                    <Calendar size={16} />
+              <div className="space-y-5 border-t border-slate-50 pt-4 md:col-span-2">
+                <label className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
+                  <Filter size={14} /> Portfolio Filters
+                </label>
+
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-sm font-semibold text-slate-700">Patent Type</span>
+                      <span className="text-xs font-medium uppercase tracking-[0.14em] text-slate-400">
+                        {formData.patentTypes.length > 0 ? `${formData.patentTypes.length} selected` : 'Any'}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {patentTypes.map((type) => (
+                        <button
+                          key={type}
+                          onClick={() => handleToggleArrayValue('patentTypes', type)}
+                          className={`rounded-lg border px-3 py-1.5 text-xs font-medium uppercase tracking-[0.14em] transition-all ${formData.patentTypes.includes(type) ? 'border-blue-600 bg-blue-50 text-blue-600' : 'border-slate-200 bg-white text-slate-400 hover:border-slate-300'}`}
+                        >
+                          {type}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                  <div>
-                    <div className="text-sm font-medium text-slate-900">Exclude Expired Patents</div>
-                    <div className="text-xs font-medium uppercase tracking-[0.14em] text-slate-500">Show only enforceable patents</div>
+
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-sm font-semibold text-slate-700">Assignee Type</span>
+                      <span className="text-xs font-medium uppercase tracking-[0.14em] text-slate-400">
+                        {formData.assigneeTypes.length > 0 ? `${formData.assigneeTypes.length} selected` : 'Any'}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {assigneeTypes.map((type) => (
+                        <button
+                          key={type}
+                          onClick={() => handleToggleArrayValue('assigneeTypes', type)}
+                          className={`rounded-lg border px-3 py-1.5 text-xs font-medium uppercase tracking-[0.14em] transition-all ${formData.assigneeTypes.includes(type) ? 'border-blue-600 bg-blue-50 text-blue-600' : 'border-slate-200 bg-white text-slate-400 hover:border-slate-300'}`}
+                        >
+                          {type}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
-                <button 
-                  onClick={() => setFormData({...formData, excludeExpired: !formData.excludeExpired})}
-                  className={`w-12 h-6 rounded-full transition-all relative ${formData.excludeExpired ? 'bg-blue-600' : 'bg-slate-300'}`}
+
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium uppercase tracking-[0.14em] text-slate-500">Litigation Filter</label>
+                    <div className="flex rounded-xl bg-slate-100 p-1">
+                      {(['all', 'include', 'exclude'] as const).map((value) => (
+                        <button
+                          key={value}
+                          onClick={() => setFormData({ ...formData, litigation: value })}
+                          className={`flex-1 rounded-lg py-2 text-sm font-medium capitalize transition-all ${formData.litigation === value ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500'}`}
+                        >
+                          {value}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4 border-t border-slate-50 pt-4 md:col-span-2">
+                <label className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
+                  <Layers size={14} /> Jurisdiction
+                </label>
+                <select
+                  value={formData.jurisdiction}
+                  onChange={(e) => setFormData({ ...formData, jurisdiction: e.target.value })}
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none focus:border-blue-500"
                 >
-                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${formData.excludeExpired ? 'right-1' : 'left-1'}`} />
-                </button>
+                  {jurisdictions.map((jurisdiction) => (
+                    <option key={jurisdiction} value={jurisdiction}>
+                      {jurisdiction}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-4 border-t border-slate-50 pt-4 md:col-span-2">
+                <div className="flex items-center justify-between rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 text-blue-600">
+                      <Calendar size={16} />
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-slate-900">Exclude Expired Patents</div>
+                      <div className="text-xs font-medium uppercase tracking-[0.14em] text-slate-500">Show only enforceable patents</div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setFormData({ ...formData, excludeExpired: !formData.excludeExpired })}
+                    className={`relative h-6 w-12 rounded-full transition-all ${formData.excludeExpired ? 'bg-blue-600' : 'bg-slate-300'}`}
+                  >
+                    <div className={`absolute top-1 h-4 w-4 rounded-full bg-white transition-all ${formData.excludeExpired ? 'right-1' : 'left-1'}`} />
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="p-8 bg-slate-50 border-t border-slate-100 flex gap-4">
-          <button 
+        <div className="flex-shrink-0 flex flex-col gap-4 border-t border-slate-100 bg-slate-50 p-6 sm:flex-row sm:p-8">
+          <button
             onClick={() => setFormData(DEFAULT_FORM_DATA)}
             className="flex-1 rounded-2xl border border-slate-200 bg-white px-6 py-3.5 text-sm font-medium text-slate-600 transition-all hover:bg-slate-50"
           >
             Clear All
           </button>
-          <button 
-            onClick={() => { onSearch(formData); onClose(); }}
+          <button
+            onClick={() => {
+              onSearch(formData);
+              onClose();
+            }}
             disabled={formData.searchIn.length === 0}
             className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-blue-600 px-6 py-3.5 text-sm font-semibold text-white shadow-xl shadow-blue-200 transition-all hover:bg-blue-700 active:scale-95"
           >
