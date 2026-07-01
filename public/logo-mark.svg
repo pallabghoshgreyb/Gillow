@@ -9,8 +9,10 @@
       <stop offset="100%" stop-color="#243d8f"/>
     </linearGradient>
   </defs>
-  <circle cx="236" cy="262" r="196" fill="url(#pi-teal)"/>
-  <circle cx="316" cy="112" r="98" fill="url(#pi-teal)"/>
-  <circle cx="314" cy="358" r="146" fill="url(#pi-blue)"/>
-  <circle cx="226" cy="280" r="172" fill="url(#pi-teal)"/>
+  <g>
+    <circle cx="236" cy="262" r="196" fill="url(#pi-teal)"/>
+    <circle cx="316" cy="112" r="98" fill="url(#pi-teal)"/>
+    <circle cx="314" cy="358" r="146" fill="url(#pi-blue)"/>
+    <circle cx="226" cy="280" r="172" fill="url(#pi-teal)"/>
+  </g>
 </svg>

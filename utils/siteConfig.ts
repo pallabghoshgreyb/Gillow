@@ -13,6 +13,7 @@ export const SITE_NAME = 'PatentIndex';
 export const SITE_URL = trimTrailingSlash(rawSiteUrl || getFallbackSiteUrl());
 export const OG_IMAGE_URL = `${SITE_URL}/og-image.svg`;
 export const APPLE_TOUCH_ICON_URL = `${SITE_URL}/apple-touch-icon.svg`;
+export const LOGO_URL = `${SITE_URL}/logo-mark.svg`;
 export const DEFAULT_THEME_COLOR = '#00bdcd';
 
 export const GA4_ID = import.meta.env.VITE_GA4_ID?.trim() || '';

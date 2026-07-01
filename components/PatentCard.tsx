@@ -1,9 +1,10 @@
 
 import React from 'react';
-import { Heart, Building2, Users, Globe, Zap, ShieldCheck, AlertTriangle, Fingerprint, Tag, Scale, Rocket, ShieldAlert } from 'lucide-react';
+import { Heart, Building2, Users, Globe, Zap, ShieldCheck, AlertTriangle, Tag, Scale, Rocket, ShieldAlert } from 'lucide-react';
 import { Patent } from '../types';
 import { formatCompactCurrency, isKnownNumber } from '../utils/patentDisplay';
 import { trackEvent } from '../utils/analytics';
+import { getPatentThumbnailSrc } from '../utils/patentThumbnail';
 
 interface PatentCardProps {
   patent: Patent;
@@ -44,8 +45,16 @@ const PatentCard: React.FC<PatentCardProps> = ({ patent, isFavorite, onToggleFav
         <div className="absolute inset-0 bg-white/40 pattern-grid opacity-20"></div>
         
         <div className="relative text-center p-6 select-none flex flex-col items-center">
-            <div className="w-16 h-16 bg-white border border-slate-200 rounded-2xl flex items-center justify-center mb-4 shadow-sm group-hover:bg-blue-600 group-hover:border-blue-500 transition-colors">
-               <Fingerprint size={32} className="text-blue-600 group-hover:text-white transition-colors" />
+            <div className="w-16 h-16 bg-white border border-slate-200 rounded-2xl flex items-center justify-center mb-4 shadow-sm overflow-hidden group-hover:border-blue-500 transition-colors">
+               <img
+                 src={getPatentThumbnailSrc(patent.subdomain)}
+                 alt={`${patent.subdomain || patent.title || patent.publicationNumber} thumbnail`}
+                 width={64}
+                 height={64}
+                 loading="lazy"
+                 decoding="async"
+                 className="h-full w-full object-cover"
+               />
             </div>
             <div className="text-xs font-medium uppercase tracking-[0.16em] text-slate-400">{patent.publicationNumber}</div>
             <div className="mt-1 text-[11px] font-medium uppercase tracking-[0.14em] text-slate-500">{patent.patentType} Patent</div>

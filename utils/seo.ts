@@ -1,6 +1,6 @@
 import { getPatentById } from '../data/patents';
 import { getDomainDetailBySlug, getDomainDetails, slugifyDomainName } from '../data/domainDetails';
-import { OG_IMAGE_URL, SITE_NAME, SITE_URL } from './siteConfig';
+import { LOGO_URL, OG_IMAGE_URL, SITE_NAME, SITE_URL } from './siteConfig';
 
 type RouteLocation = {
   pathname: string;
@@ -254,7 +254,7 @@ export const buildOrganizationSchema = () => ({
   '@type': 'Organization',
   name: SITE_NAME,
   url: SITE_URL,
-  logo: `${SITE_URL}/logo.gif`,
+  logo: LOGO_URL,
 });
 
 export const buildWebSiteSchema = (meta: SeoMeta) => ({
