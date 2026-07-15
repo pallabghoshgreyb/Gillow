@@ -1,0 +1,40 @@
+name: Deploy PatIndex
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: patindex-production
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout latest code
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build --no-cache -t patindex:${{ github.sha }} .
+
+      - name: Remove old container
+        run: |
+          docker stop patindex 2>/dev/null || true
+          docker rm patindex 2>/dev/null || true
+
+      - name: Start updated container
+        run: |
+          docker run -d \
+            --name patindex \
+            -p 8085:80 \
+            --restart unless-stopped \
+            patindex:${{ github.sha }}
+
+      - name: Verify deployment
+        run: |
+          sleep 5
+          docker ps --filter "name=patindex"
+          curl --fail http://localhost:8085/
