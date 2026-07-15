@@ -17,13 +17,15 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({ onFilterChange, onReset, 
   const technologyDomains = Array.from(new Set(PATENTS.map(patent => patent.domain).filter(Boolean))).sort();
   const technologySubdomains = Array.from(new Set(PATENTS.map(patent => patent.subdomain).filter(Boolean))).sort();
   const legalStatuses = Array.from(new Set(PATENTS.map(patent => patent.legalStatus).filter(Boolean))).sort();
-  const filingYears = Array.from(
+  const publicationYears = Array.from(
     new Set(
       PATENTS
-        .map((patent) => new Date(patent.filingDate).getFullYear())
+        .map((patent) => new Date(patent.publicationDate).getFullYear())
         .filter((year) => !Number.isNaN(year))
     )
-  ).sort((a, b) => b - a);
+  ).sort((a, b) => a - b);
+  const defaultMinYear = publicationYears[0]?.toString() || '1990';
+  const defaultMaxYear = publicationYears[publicationYears.length - 1]?.toString() || new Date().getFullYear().toString();
   
   const toggleSection = (section: string) => {
     setExpanded(prev => 
@@ -54,12 +56,18 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({ onFilterChange, onReset, 
         <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
           <Filter size={18} className="text-[#00bdcd]" /> Filters
         </h2>
-        <button 
-          onClick={handleReset}
-          className="p-2 text-slate-400 hover:text-[#00bdcd] hover:bg-blue-50 rounded-lg transition-all"
-        >
-          <RefreshCcw size={16} />
-        </button>
+        <div className="relative group">
+          <button 
+            onClick={handleReset}
+            aria-label="Reset all filters"
+            className="p-2 text-slate-400 hover:text-[#00bdcd] hover:bg-blue-50 rounded-lg transition-all"
+          >
+            <RefreshCcw size={16} />
+          </button>
+          <span className="pointer-events-none absolute right-0 top-full z-20 mt-2 hidden whitespace-nowrap rounded-lg bg-slate-900 px-2.5 py-1 text-xs font-medium text-white shadow-2xl group-hover:block group-focus-within:block">
+            Reset all filters
+          </span>
+        </div>
       </div>
 
       <div className="p-6 space-y-8">
@@ -149,26 +157,32 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({ onFilterChange, onReset, 
         </FilterSection>
 
         {/* Filing Date Range */}
-        <FilterSection title="Filing Date" isOpen={expanded.includes('years')} onToggle={() => toggleSection('years')}>
+        <FilterSection title="Publication Year" isOpen={expanded.includes('years')} onToggle={() => toggleSection('years')}>
           <div className="grid grid-cols-2 gap-3">
              <div className="space-y-1">
                 <label className="text-xs font-medium uppercase tracking-[0.14em] text-slate-400">From</label>
                 <select 
-                  value={activeFilters.startYear}
-                  onChange={(e) => onFilterChange({ startYear: e.target.value })}
+                  value={activeFilters.publicationYearFrom}
+                  onChange={(e) => onFilterChange({
+                    publicationYearFrom: e.target.value,
+                    publicationYearTo: Number(e.target.value) > Number(activeFilters.publicationYearTo) ? e.target.value : activeFilters.publicationYearTo,
+                  })}
                   className="w-full p-2 bg-slate-50 border border-slate-200 rounded text-sm"
                 >
-                   {filingYears.map(y => <option key={y} value={y}>{y}</option>)}
+                   {publicationYears.map((year) => <option key={year} value={year}>{year}</option>)}
                 </select>
              </div>
              <div className="space-y-1">
                 <label className="text-xs font-medium uppercase tracking-[0.14em] text-slate-400">To</label>
                 <select 
-                  value={activeFilters.endYear}
-                  onChange={(e) => onFilterChange({ endYear: e.target.value })}
+                  value={activeFilters.publicationYearTo}
+                  onChange={(e) => onFilterChange({
+                    publicationYearTo: e.target.value,
+                    publicationYearFrom: Number(e.target.value) < Number(activeFilters.publicationYearFrom) ? e.target.value : activeFilters.publicationYearFrom,
+                  })}
                   className="w-full p-2 bg-slate-50 border border-slate-200 rounded text-sm"
                 >
-                   {filingYears.map(y => <option key={y} value={y}>{y}</option>)}
+                   {publicationYears.map((year) => <option key={year} value={year}>{year}</option>)}
                 </select>
              </div>
           </div>

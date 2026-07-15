@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { 
+import {
     List, Map as MapIcon, SlidersHorizontal, 
     Save, LayoutGrid, Loader2,
-    CheckCircle2, Filter, ChevronLeft, ChevronRight
+    CheckCircle2, Filter, ChevronLeft, ChevronRight, Info
 } from 'lucide-react';
 import { usePatentFilters } from '../hooks/usePatentFilters';
 import FilterSidebar from '../components/FilterSidebar';
@@ -32,12 +32,30 @@ const Search: React.FC = () => {
     () => Array.from(new Set(PATENTS.map(patent => patent.domain).filter(Boolean))).sort().slice(0, 6),
     []
   );
+  const availablePublicationYears = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          PATENTS
+            .map((patent) => new Date(patent.publicationDate).getFullYear())
+            .filter((year) => !Number.isNaN(year))
+        )
+      ).sort((a, b) => a - b),
+    []
+  );
+  const minPublicationYear = availablePublicationYears[0]?.toString() || '1990';
+  const maxPublicationYear = availablePublicationYears[availablePublicationYears.length - 1]?.toString() || new Date().getFullYear().toString();
   const activeFilterCount =
     filters.assignees.length +
     filters.categories.length +
     filters.subCategories.length +
     filters.statuses.length +
-    filters.patentTypes.length;
+    filters.patentTypes.length +
+    (filters.publicationYearFrom !== minPublicationYear || filters.publicationYearTo !== maxPublicationYear ? 1 : 0) +
+    (filters.minCitations > 0 ? 1 : 0) +
+    (filters.minValuation > 0 ? 1 : 0) +
+    (filters.minClaims > 0 ? 1 : 0) +
+    (filters.minFamilySize > 0 ? 1 : 0);
 
   useEffect(() => {
     if (query) addSearchHistory(query);
@@ -185,9 +203,9 @@ const Search: React.FC = () => {
         {sidebarOpen && <div className="md:hidden fixed inset-0 bg-slate-900/40 z-[60] backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />}
 
         <div className={`
-          absolute md:relative inset-y-0 left-0 z-[70] md:z-30 transition-transform duration-300 ease-in-out transform
+          absolute md:sticky md:top-20 md:self-start inset-y-0 left-0 z-[70] md:z-30 transition-transform duration-300 ease-in-out transform
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-          w-80 flex-shrink-0 h-full bg-white
+          w-80 flex-shrink-0 h-full md:h-[calc(100vh-5rem)] bg-white
         `}>
           <FilterSidebar 
             onFilterChange={updateFilters} 
@@ -232,6 +250,13 @@ const Search: React.FC = () => {
                             <Save size={16} /> Save this search
                         </button>
                     </div>
+                </div>
+
+                <div className="mb-6 flex items-start gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs font-medium leading-relaxed text-slate-500 shadow-sm">
+                    <Info size={14} className="mt-0.5 flex-shrink-0 text-slate-400" />
+                    <p>
+                        Card images are representative visuals based on each patent&apos;s technology subdomain, not images extracted from the individual patent.
+                    </p>
                 </div>
 
                 {activeFilterCount > 0 && (
@@ -281,6 +306,14 @@ const Search: React.FC = () => {
                                 Type: {type} x
                             </button>
                         ))}
+                        {(filters.publicationYearFrom !== minPublicationYear || filters.publicationYearTo !== maxPublicationYear) && (
+                            <button
+                                onClick={resetFilters}
+                                className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700"
+                            >
+                                Publication Year: {filters.publicationYearFrom} - {filters.publicationYearTo} x
+                            </button>
+                        )}
                         <button
                             onClick={resetFilters}
                             className="rounded-full px-3 py-1.5 text-xs font-medium text-slate-500 hover:text-slate-900"

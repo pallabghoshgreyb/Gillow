@@ -393,12 +393,6 @@ const DomainDetail: React.FC = () => {
                       <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100">
                         <div className="h-full rounded-full bg-[#00bdcd]" style={{ width: `${Math.max(6, technology.share)}%` }} />
                       </div>
-                      {technology.topAssignee && (
-                        <p className="mt-3 flex items-center gap-2 text-xs font-medium text-slate-500">
-                          <Building2 size={13} className="text-slate-400" />
-                          {technology.topAssignee}
-                        </p>
-                      )}
                     </button>
                   );
                 })}
@@ -465,6 +459,7 @@ const DomainDetail: React.FC = () => {
           }}
         />
 
+        {/*
         <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
@@ -513,6 +508,7 @@ const DomainDetail: React.FC = () => {
             <EmptyState title="No trend data" text="Filing dates are not available for this domain yet." />
           )}
         </section>
+        */}
 
         <section className="space-y-6" id="domain-patents" ref={patentsSectionRef} style={{ scrollMarginTop: '96px' }}>
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">

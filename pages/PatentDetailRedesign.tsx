@@ -1018,7 +1018,7 @@ const PatentDetailRedesign: React.FC = () => {
                 </div>
               </div>
               <div className="lg:hidden">
-                <SidebarCard patent={patent} view={view} shareFeedback={shareFeedback} onDownload={() => window.print()} onShare={() => void handleShare()} />
+                <SidebarCard patent={patent} view={view} remainingLifeLabel={remainingLifeLabel} shareFeedback={shareFeedback} onShare={() => void handleShare()} />
               </div>
             </motion.div>
 
@@ -1267,8 +1267,8 @@ const PatentDetailRedesign: React.FC = () => {
           </div>
 
           <aside className="mt-10 hidden lg:block lg:mt-0">
-            <div className="sticky top-28">
-              <SidebarCard patent={patent} view={view} shareFeedback={shareFeedback} onDownload={() => window.print()} onShare={() => void handleShare()} />
+            <div className="space-y-10 lg:pr-2">
+              <SidebarCard patent={patent} view={view} remainingLifeLabel={remainingLifeLabel} shareFeedback={shareFeedback} onShare={() => void handleShare()} />
               <QuickJumpNavigation activeId={activeJumpId} availableIds={availableJumpIds} items={visibleQuickJumpItems} onJump={handleQuickJump} />
             </div>
           </aside>
@@ -1758,7 +1758,7 @@ const PatentTimeline = ({
   );
 };
 
-const SidebarCard = ({ patent, view, shareFeedback, onDownload, onShare }: { patent: Patent; view: View; shareFeedback: string; onDownload: () => void; onShare: () => void }) => {
+const SidebarCard = ({ patent, view, remainingLifeLabel, shareFeedback, onShare }: { patent: Patent; view: View; remainingLifeLabel: string; shareFeedback: string; onShare: () => void }) => {
   const familyCount = Math.max(patent.familySize, view.family.length);
   const hasValuation = isKnownNumber(view.valuation);
   const hasStrength = view.strength !== null;
@@ -1784,6 +1784,7 @@ const SidebarCard = ({ patent, view, shareFeedback, onDownload, onShare }: { pat
         )}
         <div className="space-y-4">
           <div className="flex items-center justify-between gap-4"><p className="text-sm font-medium text-slate-500">Legal status</p><span className={cn('inline-flex rounded-full border px-3 py-1 text-xs font-medium', statusClasses(view.status.tone))}>{view.status.label}</span></div>
+          <div className="flex items-center justify-between gap-4"><p className="text-sm font-medium text-slate-500">Remaining Life</p><p className="max-w-[60%] text-right text-sm font-semibold text-slate-900">{remainingLifeLabel || 'Unknown'}</p></div>
           {hasText(view.assignee) && <div className="flex items-center justify-between gap-4"><p className="text-sm font-medium text-slate-500">Assignee</p><p className="max-w-[60%] text-right text-sm font-semibold text-slate-900">{view.assignee}</p></div>}
           {familyCount > 0 && <div className="flex items-center justify-between gap-4"><p className="text-sm font-medium text-slate-500">Family size</p><p className="text-sm font-semibold tabular-nums text-slate-900">{familyCount}</p></div>}
         </div>
@@ -1798,7 +1799,9 @@ const SidebarCard = ({ patent, view, shareFeedback, onDownload, onShare }: { pat
           </div>
         )}
         <div className="space-y-3">
+          {/*
           <button type="button" onClick={onDownload} className={cn('flex w-full items-center justify-center gap-2 rounded-2xl bg-teal-600 px-4 py-3.5 text-sm font-semibold text-white transition hover:bg-teal-700', FOCUS)}><Download size={16} />Download PDF</button>
+          */}
           <button type="button" onClick={onShare} className={cn('flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-sm font-semibold text-slate-700 transition hover:border-teal-200 hover:text-teal-700', FOCUS)}><Share2 size={16} />Share</button>
         </div>
         <AnimatePresence initial={false}>{shareFeedback ? <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">{shareFeedback}</motion.div> : null}</AnimatePresence>

@@ -72,7 +72,7 @@ const SeoManager: React.FC = () => {
     upsertMeta('meta[name="theme-color"]', 'name', 'theme-color', DEFAULT_THEME_COLOR);
     upsertMeta('meta[name="application-name"]', 'name', 'application-name', SITE_NAME);
     upsertLink('canonical', meta.canonical);
-    upsertLink('icon', '/logo.gif');
+    upsertLink('icon', '/logo-mark.svg');
     upsertLink('apple-touch-icon', '/apple-touch-icon.svg');
     upsertLink('manifest', '/manifest.webmanifest');
 

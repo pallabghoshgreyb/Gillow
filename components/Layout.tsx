@@ -31,8 +31,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const [isServerConfigOpen, setIsServerConfigOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
-  const [newsletterEmail, setNewsletterEmail] = useState('');
-  const [newsletterStatus, setNewsletterStatus] = useState('');
   const [infoDialog, setInfoDialog] = useState<InfoDialogState | null>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const notificationsRef = useRef<HTMLDivElement>(null);
@@ -111,12 +109,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     return () => document.removeEventListener('mousedown', handlePointerDown);
   }, []);
 
-  useEffect(() => {
-    if (!newsletterStatus) return;
-    const timer = window.setTimeout(() => setNewsletterStatus(''), 3000);
-    return () => window.clearTimeout(timer);
-  }, [newsletterStatus]);
-
   const patentNumberSearchPath = (query: string) => `/search?q=${encodeURIComponent(query)}&pn=1`;
   const hardNavigate = (path: string) => {
     window.location.assign(`${window.location.origin}${window.location.pathname}#${path}`);
@@ -188,26 +180,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       trackEvent('Patent Card Clicked', { publication_number: PATENTS[0].publicationNumber, source: 'info-dialog' });
       navigate(`/patent/${PATENTS[0].publicationNumber}`);
     }
-  };
-
-  const handleNewsletterSubscribe = (event: React.FormEvent) => {
-    event.preventDefault();
-    const trimmedEmail = newsletterEmail.trim();
-
-    if (!trimmedEmail) {
-      setNewsletterStatus('Enter an email address first.');
-      return;
-    }
-
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailPattern.test(trimmedEmail)) {
-      setNewsletterStatus('Use a valid email address.');
-      return;
-    }
-
-    trackEvent('CTA Clicked', { label: 'Newsletter Subscribe', source: 'footer' });
-    setNewsletterStatus(`Subscribed ${trimmedEmail}`);
-    setNewsletterEmail('');
   };
 
   const openShareWindow = (platform: 'linkedin' | 'x') => {
@@ -430,51 +402,33 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         {children}
       </main>
 
-      <footer className="bg-white text-slate-900 py-32 px-6 border-t border-slate-100">
+      <footer className="bg-white text-slate-900 pt-12 pb-8 px-6 border-t border-slate-100">
           <div className="max-w-[1400px] mx-auto">
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-16 md:gap-8 mb-24">
-                  <div className="md:col-span-5">
-                      <div className="flex items-center gap-2 mb-10">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 md:gap-8 mb-8">
+                  <div className="order-1 lg:order-none lg:col-span-1">
+                      <div className="flex items-center gap-2 mb-6">
                           <div className="w-10 h-10 rounded-xl overflow-hidden bg-white flex items-center justify-center shadow-xl shadow-blue-200">
                               <img src="/logo.gif" alt="PatentIndex logo" width={40} height={40} loading="eager" decoding="async" className="w-full h-full object-contain" />
                           </div>
                           <span className="sr-only">PatIndex</span>
                       </div>
-                      <p className="text-slate-400 max-w-sm mb-12 text-lg font-medium leading-relaxed">
+                      <p className="text-slate-400 max-w-sm mb-6 text-base font-medium leading-relaxed">
                           Reimagining intellectual property management for the modern era. Navigate, value, and acquire patents with global transparency.
                       </p>
-                      <div className="flex gap-4">
-                          <SocialIcon icon="LinkedIn" label="Share on LinkedIn" onClick={() => openShareWindow('linkedin')} />
-                          <SocialIcon icon="X" label="Share on X" onClick={() => openShareWindow('x')} />
-                          <SocialIcon
-                            icon="Youtube"
-                            label="Open product tour info"
-                            onClick={() => {
-                              trackEvent('Footer Link Clicked', { label: 'Video Tours' });
-                              setInfoDialog({
-                                title: 'Video Tours',
-                                description: 'Recorded product walkthroughs are not published yet, but the live PatIndex pages are ready to explore.',
-                                actionLabel: 'Open PatIndex',
-                                actionType: 'browse',
-                              });
-                            }}
-                          />
-                      </div>
                   </div>
 
-                  <div className="md:col-span-2">
-                      <h4 className="mb-10 text-sm font-medium uppercase tracking-[0.16em] text-slate-400">Platform</h4>
-                      <ul className="space-y-6 text-sm font-medium text-slate-600">
+                  <div className="order-2 lg:order-none lg:col-span-1">
+                      <h4 className="mb-6 text-sm font-medium uppercase tracking-[0.16em] text-slate-400">Platform</h4>
+                      <ul className="space-y-3 text-sm font-medium text-slate-600">
                           <li><button onClick={() => { trackEvent('Footer Link Clicked', { label: 'PatIndex' }); navigate('/browse'); }} className="hover:text-[#00bdcd] transition-colors">PatIndex</button></li>
                           {/* <li><button onClick={() => navigate('/landscape')} className="hover:text-[#00bdcd] transition-colors">Landscape</button></li> */}
                           <li><button onClick={() => { trackEvent('Footer Link Clicked', { label: 'AI Valuation' }); setInfoDialog({ title: 'AI Valuation', description: 'Valuation insights are available inside each patent detail page, including pricing, quality score, and risk context.', actionLabel: 'Open Sample Patent', actionType: 'sample-patent' }); }} className="hover:text-[#00bdcd] transition-colors">AI Valuation</button></li>
-                          <li><button onClick={() => { trackEvent('Footer Link Clicked', { label: 'API Docs' }); setIsServerConfigOpen(true); }} className="hover:text-[#00bdcd] transition-colors">API Docs</button></li>
                       </ul>
                   </div>
 
-                  <div className="md:col-span-2">
-                      <h4 className="mb-10 text-sm font-medium uppercase tracking-[0.16em] text-slate-400">Company</h4>
-                      <ul className="space-y-6 text-sm font-medium text-slate-600">
+                  <div className="lg:col-span-1">
+                      <h4 className="mb-6 text-sm font-medium uppercase tracking-[0.16em] text-slate-400">Company</h4>
+                      <ul className="space-y-3 text-sm font-medium text-slate-600">
                           <li><button onClick={() => { trackEvent('Footer Link Clicked', { label: 'Our Mission' }); setInfoDialog({ title: 'Our Mission', description: 'PatIndex helps teams explore patent landscapes, evaluate portfolio strength, and move from discovery to transaction faster.', actionLabel: 'Go Home', actionType: 'home' }); }} className="hover:text-[#00bdcd] transition-colors">Our Mission</button></li>
                           <li><button onClick={() => { trackEvent('Footer Link Clicked', { label: 'Security' }); setInfoDialog({ title: 'Security', description: 'This workspace runs locally with browser-stored preferences. Backend connectivity is optional and can be configured from the server connection panel.', actionLabel: 'Open Server Config', actionType: 'server-config' }); }} className="hover:text-[#00bdcd] transition-colors">Security</button></li>
                           <li><button onClick={() => { trackEvent('Footer Link Clicked', { label: 'Privacy' }); setInfoDialog({ title: 'Privacy', description: 'Search history, favorites, and saved searches are stored in your browser on this device unless you connect an external backend.', actionLabel: 'Open PatIndex', actionType: 'browse' }); }} className="hover:text-[#00bdcd] transition-colors">Privacy</button></li>
@@ -482,32 +436,19 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                       </ul>
                   </div>
 
-                  <div className="md:col-span-3">
-                      <h4 className="mb-10 text-sm font-medium uppercase tracking-[0.16em] text-slate-400">Newsletter</h4>
-                      <p className="text-sm text-slate-500 mb-6 font-medium">Get the latest on high-value portfolio listings.</p>
-                      <form onSubmit={handleNewsletterSubscribe} className="flex flex-col gap-3">
-                        <input
-                          value={newsletterEmail}
-                          onChange={(event) => setNewsletterEmail(event.target.value)}
-                          className="px-5 py-3 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:border-blue-400"
-                          placeholder="your@email.com"
-                        />
-                        <button type="submit" className="rounded-xl bg-slate-900 py-3 text-sm font-semibold text-white transition-all hover:bg-slate-800">Subscribe</button>
-                        {newsletterStatus && (
-                          <p className="text-xs font-medium text-blue-600">{newsletterStatus}</p>
-                        )}
-                      </form>
+                  <div className="order-4 lg:order-none lg:col-span-1">
+                    <h4 className="mb-6 text-sm font-medium uppercase tracking-[0.16em] text-slate-400">Social</h4>
+                    <div className="flex flex-wrap gap-4">
+                      <SocialIcon icon="LinkedIn" label="Share on LinkedIn" onClick={() => openShareWindow('linkedin')} />
+                      <SocialIcon icon="X" label="Share on X" onClick={() => openShareWindow('x')} />
+                    </div>
                   </div>
+
               </div>
 
-              <div className="flex flex-col items-center justify-between gap-6 border-t border-slate-100 pt-12 md:flex-row">
-                  <div className="text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
-                      © 2025 PatIndex • Built for Global IP Excellence
-                  </div>
-                  <div className="flex gap-8 text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
-                    <button onClick={() => { trackEvent('Footer Link Clicked', { label: 'Terms of Use' }); setInfoDialog({ title: 'Terms of Use', description: 'This interface is intended for patent review and portfolio evaluation. Confirm legal and commercial conclusions against official records before making decisions.' }); }} className="hover:text-slate-900">Terms of Use</button>
-                    <button onClick={() => { trackEvent('Footer Link Clicked', { label: 'Compliance' }); setInfoDialog({ title: 'Compliance', description: 'Compliance workflows depend on your connected backend and data source policies. Use the server configuration panel to point the app at your approved systems.', actionLabel: 'Open Server Config', actionType: 'server-config' }); }} className="hover:text-slate-900">Compliance</button>
-                    <button onClick={() => { trackEvent('Footer Link Clicked', { label: 'Patent Search API' }); setIsServerConfigOpen(true); }} className="hover:text-slate-900">Patent Search API</button>
+              <div className="border-t border-slate-100 pt-6 pb-4">
+                  <div className="text-left text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
+                      &copy; {new Date().getFullYear()} PATINDEX &bull; Built for Global IP Excellence
                   </div>
               </div>
           </div>

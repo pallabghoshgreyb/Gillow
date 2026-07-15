@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Heart, Building2, Users, Globe, Zap, ShieldCheck, AlertTriangle, Tag, Scale, Rocket, ShieldAlert } from 'lucide-react';
 import { Patent } from '../types';
 import { formatCompactCurrency, isKnownNumber } from '../utils/patentDisplay';
@@ -26,7 +26,10 @@ const isOperationallyActive = (status: string) =>
 
 const PatentCard: React.FC<PatentCardProps> = ({ patent, isFavorite, onToggleFavorite, onClick, href, layout = 'grid' }) => {
   const isList = layout === 'list';
+  const [imageLoadFailed, setImageLoadFailed] = useState(false);
   const operationalStatus = operationalStatusText(patent);
+  const subdomainName = patent.subdomain?.trim() || 'Technology Visual';
+  const subdomainLabel = `Subdomain Visual · ${subdomainName}`;
   const statusTone = isOperationallyInactive(operationalStatus)
     ? 'text-red-600'
     : isOperationallyActive(operationalStatus)
@@ -37,29 +40,21 @@ const PatentCard: React.FC<PatentCardProps> = ({ patent, isFavorite, onToggleFav
     : isOperationallyActive(operationalStatus)
       ? 'bg-emerald-500 animate-pulse'
       : 'bg-amber-400';
-  const cardClassName = `group bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-2xl hover:-translate-y-1.5 transition-all duration-300 cursor-pointer flex ${isList ? 'flex-row h-72' : 'flex-col h-full'}`;
+  const cardClassName = `group bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-2xl hover:-translate-y-1.5 transition-all duration-300 cursor-pointer flex ${isList ? 'flex-row h-72' : 'flex-col h-[34rem]'}`;
+  const imageSectionClassName = isList
+    ? 'relative flex-shrink-0 w-[40%] min-w-[220px] bg-slate-50 border-r border-slate-100'
+    : 'relative flex-shrink-0 h-[220px] sm:h-[240px] lg:h-[250px] bg-slate-50 border-b border-slate-100';
+  const thumbnailSizeClassName = isList
+    ? 'h-[170px] w-[170px] sm:h-[180px] sm:w-[180px]'
+    : 'h-[170px] w-[170px] max-h-[180px] max-w-[78%] sm:h-[190px] sm:w-[190px] sm:max-h-[200px] sm:max-w-[82%] lg:h-[208px] lg:w-[208px] lg:max-h-[215px] lg:max-w-[84%]';
+  const imageAltText = `Representative visual for the ${subdomainName} technology subdomain`;
+  const showFallback = imageLoadFailed;
   const cardContent = (
     <>
-      {/* Technical Header */}
-      <div className={`relative overflow-hidden flex-shrink-0 flex flex-col items-center justify-center bg-slate-50 ${isList ? 'w-80 border-r border-slate-100' : 'h-48 border-b border-slate-100'}`}>
-        <div className="absolute inset-0 bg-white/40 pattern-grid opacity-20"></div>
-        
-        <div className="relative text-center p-6 select-none flex flex-col items-center">
-            <div className="w-16 h-16 bg-white border border-slate-200 rounded-2xl flex items-center justify-center mb-4 shadow-sm overflow-hidden group-hover:border-blue-500 transition-colors">
-               <img
-                 src={getPatentThumbnailSrc(patent.subdomain)}
-                 alt={`${patent.subdomain || patent.title || patent.publicationNumber} thumbnail`}
-                 width={64}
-                 height={64}
-                 loading="lazy"
-                 decoding="async"
-                 className="h-full w-full object-cover"
-               />
-            </div>
-            <div className="text-xs font-medium uppercase tracking-[0.16em] text-slate-400">{patent.publicationNumber}</div>
-            <div className="mt-1 text-[11px] font-medium uppercase tracking-[0.14em] text-slate-500">{patent.patentType} Patent</div>
-        </div>
-        
+      {/* Image Section */}
+      <div className={imageSectionClassName}>
+        <div className="absolute inset-0 bg-white/30 pattern-grid opacity-15" />
+
         <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10">
           <span className={`flex items-center gap-1.5 rounded-md bg-white px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.14em] shadow-sm
             ${statusTone}`}>
@@ -68,30 +63,15 @@ const PatentCard: React.FC<PatentCardProps> = ({ patent, isFavorite, onToggleFav
           </span>
           {patent.flags.litigation && (
             <span className="flex items-center gap-1.5 rounded-md bg-red-500 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.14em] text-white shadow-sm">
-                <AlertTriangle size={8} /> Litigation
+              <AlertTriangle size={8} /> Litigation
             </span>
           )}
           {patent.flags.sep && (
             <span className="flex items-center gap-1.5 rounded-md bg-purple-600 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.14em] text-white shadow-sm">
-                <ShieldCheck size={8} /> SEP
+              <ShieldCheck size={8} /> SEP
             </span>
           )}
         </div>
-
-        {(isKnownNumber(patent.technologyReadinessLevel) || isKnownNumber(patent.infringementRiskScore)) && (
-          <div className="absolute bottom-3 left-3 z-10 flex gap-1.5">
-            {isKnownNumber(patent.technologyReadinessLevel) && (
-              <div className={`flex items-center gap-1 rounded px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-[0.14em] text-white shadow-sm ${patent.technologyReadinessLevel >= 7 ? 'bg-emerald-500' : patent.technologyReadinessLevel >= 4 ? 'bg-blue-500' : 'bg-amber-500'}`}>
-                  <Rocket size={8} /> TRL {patent.technologyReadinessLevel}
-              </div>
-            )}
-            {isKnownNumber(patent.infringementRiskScore) && (
-              <div className={`flex items-center gap-1 rounded px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-[0.14em] text-white shadow-sm ${patent.infringementRiskScore >= 8 ? 'bg-red-500' : 'bg-slate-700'}`}>
-                  <ShieldAlert size={8} /> Risk {patent.infringementRiskScore}
-              </div>
-            )}
-          </div>
-        )}
 
         <button 
           onClick={(e) => {
@@ -103,19 +83,75 @@ const PatentCard: React.FC<PatentCardProps> = ({ patent, isFavorite, onToggleFav
         >
           <Heart size={18} fill={isFavorite ? "currentColor" : "none"} className={isFavorite ? "text-red-500" : ""} />
         </button>
+
+        <div className="absolute inset-0 flex items-center justify-center p-4 sm:p-5 select-none">
+          <div className={`flex items-center justify-center rounded-[1.75rem] bg-white border border-slate-200 shadow-sm overflow-hidden group-hover:border-blue-500 transition-colors ${thumbnailSizeClassName}`}>
+            {showFallback ? (
+              <div className="flex h-full w-full items-center justify-center px-4 text-center">
+                <div className="space-y-1">
+                  <div className="text-sm font-semibold text-slate-700 line-clamp-2">{subdomainName}</div>
+                  <div className="text-[10px] font-medium uppercase tracking-[0.16em] text-slate-400">Technology Visual</div>
+                </div>
+              </div>
+            ) : (
+              <img
+                src={getPatentThumbnailSrc(patent.subdomain)}
+                alt={imageAltText}
+                width={208}
+                height={208}
+                loading="lazy"
+                decoding="async"
+                onError={() => setImageLoadFailed(true)}
+                className="h-full w-full object-contain"
+              />
+            )}
+          </div>
+        </div>
+
+        <div className="absolute bottom-3 left-3 right-14 z-10">
+          <span
+            className="inline-flex max-w-full truncate rounded-full border border-slate-200 bg-white/95 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.14em] text-slate-500 shadow-sm backdrop-blur-sm"
+            title={subdomainName}
+          >
+            Subdomain Visual · {subdomainName}
+          </span>
+        </div>
+
+        {(isKnownNumber(patent.technologyReadinessLevel) || isKnownNumber(patent.infringementRiskScore)) && (
+          <div className="absolute bottom-12 left-3 z-10 flex gap-1.5">
+            {isKnownNumber(patent.technologyReadinessLevel) && (
+              <div className={`flex items-center gap-1 rounded px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-[0.14em] text-white shadow-sm ${patent.technologyReadinessLevel >= 7 ? 'bg-emerald-500' : patent.technologyReadinessLevel >= 4 ? 'bg-blue-500' : 'bg-amber-500'}`}>
+                <Rocket size={8} /> TRL {patent.technologyReadinessLevel}
+              </div>
+            )}
+            {isKnownNumber(patent.infringementRiskScore) && (
+              <div className={`flex items-center gap-1 rounded px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-[0.14em] text-white shadow-sm ${patent.infringementRiskScore >= 8 ? 'bg-red-500' : 'bg-slate-700'}`}>
+                <ShieldAlert size={8} /> Risk {patent.infringementRiskScore}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Content Section */}
-      <div className="p-5 flex flex-col flex-1 min-w-0">
-        <div className="flex justify-between items-start mb-3">
-          <div className="text-xl font-semibold leading-none text-slate-900">
-            {formatCompactCurrency(patent.valuationEstimate)}
-          </div>
-          <div className="flex flex-col items-end gap-1">
-            <div className="flex items-center gap-1 rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.14em] text-blue-600">
-              {isKnownNumber(patent.qualityScore) ? `${patent.qualityScore}% Quality` : 'Not scored'}
+      <div className="border-t border-slate-100 bg-white p-5 flex min-h-0 flex-1 flex-col min-w-0">
+        <div className="flex min-h-0 flex-1 flex-col">
+          <div className="flex items-start justify-between gap-3">
+            <div className="space-y-1">
+              <div className="text-xs font-medium uppercase tracking-[0.16em] text-slate-400">{patent.publicationNumber}</div>
+              <div className="text-[11px] font-medium uppercase tracking-[0.14em] text-slate-500">{patent.patentType} Patent</div>
             </div>
-            <span className={`rounded border px-2 py-0.5 text-[9px] font-medium uppercase tracking-[0.14em] ${
+            <div className="flex flex-col items-end gap-1">
+              <div className="text-xl font-semibold leading-none text-slate-900">
+                {formatCompactCurrency(patent.valuationEstimate)}
+              </div>
+              <div className="flex items-center gap-1 rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.14em] text-blue-600">
+                {isKnownNumber(patent.qualityScore) ? `${patent.qualityScore}% Quality` : 'Not scored'}
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-3">
+            <span className={`inline-flex rounded border px-2 py-0.5 text-[9px] font-medium uppercase tracking-[0.14em] ${
               patent.independentClaimsCount >= 4 ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
               patent.independentClaimsCount >= 2 ? 'bg-blue-50 text-blue-700 border-blue-100' :
               'bg-amber-50 text-amber-700 border-amber-100'
@@ -123,37 +159,41 @@ const PatentCard: React.FC<PatentCardProps> = ({ patent, isFavorite, onToggleFav
               {patent.independentClaimsCount} IND / {patent.dependentClaimsCount} DEP
             </span>
           </div>
-        </div>
 
-        <h3 className={`mb-3 flex-1 line-clamp-2 font-semibold leading-tight text-slate-800 ${isList ? 'text-2xl' : 'text-base'}`}>
-          {patent.title}
-        </h3>
+          <h3 className={`mt-3 line-clamp-3 min-h-[4.5rem] font-semibold leading-tight text-slate-800 ${isList ? 'text-2xl' : 'text-base'}`}>
+            {patent.title}
+          </h3>
 
-        <div className="space-y-1.5 mb-4">
-          <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.14em] text-slate-500">
-            <Building2 size={12} className="text-slate-400 flex-shrink-0" />
-            <span className="truncate">{patent.currentAssignees[0] || 'Unassigned'}</span>
-          </div>
-          <div className="flex items-center gap-2 text-[10px] text-slate-400 font-medium">
-            <Users size={12} className="text-slate-400 flex-shrink-0" />
-            <span className="truncate">INV: {patent.inventors.slice(0, 2).join(', ')}{patent.inventors.length > 2 ? '...' : ''}</span>
-          </div>
-        </div>
-
-        <div className="mt-auto flex items-center justify-between border-t border-slate-50 pt-3 text-[11px] font-medium uppercase tracking-[0.14em] text-slate-400">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-1" title="Forward Citations">
-              <Zap size={10} className="text-blue-500" /> {patent.forwardCitationsCount}
+          <div className="mt-3 space-y-1.5">
+            <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.14em] text-slate-500">
+              <Building2 size={12} className="text-slate-400 flex-shrink-0" />
+              <span className="truncate">{patent.currentAssignees[0] || 'Unassigned'}</span>
             </div>
-            <div className="flex items-center gap-1" title="Family Size">
-              <Globe size={10} className="text-emerald-500" /> {patent.familySize}
-            </div>
-            <div className="flex items-center gap-1" title="Art Unit">
-              <Tag size={10} className="text-amber-500" /> {patent.gau}
+            <div className="flex items-center gap-2 text-[10px] text-slate-400 font-medium">
+              <Users size={12} className="text-slate-400 flex-shrink-0" />
+              <span className="truncate">INV: {patent.inventors.slice(0, 2).join(', ')}{patent.inventors.length > 2 ? '...' : ''}</span>
             </div>
           </div>
-          <div className="flex items-center gap-1">
-             <Scale size={10} /> {patent.jurisdiction}
+
+          <div className="mt-auto pt-3">
+            <div className="border-t border-slate-50 pt-3 text-[11px] font-medium uppercase tracking-[0.14em] text-slate-400">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-1" title="Forward Citations">
+                    <Zap size={10} className="text-blue-500" /> {patent.forwardCitationsCount}
+                  </div>
+                  <div className="flex items-center gap-1" title="Family Size">
+                    <Globe size={10} className="text-emerald-500" /> {patent.familySize}
+                  </div>
+                  <div className="flex items-center gap-1" title="Art Unit">
+                    <Tag size={10} className="text-amber-500" /> {patent.gau}
+                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Scale size={10} /> {patent.jurisdiction}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

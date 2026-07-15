@@ -27,6 +27,24 @@ import { exportPatentToCsv } from '../utils/exportUtils';
 import { shareContent } from '../utils/shareUtils';
 import { formatCompactCurrency, hasItems, hasText, isKnownNumber } from '../utils/patentDisplay';
 
+const formatRemainingLife = (expirationDate?: string) => {
+  if (!hasText(expirationDate)) return '';
+  const expiresAt = new Date(expirationDate as string);
+  if (Number.isNaN(expiresAt.getTime())) return '';
+
+  const today = new Date();
+  const remainingMs = expiresAt.getTime() - today.getTime();
+  if (remainingMs <= 0) return 'Expired';
+
+  const remainingYears = remainingMs / (365.25 * 24 * 60 * 60 * 1000);
+  if (remainingYears >= 1) {
+    return `${remainingYears.toFixed(1)} years remaining`;
+  }
+
+  const remainingMonths = Math.max(1, Math.round(remainingYears * 12));
+  return `${remainingMonths} month${remainingMonths === 1 ? '' : 's'} remaining`;
+};
+
 const PatentDetail: React.FC = () => {
   const { patentId } = useParams();
   const navigate = useNavigate();
@@ -133,6 +151,7 @@ const PatentDetail: React.FC = () => {
   const hasRiskSidebar = isKnownNumber(patent.infringementRiskScore);
   const marketSidebarValue = hasText(patent.marketSector) ? patent.marketSector : `$${(patent.totalAddressableMarket / 1e9).toFixed(1)}B TAM`;
   const marketSidebarSub = isKnownNumber(patent.totalAddressableMarket) ? `TAM: $${(patent.totalAddressableMarket / 1e9).toFixed(1)}B` : 'Market Data';
+  const remainingLifeLabel = formatRemainingLife(patent.estimatedExpirationDate);
   const operationalStatus = patent.simpleLegalStatus || patent.legalStatus || 'Unknown';
   const isInactiveStatus = /\b(inactive|dead|expired|lapsed)\b/i.test(operationalStatus);
   const isActiveStatus = /\b(active|alive)\b/i.test(operationalStatus) && !isInactiveStatus;
@@ -234,10 +253,11 @@ const PatentDetail: React.FC = () => {
                     </div>
                     <h1 className="text-5xl font-black text-slate-900 tracking-tight leading-[1.1]">{patent.title}</h1>
                     <div className="flex flex-wrap gap-x-10 gap-y-4">
-                       <MetricCompact icon={<Building2 size={16} />} label="Owner" value={patent.currentAssignees[0] || 'Unassigned'} />
-                       <MetricCompact icon={<Tag size={16} />} label="Entity Type" value={patent.entityType || 'Unknown'} />
-                       <MetricCompact icon={<ListTree size={16} />} label="Art Unit" value={patent.gau} />
-                       <MetricCompact icon={<Calendar size={16} />} label="Filed" value={patent.filingDate} />
+                      <MetricCompact icon={<Building2 size={16} />} label="Owner" value={patent.currentAssignees[0] || 'Unassigned'} />
+                      <MetricCompact icon={<Tag size={16} />} label="Entity Type" value={patent.entityType || 'Unknown'} />
+                      <MetricCompact icon={<ListTree size={16} />} label="Art Unit" value={patent.gau} />
+                      <MetricCompact icon={<Calendar size={16} />} label="Filed" value={patent.filingDate} />
+                      <MetricCompact icon={<Clock size={16} />} label="Remaining Life" value={remainingLifeLabel || 'Unknown'} />
                     </div>
                 </div>
 
@@ -557,6 +577,7 @@ const PatentDetail: React.FC = () => {
                     </div>
                     <div className="space-y-5 border-t border-slate-50 pt-10">
                         <SideStat label="Patent Quality" value={`${patent.qualityScore}/100`} sub="Technical Momentum" />
+                        <SideStat label="Remaining Life" value={remainingLifeLabel || 'Unknown'} sub="Estimated patent term" />
                         {hasMarketSidebar && <SideStat label="Market Sector" value={marketSidebarValue} sub={marketSidebarSub} />}
                         {hasTrlSidebar && <SideStat label="TRL Maturity" value={`Level ${patent.technologyReadinessLevel}`} sub="Readiness State" />}
                         {hasLicensingSidebar && <SideStat label="Licensing" value={patent.licensingStatus} sub="Acquisition Availability" />}

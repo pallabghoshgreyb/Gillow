@@ -5,13 +5,13 @@ import { PATENTS } from '../data/patents';
 import { Patent } from '../types';
 import type { AdvancedSearchField } from '../components/AdvancedSearchModal';
 
-const AVAILABLE_FILING_YEARS = PATENTS
-  .map((patent) => new Date(patent.filingDate).getFullYear())
+const AVAILABLE_PUBLICATION_YEARS = PATENTS
+  .map((patent) => new Date(patent.publicationDate).getFullYear())
   .filter((year) => !Number.isNaN(year))
   .sort((a, b) => a - b);
 
-const MIN_FILING_YEAR = AVAILABLE_FILING_YEARS[0]?.toString() || '1990';
-const MAX_FILING_YEAR = AVAILABLE_FILING_YEARS[AVAILABLE_FILING_YEARS.length - 1]?.toString() || new Date().getFullYear().toString();
+const MIN_PUBLICATION_YEAR = AVAILABLE_PUBLICATION_YEARS[0]?.toString() || '1990';
+const MAX_PUBLICATION_YEAR = AVAILABLE_PUBLICATION_YEARS[AVAILABLE_PUBLICATION_YEARS.length - 1]?.toString() || new Date().getFullYear().toString();
 const DEFAULT_SEARCH_IN: AdvancedSearchField[] = [
   'publicationNumber',
   'applicationNumber',
@@ -63,8 +63,8 @@ export interface FilterState {
   minClaims: number;
   minCitations: number;
   minFamilySize: number;
-  startYear: string;
-  endYear: string;
+  publicationYearFrom: string;
+  publicationYearTo: string;
   litigation: 'all' | 'include' | 'exclude';
   booleanMode: 'and' | 'or';
   searchIn: AdvancedSearchField[];
@@ -93,8 +93,8 @@ export const usePatentFilters = () => {
       minClaims: Number(searchParams.get('minC')) || 0,
       minCitations: Number(searchParams.get('minCit')) || 0,
       minFamilySize: Number(searchParams.get('minFam')) || 0,
-      startYear: searchParams.get('startY') || MIN_FILING_YEAR,
-      endYear: searchParams.get('endY') || MAX_FILING_YEAR,
+      publicationYearFrom: searchParams.get('startY') || MIN_PUBLICATION_YEAR,
+      publicationYearTo: searchParams.get('endY') || MAX_PUBLICATION_YEAR,
       litigation: (searchParams.get('lit') as any) || 'all',
       booleanMode: searchParams.get('mode') === 'or' ? 'or' : 'and',
       searchIn: (searchParams.getAll('in') as AdvancedSearchField[]).filter(Boolean).length > 0 ? (searchParams.getAll('in') as AdvancedSearchField[]) : DEFAULT_SEARCH_IN,
@@ -122,8 +122,8 @@ export const usePatentFilters = () => {
     if (next.minClaims > 0) params.set('minC', next.minClaims.toString());
     if (next.minCitations > 0) params.set('minCit', next.minCitations.toString());
     if (next.minFamilySize > 0) params.set('minFam', next.minFamilySize.toString());
-    if (next.startYear !== MIN_FILING_YEAR) params.set('startY', next.startYear);
-    if (next.endYear !== MAX_FILING_YEAR) params.set('endY', next.endYear);
+    if (next.publicationYearFrom !== MIN_PUBLICATION_YEAR) params.set('startY', next.publicationYearFrom);
+    if (next.publicationYearTo !== MAX_PUBLICATION_YEAR) params.set('endY', next.publicationYearTo);
     if (next.litigation !== 'all') params.set('lit', next.litigation);
     if (next.booleanMode !== 'and') params.set('mode', next.booleanMode);
     next.searchIn.forEach((field) => params.append('in', field));
@@ -211,11 +211,11 @@ export const usePatentFilters = () => {
       p.familySize >= filters.minFamilySize
     );
 
-    const start = parseInt(filters.startYear);
-    const end = parseInt(filters.endYear);
+    const start = parseInt(filters.publicationYearFrom);
+    const end = parseInt(filters.publicationYearTo);
     result = result.filter(p => {
-      const filingYear = new Date(p.filingDate).getFullYear();
-      return filingYear >= start && filingYear <= end;
+      const publicationYear = new Date(p.publicationDate).getFullYear();
+      return publicationYear >= start && publicationYear <= end;
     });
 
     if (filters.litigation === 'include') {
