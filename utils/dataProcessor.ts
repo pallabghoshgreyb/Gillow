@@ -538,7 +538,9 @@ export const parsePatentRow = (row: any): Patent => {
   const cipConDiv = splitFlexible(row['CIP/CON/DIV']);
   const continuitySignals = cipConDiv.length > 0 ? cipConDiv : explicitContinuityRelations;
   const iprPgr = splitFlexible(row['IPR/PGR']);
-  const fit = splitFlexible(row['FIT']);
+  const fit = String(row['Patent Type'] || '').trim().toLowerCase() === 'granted'
+    ? []
+    : splitFlexible(row['FIT']);
   const largestFamilies = splitFlexible(row['Largest Families']);
 
   // Prosecution History
