@@ -366,7 +366,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   onClick={() => trackEvent('Navigation Clicked', { destination: 'saved', source: 'header' })}
                   className={({isActive}) => `w-10 h-10 flex items-center justify-center rounded-xl transition-all relative ${isActive ? 'bg-red-50 text-red-600' : 'text-slate-500 hover:text-red-600 hover:bg-slate-50'}`}
                 >
-                    <Heart size={20} fill={favorites.length > 0 && window.location.hash.includes('saved') ? 'currentColor' : 'none'} />
+                    <Heart size={20} fill={favorites.length > 0 && location.pathname.includes('saved') ? 'currentColor' : 'none'} />
                     {favorites.length > 0 && (
                         <span className="absolute top-0 right-0 flex h-4 w-4 translate-x-1/4 -translate-y-1/4 items-center justify-center rounded-full border-2 border-white bg-[#00bdcd] text-[9px] font-semibold text-white">
                             {favorites.length}
