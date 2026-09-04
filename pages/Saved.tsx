@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useGillow } from '../context/GillowContext';
 import { api } from '../utils/api';
 import { Patent } from '../types';
@@ -8,6 +9,7 @@ import ComparisonTable from '../components/ComparisonTable';
 import { exportPatentsToCsv } from '../utils/exportUtils';
 
 const Saved: React.FC = () => {
+  const navigate = useNavigate();
   const { favorites, toggleFavorite, comparisonList, addToComparison, removeFromComparison, clearComparison } = useGillow();
   const [savedPatents, setSavedPatents] = useState<Patent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -112,7 +114,7 @@ const Saved: React.FC = () => {
                       Discover high-value patents in the PatIndex and save them to your tracker.
                   </p>
                   <button 
-                      onClick={() => window.location.hash = '#/browse'}
+                      onClick={() => navigate('/browse')}
                       className="flex items-center gap-2 rounded-xl bg-slate-900 px-8 py-3 font-semibold text-white shadow-lg transition-all hover:bg-slate-800 active:scale-95"
                   >
                       Explore PatIndex <ArrowRight size={18} />
