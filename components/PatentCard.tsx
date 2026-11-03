@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Heart, Building2, Users, Globe, Zap, ShieldCheck, AlertTriangle, Tag, Scale, Rocket, ShieldAlert } from 'lucide-react';
 import { Patent } from '../types';
 import { formatCompactCurrency, isKnownNumber } from '../utils/patentDisplay';
@@ -210,11 +211,10 @@ const PatentCard: React.FC<PatentCardProps> = ({ patent, isFavorite, onToggleFav
   };
 
   if (href) {
-    const hardHref = `${window.location.origin}${window.location.pathname}#${href}`;
     return (
-      <a href={hardHref} className={cardClassName} onClick={handleCardClick}>
+      <Link to={href} className={cardClassName} onClick={handleCardClick}>
         {cardContent}
-      </a>
+      </Link>
     );
   }
 

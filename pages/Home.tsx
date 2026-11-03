@@ -225,7 +225,7 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      <section id="domains" className="border-b border-slate-200 bg-slate-50 py-16 md:py-20">
+      <section id="domains" className="scroll-mt-20 border-b border-slate-200 bg-slate-50 py-16 md:py-20">
         <div className="mx-auto max-w-[1400px] px-6">
           <div className="mb-12 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
             <div className="max-w-3xl">

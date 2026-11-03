@@ -22,11 +22,23 @@ const ScrollToTop: React.FC = () => {
   const location = useLocation();
 
   React.useLayoutEffect(() => {
-    scrollToPageTop();
-    const frame = window.requestAnimationFrame(scrollToPageTop);
+    const scrollToLocation = () => {
+      const targetId = location.hash.slice(1);
+      const target = targetId ? document.getElementById(targetId) : null;
+
+      if (target) {
+        target.scrollIntoView({ block: 'start', behavior: 'auto' });
+        return;
+      }
+
+      scrollToPageTop();
+    };
+
+    scrollToLocation();
+    const frame = window.requestAnimationFrame(scrollToLocation);
 
     return () => window.cancelAnimationFrame(frame);
-  }, [location.pathname, location.search]);
+  }, [location.pathname, location.search, location.hash]);
 
   return null;
 };

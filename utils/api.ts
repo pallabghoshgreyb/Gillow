@@ -1,6 +1,7 @@
 import { TechNode, Patent, TechLevel, ChartDataPoint } from '../types';
 import { MAP_WIDTH, MAP_HEIGHT, DOMAIN_COLORS, PLACEHOLDER_IMAGES } from '../constants';
 import { PATENTS, getPatentById } from '../data/patents';
+import { parsePatentRow } from './dataProcessor';
 import { getDomainDetailBySlug, getDomainDetails } from '../data/domainDetails';
 
 const FAV_KEY = 'GILLOW_FAVORITES';
@@ -76,6 +77,18 @@ const buildTrendSeries = (patents: Patent[]): ChartDataPoint[] => {
     return Array.from(counts.entries())
         .sort((left, right) => left[0] - right[0])
         .map(([year, count]) => ({ year, count }));
+};
+
+const fetchPatentFromServer = async (publicationNumber: string): Promise<Patent | undefined> => {
+    try {
+        const res = await fetch('/api/patents/detail/' + encodeURIComponent(publicationNumber));
+        if (!res.ok) return undefined;
+        const data = await res.json(); // { raw, domains, source_files }
+        const patent = parsePatentRow(data.raw);
+        return { ...patent, domains: data.domains, sourceFiles: data.source_files } as Patent;
+    } catch {
+        return undefined;
+    }
 };
 
 export const api = {
@@ -161,7 +174,7 @@ export const api = {
     },
 
     getPatent: async (id: string): Promise<Patent | undefined> => {
-        return getPatentById(id);
+        return getPatentById(id) || await fetchPatentFromServer(id);
     },
 
     getTrends: async (id: string): Promise<ChartDataPoint[]> => {
