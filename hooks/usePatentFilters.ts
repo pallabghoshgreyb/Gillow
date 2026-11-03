@@ -3,6 +3,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { PATENTS } from '../data/patents';
 import { Patent } from '../types';
+import { api } from '../utils/api';
 import type { AdvancedSearchField } from '../components/AdvancedSearchModal';
 
 const AVAILABLE_PUBLICATION_YEARS = PATENTS
@@ -79,6 +80,21 @@ export const usePatentFilters = () => {
 
   const query = searchParams.get('q') || '';
   const patentNumberOnly = searchParams.get('pn') === '1';
+  const [serverResult, setServerResult] = useState<{ query: string; patent: Patent } | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    const publicationNumber = query.trim();
+    setServerResult(null);
+    if (!publicationNumber || PATENTS.some((patent) =>
+      patent.publicationNumber.toLowerCase() === publicationNumber.toLowerCase()
+    )) return;
+
+    void api.getPatent(publicationNumber).then((patent) => {
+      if (alive && patent) setServerResult({ query, patent });
+    });
+    return () => { alive = false; };
+  }, [query]);
   
   const filters = useMemo((): FilterState => {
     return {
@@ -143,6 +159,7 @@ export const usePatentFilters = () => {
 
   const filteredPatents = useMemo(() => {
     let result = [...PATENTS];
+    if (serverResult?.query === query) result.push(serverResult.patent);
 
     if (query) {
       const q = query.toLowerCase();
@@ -239,7 +256,7 @@ export const usePatentFilters = () => {
     });
 
     return result;
-  }, [query, patentNumberOnly, filters]);
+  }, [query, patentNumberOnly, filters, serverResult]);
 
   useEffect(() => {
     setLoading(true);

@@ -81,7 +81,7 @@ const Search: React.FC = () => {
     setSidebarOpen(false);
     setIsSaveModalOpen(false);
     setShowSavedToast(false);
-    window.location.assign(`${window.location.origin}${window.location.pathname}#/patent/${publicationNumber}`);
+    navigate(`/patent/${publicationNumber}`);
   };
 
   const removeFilterValue = (field: keyof typeof filters, value: string) => {

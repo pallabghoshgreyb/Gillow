@@ -44,10 +44,10 @@ if (query) {
 ### Test Case 1: Search + Single Category Filter
 1. **Navigate to home page**
 2. **Type "surgical"** in search bar → Press Enter
-   - Expected: URL becomes `/#/search?q=surgical`
+   - Expected: URL becomes `/search?q=surgical`
    - Expected: See multiple patents containing "surgical" across various domains
 3. **Click category button "Assistive Care Devices"**
-   - Expected: URL updates to `/#/search?q=surgical&category=Assistive+Care+Devices`
+   - Expected: URL updates to `/search?q=surgical&category=Assistive+Care+Devices`
    - Expected: **Category buttons remain visible**
    - Possible outcomes:
      - ✅ Results show patents matching both criteria

@@ -36,6 +36,7 @@ const TechnologyProfileSection: React.FC<TechnologyProfileSectionProps> = ({ pat
       : null;
     return {
       domain: hasText(patent.domain) ? patent.domain : '',
+      domains: patent.domains && patent.domains.length > 1 ? patent.domains : [],
       subdomain: hasText(patent.subdomain) ? patent.subdomain : '',
       level,
       description: hasText(patent.trlDescription) ? patent.trlDescription : '',
@@ -46,6 +47,7 @@ const TechnologyProfileSection: React.FC<TechnologyProfileSectionProps> = ({ pat
 
   if (
     !profile.domain &&
+    profile.domains.length === 0 &&
     !profile.subdomain &&
     profile.level === null &&
     !profile.description &&
@@ -63,12 +65,20 @@ const TechnologyProfileSection: React.FC<TechnologyProfileSectionProps> = ({ pat
       </div>
 
       <div className="space-y-6 pt-6">
-        {profile.domain && (
+        {(profile.domain || profile.domains.length > 0) && (
           <div className="space-y-2">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
               Domain
             </p>
-            <p className="text-lg font-medium leading-7 text-slate-900">{profile.domain}</p>
+            {profile.domains.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {profile.domains.map((domain) => (
+                  <span key={domain} className="rounded-full border border-teal-200 bg-teal-50 px-3 py-1 text-sm font-medium text-teal-700">{domain}</span>
+                ))}
+              </div>
+            ) : (
+              <p className="text-lg font-medium leading-7 text-slate-900">{profile.domain}</p>
+            )}
           </div>
         )}
 

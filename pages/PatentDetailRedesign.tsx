@@ -719,6 +719,7 @@ const PatentDetailRedesign: React.FC = () => {
     const hasLicensingSection = hasLicensingData(patent);
     const hasTechnologySection =
       hasText(patent.domain) ||
+      hasItems(patent.domains) ||
       hasText(patent.subdomain) ||
       isKnownNumber(patent.technologyReadinessLevel) ||
       hasText(patent.trlDescription) ||
@@ -789,6 +790,10 @@ const PatentDetailRedesign: React.FC = () => {
         }
         setPatent(current);
         setCatalog(allPatents);
+        if (!allPatents.some((item) => item.id === current.id)) {
+          setRelated([]);
+          return;
+        }
         const ranked = allPatents.filter((item) => item.id !== current.id).sort((a, b) => patentScore(current, b) - patentScore(current, a));
         setRelated((ranked.length > 0 ? ranked : allPatents.filter((item) => item.id !== current.id)).slice(0, 3));
       } catch (error) {
@@ -957,6 +962,7 @@ const PatentDetailRedesign: React.FC = () => {
   const hasLicensingSection = hasLicensingData(patent);
   const hasTechnologySection =
     hasText(patent.domain) ||
+    hasItems(patent.domains) ||
     hasText(patent.subdomain) ||
     isKnownNumber(patent.technologyReadinessLevel) ||
     hasText(patent.trlDescription) ||

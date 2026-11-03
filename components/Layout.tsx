@@ -110,9 +110,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   }, []);
 
   const patentNumberSearchPath = (query: string) => `/search?q=${encodeURIComponent(query)}&pn=1`;
-  const hardNavigate = (path: string) => {
-    window.location.assign(`${window.location.origin}${window.location.pathname}#${path}`);
-  };
 
   const findExactPatent = (query: string) => {
     const normalized = query.trim().toLowerCase();
@@ -126,9 +123,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       trackEvent('Search Completed', { query, source: 'header' });
       const patent = findExactPatent(query);
       if (patent) {
-        hardNavigate(`/patent/${patent.id}`);
+        navigate(`/patent/${patent.id}`);
       } else {
-        hardNavigate(patentNumberSearchPath(query));
+        navigate(patentNumberSearchPath(query));
       }
       setShowSearchHistory(false);
       setSearchValue('');
@@ -140,9 +137,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     trackEvent('Search Completed', { query: value, source: 'header-suggestion' });
     const patent = findExactPatent(value);
     if (patent) {
-      hardNavigate(`/patent/${patent.id}`);
+      navigate(`/patent/${patent.id}`);
     } else {
-      hardNavigate(patentNumberSearchPath(value));
+      navigate(patentNumberSearchPath(value));
     }
     setShowSearchHistory(false);
     setSearchValue('');
@@ -528,7 +525,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             params.set('jur', filters.jurisdiction);
           }
 
-          hardNavigate(`/search${params.toString() ? `?${params.toString()}` : ''}`);
+          navigate(`/search${params.toString() ? `?${params.toString()}` : ''}`);
         }}
       />
       */}

@@ -79,6 +79,8 @@ export interface Patent {
   
   // TECHNOLOGY
   domain: string;
+  domains?: string[];
+  sourceFiles?: string[];
   subdomain: string;
   cpcs: string[];
   primaryCpc: string;
