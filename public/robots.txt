@@ -4,4 +4,4 @@ Disallow: /admin
 Disallow: /private
 Disallow: /api
 
-Sitemap: https://patindex.com/sitemap.xml
+Sitemap: https://patindex.greyb.com/sitemap.xml

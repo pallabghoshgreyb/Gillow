@@ -8,7 +8,7 @@ const rootDir = path.resolve(__dirname, '..');
 const publicDir = path.join(rootDir, 'public');
 const patentsFile = path.join(rootDir, 'data', 'patents.ts');
 
-const siteUrl = (process.env.SITE_URL || process.env.VITE_SITE_URL || 'https://patindex.com').replace(/\/+$/, '');
+const siteUrl = (process.env.SITE_URL || process.env.VITE_SITE_URL || 'https://patindex.greyb.com').replace(/\/+$/, '');
 
 const slugify = (value) =>
   String(value || '')
