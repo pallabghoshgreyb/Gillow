@@ -1,6 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { X, Search, Calendar, Zap, Filter, Layers, Target } from 'lucide-react';
-import { PATENTS } from '../data/patents';
+import { useFacets } from '../hooks/useFacets';
+import type { FacetRange } from '../utils/api';
 
 export type AdvancedSearchField =
   | 'publicationNumber'
@@ -62,21 +63,11 @@ const SEARCH_FIELD_OPTIONS: Array<{ field: AdvancedSearchField; label: string }>
 
 const AdvancedSearchModal: React.FC<AdvancedSearchModalProps> = ({ isOpen, onClose, onSearch, initialValues }) => {
   const [formData, setFormData] = useState<AdvancedSearchFormData>(initialValues || DEFAULT_FORM_DATA);
-  const jurisdictions = useMemo(() => (
-    ['All', ...Array.from(new Set(PATENTS.map((patent) => patent.jurisdiction).filter(Boolean))).sort()]
-  ), []);
-  const patentTypes = useMemo(
-    () => Array.from(new Set(PATENTS.map((patent) => patent.patentType).filter(Boolean))).sort(),
-    []
-  );
-  const assigneeTypes = useMemo(
-    () => Array.from(new Set(PATENTS.map((patent) => patent.assignee.type).filter(Boolean))).sort(),
-    []
-  );
-  const familySizeMax = useMemo(() => {
-    const maxFamilySize = PATENTS.reduce((max, patent) => Math.max(max, patent.familySize || 0), 0);
-    return Math.max(10, Math.min(50, maxFamilySize));
-  }, []);
+  const { facets, loading } = useFacets();
+  const jurisdictions = facets?.jurisdictions || [];
+  const patentTypes = facets?.patentTypes || [];
+  const assigneeTypes = facets?.entityTypes || [];
+  const hasRange = (range?: FacetRange) => loading || (range != null && (range.min != null || range.max != null));
 
   useEffect(() => {
     if (!isOpen) return;
@@ -125,6 +116,7 @@ const AdvancedSearchModal: React.FC<AdvancedSearchModalProps> = ({ isOpen, onClo
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto p-6 sm:p-8 custom-scrollbar">
+          {(loading || !facets) && <p role="status" className="mb-4 text-sm text-slate-400">{loading ? 'Loading filters…' : 'Filter options unavailable.'}</p>}
           <div className="space-y-8">
             <div className="space-y-4">
               <label className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
@@ -188,30 +180,35 @@ const AdvancedSearchModal: React.FC<AdvancedSearchModalProps> = ({ isOpen, onClo
                   <Zap size={14} /> Technical Thresholds
                 </label>
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
-                  <ThresholdInput
+                  {hasRange(facets?.citations) && <ThresholdInput
                     label="Min Citations"
                     value={formData.minCitations}
                     onChange={(v) => setFormData({ ...formData, minCitations: v })}
-                    max={500}
-                  />
-                  <ThresholdInput
+                    max={Math.max(formData.minCitations, facets?.citations.max || 0)}
+                    disabled={loading || facets?.citations.max == null}
+                  />}
+                  {hasRange(facets?.claims) && <ThresholdInput
                     label="Min Claims"
                     value={formData.minClaims}
                     onChange={(v) => setFormData({ ...formData, minClaims: v })}
-                    max={50}
-                  />
-                  <ThresholdInput
+                    max={Math.max(formData.minClaims, facets?.claims.max || 0)}
+                    disabled={loading || facets?.claims.max == null}
+                  />}
+                  {hasRange(facets?.valuation) && <ThresholdInput
                     label="Min Valuation ($M)"
                     value={formData.minValuation}
                     onChange={(v) => setFormData({ ...formData, minValuation: v })}
-                    max={100}
-                  />
-                  <ThresholdInput
+                    max={Math.max(formData.minValuation, (facets?.valuation.max || 0) / 1000000)}
+                    step={0.01}
+                    disabled={loading || facets?.valuation.max == null}
+                  />}
+                  {hasRange(facets?.familySize) && <ThresholdInput
                     label="Min Family Size"
                     value={formData.minFamilySize}
                     onChange={(v) => setFormData({ ...formData, minFamilySize: v })}
-                    max={familySizeMax}
-                  />
+                    max={Math.max(formData.minFamilySize, facets?.familySize.max || 0)}
+                    disabled={loading || facets?.familySize.max == null}
+                  />}
                 </div>
               </div>
 
@@ -229,13 +226,14 @@ const AdvancedSearchModal: React.FC<AdvancedSearchModalProps> = ({ isOpen, onClo
                       </span>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      {patentTypes.map((type) => (
+                      {loading && <button disabled className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-slate-400">Loading patent types…</button>}
+                      {patentTypes.map(({ value: type, count }) => (
                         <button
                           key={type}
                           onClick={() => handleToggleArrayValue('patentTypes', type)}
                           className={`rounded-lg border px-3 py-1.5 text-xs font-medium uppercase tracking-[0.14em] transition-all ${formData.patentTypes.includes(type) ? 'border-blue-600 bg-blue-50 text-blue-600' : 'border-slate-200 bg-white text-slate-400 hover:border-slate-300'}`}
                         >
-                          {type}
+                          {type} {count != null && <span className="opacity-60">({count.toLocaleString()})</span>}
                         </button>
                       ))}
                     </div>
@@ -249,13 +247,14 @@ const AdvancedSearchModal: React.FC<AdvancedSearchModalProps> = ({ isOpen, onClo
                       </span>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      {assigneeTypes.map((type) => (
+                      {loading && <button disabled className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-slate-400">Loading entity types…</button>}
+                      {assigneeTypes.map(({ value: type, count }) => (
                         <button
                           key={type}
                           onClick={() => handleToggleArrayValue('assigneeTypes', type)}
                           className={`rounded-lg border px-3 py-1.5 text-xs font-medium uppercase tracking-[0.14em] transition-all ${formData.assigneeTypes.includes(type) ? 'border-blue-600 bg-blue-50 text-blue-600' : 'border-slate-200 bg-white text-slate-400 hover:border-slate-300'}`}
                         >
-                          {type}
+                          {type} {count != null && <span className="opacity-60">({count.toLocaleString()})</span>}
                         </button>
                       ))}
                     </div>
@@ -285,13 +284,15 @@ const AdvancedSearchModal: React.FC<AdvancedSearchModalProps> = ({ isOpen, onClo
                   <Layers size={14} /> Jurisdiction
                 </label>
                 <select
+                  disabled={loading || !facets}
                   value={formData.jurisdiction}
                   onChange={(e) => setFormData({ ...formData, jurisdiction: e.target.value })}
                   className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none focus:border-blue-500"
                 >
-                  {jurisdictions.map((jurisdiction) => (
+                  <option value="All">{loading ? 'Loading jurisdictions…' : 'All'}</option>
+                  {jurisdictions.map(({ value: jurisdiction, count }) => (
                     <option key={jurisdiction} value={jurisdiction}>
-                      {jurisdiction}
+                      {jurisdiction}{count != null ? ` (${count.toLocaleString()})` : ''}
                     </option>
                   ))}
                 </select>
@@ -343,7 +344,7 @@ const AdvancedSearchModal: React.FC<AdvancedSearchModalProps> = ({ isOpen, onClo
   );
 };
 
-const ThresholdInput = ({ label, value, onChange, max }: { label: string, value: number, onChange: (v: number) => void, max: number }) => (
+const ThresholdInput = ({ label, value, onChange, max, disabled, step = 1 }: { label: string, value: number, onChange: (v: number) => void, max: number, disabled?: boolean, step?: number }) => (
   <div className="space-y-2">
     <div className="flex justify-between items-center">
       <span className="text-xs font-medium uppercase tracking-[0.14em] text-slate-500">{label}</span>
@@ -353,8 +354,10 @@ const ThresholdInput = ({ label, value, onChange, max }: { label: string, value:
       type="range" 
       min="0" 
       max={max} 
+      step={step}
+      disabled={disabled}
       value={value} 
-      onChange={e => onChange(parseInt(e.target.value))}
+      onChange={e => onChange(Number(e.target.value))}
       className="w-full h-1.5 bg-slate-200 rounded-full appearance-none cursor-pointer accent-blue-600"
     />
   </div>

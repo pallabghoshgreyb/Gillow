@@ -61,7 +61,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       query: searchValue.trim() || params.get('q') || '',
       booleanMode: params.get('mode') === 'or' ? 'OR' : 'AND',
       searchIn: searchIn.length > 0 ? (searchIn as AdvancedSearchFormData['searchIn']) : ['publicationNumber', 'applicationNumber', 'title', 'abstract', 'inventor', 'assignee', 'domain', 'subdomain'],
-      minValuation: Math.floor((Number(params.get('minV')) || 0) / 1000000),
+      minValuation: (Number(params.get('minV')) || 0) / 1000000,
       minCitations: Number(params.get('minCit')) || 0,
       minClaims: Number(params.get('minC')) || 0,
       minFamilySize: Number(params.get('minFam')) || 0,

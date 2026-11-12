@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
     List, Map as MapIcon, SlidersHorizontal, 
@@ -6,52 +6,37 @@ import {
     CheckCircle2, Filter, ChevronLeft, ChevronRight, Info
 } from 'lucide-react';
 import { usePatentFilters } from '../hooks/usePatentFilters';
+import { useFacets } from '../hooks/useFacets';
 import FilterSidebar from '../components/FilterSidebar';
 import PatentCard from '../components/PatentCard';
 import PatentMap from '../components/PatentMap';
 import SaveSearchModal from '../components/SaveSearchModal';
 import { useGillow } from '../context/GillowContext';
-import { PATENTS } from '../data/patents';
 import { trackEvent } from '../utils/analytics';
 
 const Search: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { filters, updateFilters, filteredPatents, loading, query, setQuery, resetFilters } = usePatentFilters();
+  const [requestedPageSize, setRequestedPageSize] = useState(20);
+  const { filters, updateFilters, filteredPatents, total, page, setPage, pageSize, loading, query, resetFilters } = usePatentFilters(requestedPageSize);
+  const { facets, loading: facetsLoading } = useFacets();
   const { favorites, toggleFavorite, addSearchHistory } = useGillow();
   
   const [view, setView] = useState<'grid' | 'list' | 'map'>('grid');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showSavedToast, setShowSavedToast] = useState(false);
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
-  const [pageSize, setPageSize] = useState(20);
-  const [currentPage, setCurrentPage] = useState(1);
-  
-  // Memoize quickDomainFilters to prevent unnecessary recalculations
-  const quickDomainFilters = useMemo(
-    () => Array.from(new Set(PATENTS.map(patent => patent.domain).filter(Boolean))).sort().slice(0, 6),
-    []
-  );
-  const availablePublicationYears = useMemo(
-    () =>
-      Array.from(
-        new Set(
-          PATENTS
-            .map((patent) => new Date(patent.publicationDate).getFullYear())
-            .filter((year) => !Number.isNaN(year))
-        )
-      ).sort((a, b) => a - b),
-    []
-  );
-  const minPublicationYear = availablePublicationYears[0]?.toString() || '1990';
-  const maxPublicationYear = availablePublicationYears[availablePublicationYears.length - 1]?.toString() || new Date().getFullYear().toString();
+  const quickDomainFilters = facets?.domains.slice(0, 6) || [];
+  const minPublicationYear = facets?.yearRange.min?.toString() || 'Any';
+  const maxPublicationYear = facets?.yearRange.max?.toString() || 'Any';
+  const hasPrice = facets && (facets.price.min !== null || facets.price.max !== null);
   const activeFilterCount =
     filters.assignees.length +
     filters.categories.length +
     filters.subCategories.length +
     filters.statuses.length +
     filters.patentTypes.length +
-    (filters.publicationYearFrom !== minPublicationYear || filters.publicationYearTo !== maxPublicationYear ? 1 : 0) +
+    (filters.publicationYearFrom || filters.publicationYearTo ? 1 : 0) +
     (filters.minCitations > 0 ? 1 : 0) +
     (filters.minValuation > 0 ? 1 : 0) +
     (filters.minClaims > 0 ? 1 : 0) +
@@ -63,11 +48,6 @@ const Search: React.FC = () => {
   }, [query]);
 
   useEffect(() => {
-    setCurrentPage(1);
-  }, [query, filters, view, pageSize]);
-
-  useEffect(() => {
-    setCurrentPage(1);
     window.scrollTo({ top: 0, behavior: 'auto' });
   }, [location.search]);
 
@@ -91,12 +71,11 @@ const Search: React.FC = () => {
     updateFilters({ [field]: current.filter((item) => item !== value) } as any);
   };
 
-  const totalPages = Math.max(1, Math.ceil(filteredPatents.length / pageSize));
-  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const safeCurrentPage = page;
   const startIndex = (safeCurrentPage - 1) * pageSize;
-  const paginatedPatents = filteredPatents.slice(startIndex, startIndex + pageSize);
   const startResult = filteredPatents.length === 0 ? 0 : startIndex + 1;
-  const endResult = Math.min(startIndex + pageSize, filteredPatents.length);
+  const endResult = Math.min(startIndex + filteredPatents.length, total);
 
   const getVisiblePages = () => {
     if (totalPages <= 7) {
@@ -115,7 +94,7 @@ const Search: React.FC = () => {
   };
 
   return (
-    <div key={location.search} className="flex min-h-[calc(100vh-80px)] flex-col bg-white">
+    <div className="flex min-h-[calc(100vh-80px)] flex-col bg-white">
       
       {/* Search & Action Toolbar */}
       <div className="flex-shrink-0 bg-white border-b border-slate-100 z-40 shadow-sm relative">
@@ -156,12 +135,15 @@ const Search: React.FC = () => {
 
                       <select 
                         value={filters.sortBy}
+                        disabled={facetsLoading}
                         onChange={(e) => updateFilters({ sortBy: e.target.value as any })}
                         className="cursor-pointer rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm outline-none focus:border-[#00bdcd]"
                       >
                           <option value="relevance">Relevance</option>
                           <option value="newest">Newest Listed</option>
                           <option value="citations">Citation Count</option>
+                          {hasPrice && <option value="price-low">Price: Low to High</option>}
+                          {hasPrice && <option value="price-high">Price: High to Low</option>}
                       </select>
 
                       <button 
@@ -178,8 +160,10 @@ const Search: React.FC = () => {
                   <div className="mr-2 flex items-center gap-1 rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium uppercase tracking-[0.16em] text-white">
                     <Filter size={12} /> Technology Domains
                   </div>
-                  {quickDomainFilters && quickDomainFilters.length > 0 ? (
-                    quickDomainFilters.map(domain => {
+                  {facetsLoading ? (
+                    <button disabled className="rounded-full border border-slate-200 px-4 py-1.5 text-xs text-slate-400">Loading domains…</button>
+                  ) : quickDomainFilters.length > 0 ? (
+                    quickDomainFilters.map(({ domain, count }) => {
                         const isActive = filters.categories.includes(domain);
                         return (
                             <button 
@@ -189,7 +173,7 @@ const Search: React.FC = () => {
                               }}
                               className={`whitespace-nowrap rounded-full border px-4 py-1.5 text-xs font-medium transition-all shadow-sm ${isActive ? 'bg-[#00bdcd] border-[#00bdcd] text-white' : 'bg-white border-slate-200 text-slate-600 hover:border-[#00bdcd]'}`}
                             >
-                                {domain}
+                                {domain} <span className="ml-1 opacity-70">({count})</span>
                             </button>
                         );
                     })
@@ -223,16 +207,19 @@ const Search: React.FC = () => {
                            {query ? `Search: "${query}"` : filters.assignees[0] ? `${filters.assignees[0]} Portfolio View` : 'PatIndex Hub'}
                         </h2>
                         <div className="mt-1 text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
-                            Found {filteredPatents.length} patent{filteredPatents.length === 1 ? '' : 's'}
+                            Found {total} patent{total === 1 ? '' : 's'}
                         </div>
                     </div>
                     <div className="flex flex-col items-stretch gap-3 md:flex-row md:items-center">
-                        {view !== 'map' && filteredPatents.length > 0 && (
+                        {filteredPatents.length > 0 && (
                             <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-2 shadow-sm">
                                 <span className="text-xs font-medium uppercase tracking-[0.16em] text-slate-400">Patents Per Page</span>
                                 <select
-                                  value={pageSize}
-                                  onChange={(e) => setPageSize(Number(e.target.value))}
+                                  value={requestedPageSize}
+                                  onChange={(e) => {
+                                    setRequestedPageSize(Number(e.target.value));
+                                    setPage(1);
+                                  }}
                                   className="bg-transparent text-sm font-medium text-slate-700 outline-none"
                                 >
                                   {[10, 20, 50, 100].map((size) => (
@@ -307,12 +294,12 @@ const Search: React.FC = () => {
                                 Type: {type} x
                             </button>
                         ))}
-                        {(filters.publicationYearFrom !== minPublicationYear || filters.publicationYearTo !== maxPublicationYear) && (
+                        {(filters.publicationYearFrom || filters.publicationYearTo) && (
                             <button
-                                onClick={resetFilters}
+                                onClick={() => updateFilters({ publicationYearFrom: '', publicationYearTo: '' })}
                                 className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700"
                             >
-                                Publication Year: {filters.publicationYearFrom} - {filters.publicationYearTo} x
+                                Publication Year: {filters.publicationYearFrom || minPublicationYear} - {filters.publicationYearTo || maxPublicationYear} x
                             </button>
                         )}
                         <button
@@ -324,7 +311,12 @@ const Search: React.FC = () => {
                     </div>
                 )}
 
-                {loading ? (
+                {loading && (
+                    <div role="status" className="mb-4 flex items-center gap-2 text-sm text-slate-500">
+                        <Loader2 size={16} className="animate-spin" /> Updating results…
+                    </div>
+                )}
+                {loading && filteredPatents.length === 0 ? (
                     <div className="grid gap-8 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
                         {[1, 2, 3, 4, 5, 6].map(i => (
                             <div key={i} className="h-[420px] bg-white rounded-3xl border border-slate-100 animate-pulse" />
@@ -339,18 +331,20 @@ const Search: React.FC = () => {
                             }} 
                         />
                     </div>
-                ) : !loading && filteredPatents.length > 0 ? (
+                ) : filteredPatents.length > 0 ? (
                     <>
                     <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm md:flex-row md:items-center md:justify-between">
                         <div className="text-sm font-medium text-slate-600">
-                            Showing <span className="text-slate-900">{startResult}-{endResult}</span> of <span className="text-slate-900">{filteredPatents.length}</span> patents
+                            {loading ? 'Showing previous results while updating…' : (
+                                <>Showing <span className="text-slate-900">{startResult}-{endResult}</span> of <span className="text-slate-900">{total}</span> patents</>
+                            )}
                         </div>
                         <div className="text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
-                            Page {safeCurrentPage} of {totalPages}
+                            {loading ? `Loading page ${page}` : `Page ${safeCurrentPage} of ${totalPages}`}
                         </div>
                     </div>
                     <div className={`grid gap-8 ${view === 'grid' ? 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-3' : 'grid-cols-1'}`}>
-                        {paginatedPatents.map(patent => (
+                        {filteredPatents.map(patent => (
                             <div key={patent.id} className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                                 <PatentCard 
                                     patent={patent} 
@@ -362,12 +356,24 @@ const Search: React.FC = () => {
                             </div>
                         ))}
                     </div>
+                    </>
+                ) : (
+                    <div className="bg-white rounded-[2rem] border border-slate-200 p-24 flex flex-col items-center text-center max-w-2xl mx-auto shadow-sm mt-10">
+                        <h3 className="mb-4 text-3xl font-semibold text-slate-900">No patents found</h3>
+                        <button
+                            onClick={resetFilters}
+                            className="rounded-2xl bg-slate-900 px-10 py-4 font-semibold text-white shadow-xl transition-all hover:bg-slate-800 active:scale-95"
+                        >
+                            Reset Filters
+                        </button>
+                    </div>
+                )}
                     {totalPages > 1 && (
                         <div className="mt-10 flex flex-col items-center gap-4">
                             <div className="flex flex-wrap items-center justify-center gap-2">
                                 <button
-                                  onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
-                                  disabled={safeCurrentPage === 1}
+                                  onClick={() => setPage(Math.max(1, page - 1))}
+                                  disabled={loading || safeCurrentPage === 1}
                                   className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-sm transition-all hover:border-[#00bdcd] hover:text-[#00bdcd] disabled:cursor-not-allowed disabled:opacity-40"
                                 >
                                   <ChevronLeft size={16} />
@@ -377,7 +383,8 @@ const Search: React.FC = () => {
                                   typeof page === 'number' ? (
                                     <button
                                       key={page}
-                                      onClick={() => setCurrentPage(page)}
+                                      onClick={() => setPage(page)}
+                                      disabled={loading}
                                       className={`min-w-10 rounded-xl px-3 py-2 text-sm font-medium shadow-sm transition-all ${page === safeCurrentPage ? 'bg-[#00bdcd] text-white' : 'border border-slate-200 bg-white text-slate-600 hover:border-[#00bdcd] hover:text-[#00bdcd]'}`}
                                     >
                                       {page}
@@ -389,8 +396,8 @@ const Search: React.FC = () => {
                                   )
                                 ))}
                                 <button
-                                  onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
-                                  disabled={safeCurrentPage === totalPages}
+                                  onClick={() => setPage(Math.min(totalPages, page + 1))}
+                                  disabled={loading || safeCurrentPage >= totalPages}
                                   className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-sm transition-all hover:border-[#00bdcd] hover:text-[#00bdcd] disabled:cursor-not-allowed disabled:opacity-40"
                                 >
                                   Next
@@ -399,18 +406,6 @@ const Search: React.FC = () => {
                             </div>
                         </div>
                     )}
-                    </>
-                ) : (
-                    <div className="bg-white rounded-[2rem] border border-slate-200 p-24 flex flex-col items-center text-center max-w-2xl mx-auto shadow-sm mt-10">
-                        <h3 className="mb-4 text-3xl font-semibold text-slate-900">No patents found</h3>
-                        <button 
-                            onClick={resetFilters}
-                            className="rounded-2xl bg-slate-900 px-10 py-4 font-semibold text-white shadow-xl transition-all hover:bg-slate-800 active:scale-95"
-                        >
-                            Reset Filters
-                        </button>
-                    </div>
-                )}
             </div>
         </div>
       </div>

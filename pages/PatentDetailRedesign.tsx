@@ -574,16 +574,6 @@ const buildFamily = (patent: Patent, status: { label: string; tone: Tone }) => {
   }));
 };
 
-const patentScore = (current: Patent, candidate: Patent) => {
-  let score = 0;
-  if (candidate.domain === current.domain) score += 4;
-  if (candidate.subdomain && candidate.subdomain === current.subdomain) score += 3;
-  if (leadAssignee(candidate).toLowerCase() === leadAssignee(current).toLowerCase()) score += 2;
-  score += Math.min(candidate.familySize, 4);
-  score += Math.min(candidate.forwardCitationsCount, 4);
-  return score;
-};
-
 const relatedSummary = (patent: Patent) => {
   if (hasText(patent.abstract)) return patent.abstract.length > 140 ? `${patent.abstract.slice(0, 140).trimEnd()}...` : patent.abstract;
   return '';
@@ -788,14 +778,11 @@ const PatentDetailRedesign: React.FC = () => {
           setLoading(false);
           return;
         }
+        const relatedPatents = await api.getRelatedPatents(current.publicationNumber, 3);
+        if (!alive) return;
         setPatent(current);
         setCatalog(allPatents);
-        if (!allPatents.some((item) => item.id === current.id)) {
-          setRelated([]);
-          return;
-        }
-        const ranked = allPatents.filter((item) => item.id !== current.id).sort((a, b) => patentScore(current, b) - patentScore(current, a));
-        setRelated((ranked.length > 0 ? ranked : allPatents.filter((item) => item.id !== current.id)).slice(0, 3));
+        setRelated(relatedPatents);
       } catch (error) {
         console.error('Failed to load patent detail page', error);
         if (!alive) return;

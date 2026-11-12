@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Search, X } from 'lucide-react';
-import { PATENTS } from '../data/patents';
+import { useFacets } from '../hooks/useFacets';
 
 interface SearchAutocompleteProps {
   onSearch: (query: string) => void;
@@ -12,17 +12,20 @@ const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({ onSearch, place
   const [query, setQuery] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const { facets, loading } = useFacets();
   const suggestions = useMemo(() => {
-    const subdomains = PATENTS
-      .map((patent) => patent.subdomain)
-      .filter(Boolean) as string[];
-    const assignees = PATENTS.flatMap((patent) => patent.currentAssignees).filter(Boolean);
-    return Array.from(new Set([...subdomains, ...assignees])).sort();
-  }, []);
+    const counts = new Map<string, number>();
+    facets?.domains.forEach(({ subdomains }) => subdomains.forEach(({ subdomain, count }) => {
+      counts.set(subdomain, (counts.get(subdomain) || 0) + count);
+    }));
+    facets?.assignees.forEach(({ name, count }) => counts.set(name, count));
+    return Array.from(counts, ([value, count]) => ({ value, count }))
+      .sort((a, b) => a.value.localeCompare(b.value));
+  }, [facets]);
   const filteredSuggestions = useMemo(() => {
     const trimmedQuery = query.trim().toLowerCase();
     if (!trimmedQuery) return suggestions.slice(0, 8);
-    return suggestions.filter((suggestion) => suggestion.toLowerCase().includes(trimmedQuery)).slice(0, 8);
+    return suggestions.filter((suggestion) => suggestion.value.toLowerCase().includes(trimmedQuery)).slice(0, 8);
   }, [query, suggestions]);
 
   const handleSearch = (q: string) => {
@@ -58,13 +61,14 @@ const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({ onSearch, place
         <div className={`relative flex items-center transition-all duration-300 ${isFocused ? 'scale-[1.02]' : ''}`}>
           <Search className={`absolute left-5 transition-colors duration-300 ${isFocused ? 'text-[#00bdcd]' : 'text-slate-400'}`} size={22} />
           <input 
+            disabled={loading}
             type="text"
             value={query}
             autoComplete="off"
             onFocus={() => setIsFocused(true)}
             onBlur={() => setTimeout(() => setIsFocused(false), 200)}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder={placeholder || "Search patents by ID, title, or tech..."}
+            placeholder={loading ? 'Loading search suggestions…' : placeholder || "Search patents by ID, title, or tech..."}
             className="h-16 w-full rounded-full border-2 border-slate-100 bg-white pl-14 pr-16 text-base font-medium text-slate-800 shadow-xl shadow-slate-200/50 outline-none transition-all placeholder:text-slate-400 focus:border-[#00bdcd]"
           />
           {query && (
@@ -81,6 +85,7 @@ const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({ onSearch, place
           )}
           <button 
             type="submit"
+            disabled={loading}
             className="absolute right-2 top-2 h-12 w-12 bg-[#00bdcd] text-white rounded-full flex items-center justify-center hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200 active:scale-95"
           >
             <Search size={24} />
@@ -88,13 +93,14 @@ const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({ onSearch, place
         </div>
       </form>
 
+      {loading && <p role="status" className="mt-2 px-5 text-xs text-slate-400">Loading search suggestions…</p>}
       {isFocused && filteredSuggestions.length > 0 && (
         <div className="absolute left-0 right-0 top-full z-50 mt-3 rounded-3xl border border-slate-200 bg-white p-3 shadow-2xl">
           <div className="px-3 pb-2 text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
             Suggested Subdomains & Assignees
           </div>
           <div className="space-y-1">
-            {filteredSuggestions.map((suggestion) => (
+            {filteredSuggestions.map(({ value: suggestion, count }) => (
               <button
                 key={suggestion}
                 onMouseDown={(event) => {
@@ -104,7 +110,7 @@ const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({ onSearch, place
                 className="flex w-full items-center justify-between rounded-2xl px-3 py-3 text-left text-sm font-medium text-slate-600 transition-colors hover:bg-blue-50 hover:text-blue-700"
               >
                 <span>{suggestion}</span>
-                <span className="text-xs font-medium uppercase tracking-[0.14em] text-slate-300">Search</span>
+                <span className="text-xs font-medium uppercase tracking-[0.14em] text-slate-300">{count.toLocaleString()} patents</span>
               </button>
             ))}
           </div>

@@ -1,18 +1,8 @@
-
 import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { PATENTS } from '../data/patents';
-import { Patent } from '../types';
-import { api } from '../utils/api';
+import { api, PatentSearchResult } from '../utils/api';
 import type { AdvancedSearchField } from '../components/AdvancedSearchModal';
 
-const AVAILABLE_PUBLICATION_YEARS = PATENTS
-  .map((patent) => new Date(patent.publicationDate).getFullYear())
-  .filter((year) => !Number.isNaN(year))
-  .sort((a, b) => a - b);
-
-const MIN_PUBLICATION_YEAR = AVAILABLE_PUBLICATION_YEARS[0]?.toString() || '1990';
-const MAX_PUBLICATION_YEAR = AVAILABLE_PUBLICATION_YEARS[AVAILABLE_PUBLICATION_YEARS.length - 1]?.toString() || new Date().getFullYear().toString();
 const DEFAULT_SEARCH_IN: AdvancedSearchField[] = [
   'publicationNumber',
   'applicationNumber',
@@ -23,33 +13,14 @@ const DEFAULT_SEARCH_IN: AdvancedSearchField[] = [
   'domain',
   'subdomain',
 ];
+const DEFAULT_MAX_VALUATION = 50000000;
 
-const isOperationallyInactive = (patent: Patent) =>
-  /\b(inactive|dead|expired|lapsed)\b/i.test(`${patent.legalStatus || ''} ${patent.simpleLegalStatus || ''}`);
+const hasDefaultSearchFields = (fields: AdvancedSearchField[]) =>
+  fields.length === DEFAULT_SEARCH_IN.length && DEFAULT_SEARCH_IN.every((field) => fields.includes(field));
 
-const getSearchableValues = (patent: Patent, searchIn: AdvancedSearchField[]): string[] => {
-  return searchIn.flatMap((field) => {
-    switch (field) {
-      case 'title':
-        return patent.title ? [patent.title] : [];
-      case 'publicationNumber':
-        return patent.publicationNumber ? [patent.publicationNumber] : [];
-      case 'applicationNumber':
-        return patent.applicationNumber ? [patent.applicationNumber] : [];
-      case 'abstract':
-        return patent.abstract ? [patent.abstract] : [];
-      case 'inventor':
-        return patent.inventors;
-      case 'assignee':
-        return patent.currentAssignees.length > 0 ? patent.currentAssignees : [patent.assignee.name];
-      case 'domain':
-        return patent.domain ? [patent.domain] : [];
-      case 'subdomain':
-        return patent.subdomain ? [patent.subdomain] : [];
-      default:
-        return [];
-    }
-  });
+const positiveInteger = (value: string | null, fallback: number) => {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
 };
 
 export interface FilterState {
@@ -74,79 +45,129 @@ export interface FilterState {
   sortBy: 'relevance' | 'newest' | 'price-low' | 'price-high' | 'citations';
 }
 
-export const usePatentFilters = () => {
+export const usePatentFilters = (pageSize = 20) => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [loading, setLoading] = useState(false);
-
+  const urlKey = searchParams.toString();
+  const [loading, setLoading] = useState(true);
+  const [result, setResult] = useState<PatentSearchResult>({ patents: [], total: 0 });
   const query = searchParams.get('q') || '';
-  const patentNumberOnly = searchParams.get('pn') === '1';
-  const [serverResult, setServerResult] = useState<{ query: string; patent: Patent } | null>(null);
+  const page = positiveInteger(searchParams.get('page'), 1);
+
+  const filters = useMemo((): FilterState => {
+    const params = new URLSearchParams(urlKey);
+    const searchIn = params.getAll('in') as AdvancedSearchField[];
+    return {
+      assignees: params.getAll('assignee'),
+      categories: params.getAll('category'),
+      subCategories: params.getAll('sub'),
+      statuses: params.getAll('status'),
+      patentTypes: params.getAll('type'),
+      assigneeTypes: params.getAll('assigneeType'),
+      minValuation: Number(params.get('minV')) || 0,
+      maxValuation: params.has('maxV') ? Number(params.get('maxV')) : DEFAULT_MAX_VALUATION,
+      minClaims: Number(params.get('minC')) || 0,
+      minCitations: Number(params.get('minCit')) || 0,
+      minFamilySize: Number(params.get('minFam')) || 0,
+      publicationYearFrom: params.get('startY') || '',
+      publicationYearTo: params.get('endY') || '',
+      litigation: (params.get('lit') as FilterState['litigation']) || 'all',
+      booleanMode: params.get('mode') === 'or' ? 'or' : 'and',
+      searchIn: searchIn.length > 0 ? searchIn : DEFAULT_SEARCH_IN,
+      excludeExpired: params.get('alive') === '1',
+      jurisdiction: params.get('jur') || 'All',
+      sortBy: (params.get('sort') as FilterState['sortBy']) || 'relevance',
+    };
+  }, [urlKey]);
 
   useEffect(() => {
-    let alive = true;
-    const publicationNumber = query.trim();
-    setServerResult(null);
-    if (!publicationNumber || PATENTS.some((patent) =>
-      patent.publicationNumber.toLowerCase() === publicationNumber.toLowerCase()
-    )) return;
-
-    void api.getPatent(publicationNumber).then((patent) => {
-      if (alive && patent) setServerResult({ query, patent });
-    });
-    return () => { alive = false; };
-  }, [query]);
-  
-  const filters = useMemo((): FilterState => {
-    return {
-      assignees: searchParams.getAll('assignee'),
-      categories: searchParams.getAll('category'),
-      subCategories: searchParams.getAll('sub'),
-      statuses: searchParams.getAll('status'),
-      patentTypes: searchParams.getAll('type'),
-      assigneeTypes: searchParams.getAll('assigneeType'),
-      minValuation: Number(searchParams.get('minV')) || 0,
-      maxValuation: Number(searchParams.get('maxV')) || 50000000,
-      minClaims: Number(searchParams.get('minC')) || 0,
-      minCitations: Number(searchParams.get('minCit')) || 0,
-      minFamilySize: Number(searchParams.get('minFam')) || 0,
-      publicationYearFrom: searchParams.get('startY') || MIN_PUBLICATION_YEAR,
-      publicationYearTo: searchParams.get('endY') || MAX_PUBLICATION_YEAR,
-      litigation: (searchParams.get('lit') as any) || 'all',
-      booleanMode: searchParams.get('mode') === 'or' ? 'or' : 'and',
-      searchIn: (searchParams.getAll('in') as AdvancedSearchField[]).filter(Boolean).length > 0 ? (searchParams.getAll('in') as AdvancedSearchField[]) : DEFAULT_SEARCH_IN,
-      excludeExpired: searchParams.get('alive') === '1',
-      jurisdiction: searchParams.get('jur') || 'All',
-      sortBy: (searchParams.get('sort') as any) || 'relevance',
+    let active = true;
+    setLoading(true);
+    const timer = setTimeout(() => {
+      const params = new URLSearchParams();
+      const source = new URLSearchParams(urlKey);
+      const repeatable = {
+        assignee: filters.assignees,
+        domain: filters.categories,
+        subdomain: filters.subCategories,
+        status: filters.statuses,
+        type: filters.patentTypes,
+        entityType: filters.assigneeTypes,
+      };
+      Object.entries(repeatable).forEach(([key, values]) => {
+        values.filter(Boolean).forEach((value) => params.append(key, value));
+      });
+      const q = source.get('q');
+      if (q) params.set('q', q);
+      if (source.get('pn') === '1') params.set('pn', '1');
+      if (filters.jurisdiction !== 'All') params.set('jurisdiction', filters.jurisdiction);
+      if (filters.publicationYearFrom) params.set('yearFrom', filters.publicationYearFrom);
+      if (filters.publicationYearTo) params.set('yearTo', filters.publicationYearTo);
+      if (filters.minValuation > 0) params.set('minValuation', String(filters.minValuation));
+      if (filters.maxValuation !== DEFAULT_MAX_VALUATION) params.set('maxValuation', String(filters.maxValuation));
+      if (filters.minClaims > 0) params.set('minClaims', String(filters.minClaims));
+      if (filters.minCitations > 0) params.set('minCitations', String(filters.minCitations));
+      if (filters.minFamilySize > 0) params.set('minFamilySize', String(filters.minFamilySize));
+      if (filters.excludeExpired) params.set('alive', '1');
+      if (filters.litigation !== 'all') params.set('litigation', filters.litigation);
+      if (filters.booleanMode !== 'and') params.set('mode', filters.booleanMode);
+      if (!hasDefaultSearchFields(filters.searchIn)) {
+        filters.searchIn.forEach((field) => params.append('in', field));
+      }
+      if (filters.sortBy !== 'relevance') params.set('sort', filters.sortBy);
+      params.set('page', String(page));
+      params.set('pageSize', String(pageSize));
+      void api.searchPatents(params).then((nextResult) => {
+        if (!active) return;
+        setResult(nextResult);
+        setLoading(false);
+        if (Number.isInteger(nextResult.page) && nextResult.page > 0 && nextResult.page !== page) {
+          const corrected = new URLSearchParams(urlKey);
+          if (nextResult.page === 1) corrected.delete('page');
+          else corrected.set('page', String(nextResult.page));
+          setSearchParams(corrected, { replace: true });
+        }
+      });
+    }, 250);
+    return () => {
+      active = false;
+      clearTimeout(timer);
     };
-  }, [searchParams]);
+  }, [urlKey, filters, page, pageSize]);
 
   const updateFilters = (newFilters: Partial<FilterState>) => {
     const next = { ...filters, ...newFilters };
-    const params = new URLSearchParams();
-    if (query) params.set('q', query);
-    if (patentNumberOnly) params.set('pn', '1');
-    
-    next.assignees.forEach(a => params.append('assignee', a));
-    next.categories.forEach(c => params.append('category', c));
-    next.subCategories.forEach(s => params.append('sub', s));
-    next.statuses.forEach(s => params.append('status', s));
-    next.patentTypes.forEach(t => params.append('type', t));
-    next.assigneeTypes.forEach(a => params.append('assigneeType', a));
-    
-    if (next.minValuation > 0) params.set('minV', next.minValuation.toString());
-    if (next.maxValuation < 50000000) params.set('maxV', next.maxValuation.toString());
-    if (next.minClaims > 0) params.set('minC', next.minClaims.toString());
-    if (next.minCitations > 0) params.set('minCit', next.minCitations.toString());
-    if (next.minFamilySize > 0) params.set('minFam', next.minFamilySize.toString());
-    if (next.publicationYearFrom !== MIN_PUBLICATION_YEAR) params.set('startY', next.publicationYearFrom);
-    if (next.publicationYearTo !== MAX_PUBLICATION_YEAR) params.set('endY', next.publicationYearTo);
-    if (next.litigation !== 'all') params.set('lit', next.litigation);
-    if (next.booleanMode !== 'and') params.set('mode', next.booleanMode);
-    next.searchIn.forEach((field) => params.append('in', field));
-    if (next.excludeExpired) params.set('alive', '1');
-    if (next.jurisdiction !== 'All') params.set('jur', next.jurisdiction);
-    
-    params.set('sort', next.sortBy);
+    const params = new URLSearchParams(searchParams);
+    const repeatable = {
+      assignee: next.assignees,
+      category: next.categories,
+      sub: next.subCategories,
+      status: next.statuses,
+      type: next.patentTypes,
+      assigneeType: next.assigneeTypes,
+    };
+    Object.entries(repeatable).forEach(([key, values]) => {
+      params.delete(key);
+      values.filter(Boolean).forEach((value) => params.append(key, value));
+    });
+    const setOptional = (key: string, value: string | number, enabled: boolean) => {
+      params.delete(key);
+      if (enabled) params.set(key, String(value));
+    };
+    setOptional('minV', next.minValuation, next.minValuation > 0);
+    setOptional('maxV', next.maxValuation, next.maxValuation !== DEFAULT_MAX_VALUATION);
+    setOptional('minC', next.minClaims, next.minClaims > 0);
+    setOptional('minCit', next.minCitations, next.minCitations > 0);
+    setOptional('minFam', next.minFamilySize, next.minFamilySize > 0);
+    setOptional('startY', next.publicationYearFrom, Boolean(next.publicationYearFrom));
+    setOptional('endY', next.publicationYearTo, Boolean(next.publicationYearTo));
+    setOptional('lit', next.litigation, next.litigation !== 'all');
+    setOptional('mode', next.booleanMode, next.booleanMode !== 'and');
+    params.delete('in');
+    if (!hasDefaultSearchFields(next.searchIn)) next.searchIn.forEach((field) => params.append('in', field));
+    setOptional('alive', '1', next.excludeExpired);
+    setOptional('jur', next.jurisdiction, next.jurisdiction !== 'All');
+    setOptional('sort', next.sortBy, next.sortBy !== 'relevance');
+    params.delete('page');
     setSearchParams(params);
   };
 
@@ -154,123 +175,29 @@ export const usePatentFilters = () => {
     const params = new URLSearchParams(searchParams);
     if (q) params.set('q', q);
     else params.delete('q');
+    params.delete('page');
     setSearchParams(params);
   };
 
-  const filteredPatents = useMemo(() => {
-    let result = [...PATENTS];
-    if (serverResult?.query === query) result.push(serverResult.patent);
-
-    if (query) {
-      const q = query.toLowerCase();
-      if (patentNumberOnly) {
-        result = result.filter((patent) => patent.publicationNumber.toLowerCase().includes(q));
-      } else {
-        const exactMatch = result.find(p => p.id.toLowerCase() === q || p.applicationNumber.toLowerCase() === q);
-        if (exactMatch) return [exactMatch];
-        const terms = q.split(/\s+/).filter(Boolean);
-
-        result = result.filter((patent) => {
-          const searchableValues = [
-            patent.id,
-            patent.applicationNumber,
-            ...getSearchableValues(patent, filters.searchIn),
-          ]
-            .filter(Boolean)
-            .map((value) => value.toLowerCase());
-
-          if (searchableValues.length === 0) return false;
-
-          return filters.booleanMode === 'or'
-            ? terms.some((term) => searchableValues.some((value) => value.includes(term)))
-            : terms.every((term) => searchableValues.some((value) => value.includes(term)));
-        });
-      }
-    }
-
-    if (filters.categories.length > 0) {
-      result = result.filter(p => filters.categories.includes(p.domain));
-    }
-
-    if (filters.subCategories.length > 0) {
-      result = result.filter(p => filters.subCategories.includes(p.subdomain || 'General'));
-    }
-
-    if (filters.assignees.length > 0) {
-      result = result.filter(p => filters.assignees.includes(p.assignee.name));
-    }
-    
-    if (filters.statuses.length > 0) {
-      result = result.filter(p => filters.statuses.includes(p.legalStatus));
-    }
-
-    if (filters.patentTypes.length > 0) {
-      result = result.filter(p => filters.patentTypes.includes(p.patentType));
-    }
-
-    if (filters.assigneeTypes.length > 0) {
-      result = result.filter(p => filters.assigneeTypes.includes(p.assignee.type));
-    }
-
-    if (filters.excludeExpired) {
-      result = result.filter((patent) => !isOperationallyInactive(patent));
-    }
-
-    if (filters.jurisdiction !== 'All') {
-      result = result.filter((patent) => patent.jurisdiction === filters.jurisdiction);
-    }
-
-    result = result.filter(p => 
-      p.valuation.current >= filters.minValuation && 
-      p.valuation.current <= filters.maxValuation &&
-      p.totalClaims >= filters.minClaims &&
-      p.forwardCitationsCount >= filters.minCitations &&
-      p.familySize >= filters.minFamilySize
-    );
-
-    const start = parseInt(filters.publicationYearFrom);
-    const end = parseInt(filters.publicationYearTo);
-    result = result.filter(p => {
-      const publicationYear = new Date(p.publicationDate).getFullYear();
-      return publicationYear >= start && publicationYear <= end;
-    });
-
-    if (filters.litigation === 'include') {
-      result = result.filter(p => p.flags.litigation === true);
-    } else if (filters.litigation === 'exclude') {
-      result = result.filter(p => p.flags.litigation === false);
-    }
-
-    result.sort((a, b) => {
-      switch (filters.sortBy) {
-        case 'newest': {
-          const timeB = new Date(b.filingDate).getTime() || 0;
-          const timeA = new Date(a.filingDate).getTime() || 0;
-          return timeB - timeA;
-        }
-        case 'price-low': return (a.askingPrice || 0) - (b.askingPrice || 0);
-        case 'price-high': return (b.askingPrice || 0) - (a.askingPrice || 0);
-        case 'citations': return b.forwardCitationsCount - a.forwardCitationsCount;
-        default: return 0;
-      }
-    });
-
-    return result;
-  }, [query, patentNumberOnly, filters, serverResult]);
-
-  useEffect(() => {
-    setLoading(true);
-    const timer = setTimeout(() => setLoading(false), 400);
-    return () => clearTimeout(timer);
-  }, [searchParams]);
+  const setPage = (nextPage: number) => {
+    const params = new URLSearchParams(searchParams);
+    const next = Math.max(1, Math.floor(nextPage));
+    if (next === 1) params.delete('page');
+    else params.set('page', String(next));
+    setSearchParams(params);
+  };
 
   return {
     filters,
     updateFilters,
-    filteredPatents,
+    filteredPatents: result.patents,
+    total: result.total,
+    page,
+    setPage,
+    pageSize: result.pageSize || pageSize,
     loading,
     query,
     setQuery,
-    resetFilters: () => setSearchParams(new URLSearchParams())
+    resetFilters: () => setSearchParams(new URLSearchParams()),
   };
 };
