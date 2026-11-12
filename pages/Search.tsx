@@ -59,7 +59,8 @@ const Search: React.FC = () => {
 
   useEffect(() => {
     if (query) addSearchHistory(query);
-  }, [query, addSearchHistory]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query]);
 
   useEffect(() => {
     setCurrentPage(1);
