@@ -45,7 +45,10 @@ const ScrollToTop: React.FC = () => {
 
 const AppShell: React.FC = () => {
   const location = useLocation();
-  const routeKey = `${location.pathname}${location.search}`;
+  // Keep search state/results mounted while URL filters and pages change.
+  const routeKey = location.pathname === '/search' || location.pathname === '/browse'
+    ? location.pathname
+    : `${location.pathname}${location.search}`;
 
   return (
     <>

@@ -7,6 +7,52 @@ import { getDomainDetailBySlug, getDomainDetails } from '../data/domainDetails';
 const FAV_KEY = 'GILLOW_FAVORITES';
 const SERVER_URL_KEY = 'GILLOW_SERVER_URL';
 
+export interface FacetRange {
+    min: number | null;
+    max: number | null;
+}
+
+export interface FacetValue {
+    value: string;
+    count: number | null;
+}
+
+export interface PatentFacets {
+    total: number;
+    domains: Array<{
+        domain: string;
+        count: number;
+        subdomains: Array<{ subdomain: string; count: number }>;
+    }>;
+    assignees: Array<{ name: string; count: number }>;
+    legalStatuses: FacetValue[];
+    patentTypes: FacetValue[];
+    entityTypes: FacetValue[];
+    jurisdictions: FacetValue[];
+    yearRange: FacetRange;
+    valuation: FacetRange;
+    claims: FacetRange;
+    citations: FacetRange;
+    familySize: FacetRange;
+    price: FacetRange;
+}
+
+export interface PatentSearchResult {
+    patents: Patent[];
+    total: number;
+    page?: number;
+    pageSize?: number;
+}
+
+export type PatentSearchParams = Record<string, string | number | boolean | string[] | undefined>;
+
+let facetsPromise: Promise<PatentFacets | null> | undefined;
+
+const normalizeFacetValues = (values: Array<string | FacetValue | { name: string; count: number }>): FacetValue[] =>
+    values.map((item) => typeof item === 'string'
+        ? { value: item, count: null }
+        : { value: 'value' in item ? item.value : item.name, count: item.count });
+
 // Added utility functions for server URL configuration
 export const getServerUrl = (): string | null => localStorage.getItem(SERVER_URL_KEY);
 
@@ -92,6 +138,65 @@ const fetchPatentFromServer = async (publicationNumber: string): Promise<Patent 
 };
 
 export const api = {
+    getFacets: (): Promise<PatentFacets | null> => {
+        if (!facetsPromise) {
+            facetsPromise = (async () => {
+                try {
+                    const response = await fetch('/api/patents/facets');
+                    if (!response.ok) throw new Error(`Facets request failed: ${response.status}`);
+                    const facets = await response.json();
+                    return {
+                        ...facets,
+                        patentTypes: normalizeFacetValues(facets.patentTypes || []),
+                        entityTypes: normalizeFacetValues(facets.entityTypes || []),
+                        jurisdictions: normalizeFacetValues(facets.jurisdictions || []),
+                    } as PatentFacets;
+                } catch (error) {
+                    console.error('Unable to load patent facets', error);
+                    return null;
+                }
+            })();
+        }
+        return facetsPromise;
+    },
+
+    searchPatents: async (params: URLSearchParams | PatentSearchParams): Promise<PatentSearchResult> => {
+        try {
+            const query = params instanceof URLSearchParams ? params : new URLSearchParams();
+            if (!(params instanceof URLSearchParams)) {
+                Object.entries(params).forEach(([key, value]) => {
+                    if (value === undefined || value === '') return;
+                    if (Array.isArray(value)) value.forEach((item) => query.append(key, item));
+                    else query.set(key, String(value));
+                });
+            }
+            const response = await fetch(`/api/patents/search?${query}`);
+            if (!response.ok) throw new Error(`Search request failed: ${response.status}`);
+            const data = await response.json();
+            return {
+                patents: data.rows.map(parsePatentRow),
+                total: data.total,
+                page: data.page,
+                pageSize: data.pageSize,
+            };
+        } catch (error) {
+            console.error('Unable to search patents', error);
+            return { patents: [], total: 0 };
+        }
+    },
+
+    getRelatedPatents: async (publicationNumber: string, limit = 3): Promise<Patent[]> => {
+        try {
+            const response = await fetch(`/api/patents/related/${encodeURIComponent(publicationNumber)}?limit=${limit}`);
+            if (!response.ok) throw new Error(`Related patents request failed: ${response.status}`);
+            const data = await response.json();
+            return (Array.isArray(data) ? data : data.rows).map(parsePatentRow);
+        } catch (error) {
+            console.error('Unable to load related patents', error);
+            return [];
+        }
+    },
+
     getTechnologies: async (): Promise<TechNode[]> => {
         const domains = [...new Set(PATENTS.map(p => p.domain || 'Uncategorized'))];
         const nodes: TechNode[] = [];
