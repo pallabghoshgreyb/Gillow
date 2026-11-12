@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
 import { Patent } from '../types';
 import { PATENTS } from '../data/patents';
 import { calculateMaintenanceStatus } from '../utils/dataProcessor';
@@ -224,40 +224,43 @@ export const GillowProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     setNotifications(createPatentNotifications(PATENTS, favorites, savedSearches, readNotificationIds));
   }, [favorites, savedSearches, readNotificationIds]);
 
-  const toggleFavorite = (id: string) => {
+  const toggleFavorite = useCallback((id: string) => {
     setFavorites(prev => {
       const next = prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id];
       localStorage.setItem('GILLOW_FAVORITES', JSON.stringify(next));
       return next;
     });
-  };
+  }, []);
 
-  const addSearchHistory = (query: string) => {
+  const addSearchHistory = useCallback((query: string) => {
     if (!query.trim()) return;
     setSearchHistory(prev => {
+      if (prev[0] === query) return prev;
       const next = [query, ...prev.filter(q => q !== query)].slice(0, 8);
       localStorage.setItem('GILLOW_HISTORY', JSON.stringify(next));
       return next;
     });
-  };
+  }, []);
 
-  const clearSearchHistory = () => {
+  const clearSearchHistory = useCallback(() => {
     setSearchHistory([]);
     localStorage.removeItem('GILLOW_HISTORY');
-  };
+  }, []);
 
-  const addToComparison = (id: string) => {
-    if (comparisonList.length >= 4) return; // Limit to 4 for UX
-    setComparisonList(prev => [...new Set([...prev, id])]);
-  };
+  const addToComparison = useCallback((id: string) => {
+    setComparisonList(prev => {
+      if (prev.length >= 4 || prev.includes(id)) return prev; // Limit to 4 for UX
+      return [...prev, id];
+    });
+  }, []);
 
-  const removeFromComparison = (id: string) => {
+  const removeFromComparison = useCallback((id: string) => {
     setComparisonList(prev => prev.filter(p => p !== id));
-  };
+  }, []);
 
-  const clearComparison = () => setComparisonList([]);
+  const clearComparison = useCallback(() => setComparisonList([]), []);
 
-  const markRead = (id: string) => {
+  const markRead = useCallback((id: string) => {
     setReadNotificationIds(prev => {
       if (prev.includes(id)) return prev;
       const next = [...prev, id];
@@ -265,25 +268,33 @@ export const GillowProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       return next;
     });
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
-  };
+  }, []);
 
-  const saveSearch = (name: string, query: string, filters: any) => {
+  const saveSearch = useCallback((name: string, query: string, filters: any) => {
     const newSaved = { id: Date.now().toString(), name, query, filters, timestamp: Date.now() };
     setSavedSearches(prev => {
       const next = [newSaved, ...prev];
       localStorage.setItem('GILLOW_SAVED_SEARCHES', JSON.stringify(next));
       return next;
     });
-  };
+  }, []);
 
-  return (
-    <GillowContext.Provider value={{
+  const value = useMemo(() => ({
       favorites, toggleFavorite,
       searchHistory, addSearchHistory, clearSearchHistory,
       comparisonList, addToComparison, removeFromComparison, clearComparison,
       notifications, markRead,
       savedSearches, saveSearch
-    }}>
+  }), [
+    favorites, toggleFavorite,
+    searchHistory, addSearchHistory, clearSearchHistory,
+    comparisonList, addToComparison, removeFromComparison, clearComparison,
+    notifications, markRead,
+    savedSearches, saveSearch
+  ]);
+
+  return (
+    <GillowContext.Provider value={value}>
       {children}
     </GillowContext.Provider>
   );
